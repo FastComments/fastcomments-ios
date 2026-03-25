@@ -56,6 +56,14 @@ public final class FastCommentsSDK: ObservableObject {
     public var showLiveRightAway: Bool = true
     public var defaultSortDirection: SortDirections = .nf
 
+    public var disableUnverifiedLabel: Bool {
+        customConfig?.disableUnverifiedLabel ?? false
+    }
+
+    public var disableToolbar: Bool {
+        customConfig?.disableToolbar ?? false
+    }
+
     // MARK: - Internal
 
     var broadcastIdsSent: Set<String> = []

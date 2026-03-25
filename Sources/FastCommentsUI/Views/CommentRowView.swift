@@ -36,6 +36,13 @@ public struct CommentRowView: View {
                 .buttonStyle(.plain)
 
                 VStack(alignment: .leading, spacing: 2) {
+                    // Display label above username
+                    if let displayLabel = comment.comment.displayLabel, !displayLabel.isEmpty {
+                        Text(displayLabel)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+
                     HStack(spacing: 4) {
                         Button {
                             onUserClick?(.comment(comment.comment), UserInfo.from(comment.comment), .name)
@@ -56,6 +63,17 @@ public struct CommentRowView: View {
                             ForEach(badges) { badge in
                                 BadgeView(badge: badge)
                             }
+                        }
+
+                        // Unverified badge
+                        if !sdk.disableUnverifiedLabel && !(comment.comment.verified ?? true) {
+                            Text(NSLocalizedString("unverified", bundle: .module, comment: ""))
+                                .font(.caption2)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(Color(.systemGray6))
+                                .foregroundStyle(.secondary)
+                                .clipShape(RoundedRectangle(cornerRadius: 2))
                         }
                     }
 

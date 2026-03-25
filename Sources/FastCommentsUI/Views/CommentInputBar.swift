@@ -15,6 +15,7 @@ public struct CommentInputBar: View {
     @State private var errorMessage: String?
     @State private var mentionSuggestions: [UserSearchResult] = []
     @State private var selectedMentions: [CommentUserMentionInfo] = []
+    @State private var showAddLinkSheet: Bool = false
     @FocusState private var isTextFieldFocused: Bool
 
     public var body: some View {
@@ -56,6 +57,78 @@ public struct CommentInputBar: View {
                     .foregroundStyle(.red)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 4)
+            }
+
+            // Formatting toolbar
+            if !sdk.disableToolbar {
+                Divider()
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        // Default formatting buttons
+                        Button { wrapText(startTag: "<b>", endTag: "</b>") } label: {
+                            Image(systemName: "bold")
+                                .font(.system(size: 16))
+                                .foregroundStyle(theme.resolveActionButtonColor())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(NSLocalizedString("format_bold", bundle: .module, comment: ""))
+
+                        Button { wrapText(startTag: "<i>", endTag: "</i>") } label: {
+                            Image(systemName: "italic")
+                                .font(.system(size: 16))
+                                .foregroundStyle(theme.resolveActionButtonColor())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(NSLocalizedString("format_italic", bundle: .module, comment: ""))
+
+                        Button { wrapText(startTag: "<code>", endTag: "</code>") } label: {
+                            Image(systemName: "chevron.left.forwardslash.chevron.right")
+                                .font(.system(size: 16))
+                                .foregroundStyle(theme.resolveActionButtonColor())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(NSLocalizedString("format_code", bundle: .module, comment: ""))
+
+                        Button { showAddLinkSheet = true } label: {
+                            Image(systemName: "link")
+                                .font(.system(size: 16))
+                                .foregroundStyle(theme.resolveActionButtonColor())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(NSLocalizedString("add_link", bundle: .module, comment: ""))
+
+                        // Custom toolbar buttons
+                        ForEach(customToolbarButtons.filter { $0.isVisible() }, id: \.id) { button in
+                            Button {
+                                button.onClick(text: $text)
+                            } label: {
+                                ZStack(alignment: .topTrailing) {
+                                    Image(systemName: button.iconSystemName)
+                                        .font(.system(size: 16))
+                                        .foregroundStyle(
+                                            button.isEnabled() ? theme.resolveActionButtonColor() : .secondary
+                                        )
+                                    if let badge = button.badgeText {
+                                        Text(badge)
+                                            .font(.system(size: 8))
+                                            .padding(2)
+                                            .background(Color.red)
+                                            .foregroundStyle(.white)
+                                            .clipShape(Circle())
+                                            .offset(x: 4, y: -4)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(!button.isEnabled())
+                            .accessibilityLabel(button.contentDescription)
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                }
+                .background(Color(.secondarySystemBackground))
             }
 
             Divider()
@@ -101,6 +174,14 @@ public struct CommentInputBar: View {
             .padding(.vertical, 8)
         }
         .background(Color(.systemBackground))
+        .sheet(isPresented: $showAddLinkSheet) {
+            AddLinkSheet { url, label in
+                let linkHtml = label.isEmpty
+                    ? "<a href=\"\(url)\">\(url)</a>"
+                    : "<a href=\"\(url)\">\(label)</a>"
+                text += linkHtml
+            }
+        }
     }
 
     // MARK: - Private
@@ -156,6 +237,10 @@ public struct CommentInputBar: View {
                 mentionSuggestions = []
             }
         }
+    }
+
+    private func wrapText(startTag: String, endTag: String) {
+        text += "\(startTag)\(endTag)"
     }
 
     private func insertMention(_ user: UserSearchResult) {

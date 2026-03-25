@@ -86,6 +86,33 @@ public struct FeedPostCreateView: View {
                         Task { await loadImages(newItems) }
                     }
 
+                    // Custom toolbar buttons
+                    ForEach(customToolbarButtons.filter { $0.isVisible() }, id: \.id) { button in
+                        Button {
+                            button.onClick(content: $postContent)
+                        } label: {
+                            ZStack(alignment: .topTrailing) {
+                                Image(systemName: button.iconSystemName)
+                                    .font(.title3)
+                                    .foregroundStyle(
+                                        button.isEnabled() ? theme.resolveActionButtonColor() : .secondary
+                                    )
+                                if let badge = button.badgeText {
+                                    Text(badge)
+                                        .font(.system(size: 8))
+                                        .padding(2)
+                                        .background(Color.red)
+                                        .foregroundStyle(.white)
+                                        .clipShape(Circle())
+                                        .offset(x: 4, y: -4)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(!button.isEnabled())
+                        .accessibilityLabel(button.contentDescription)
+                    }
+
                     Spacer()
                 }
                 .padding(.horizontal, 12)
