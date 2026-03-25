@@ -1,6 +1,11 @@
 import SwiftUI
 import PhotosUI
 import FastCommentsSwift
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 /// View for creating a new feed post with text, images, and links.
 /// Mirrors FeedPostCreateView.java from Android.
@@ -119,7 +124,9 @@ public struct FeedPostCreateView: View {
                 .padding(.vertical, 8)
             }
             .navigationTitle(NSLocalizedString("create_post", bundle: .module, comment: ""))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(NSLocalizedString("cancel", bundle: .module, comment: "")) {
@@ -167,7 +174,13 @@ public struct FeedPostCreateView: View {
             if !loadedImages.isEmpty {
                 let totalImages = Double(loadedImages.count)
                 for (index, image) in loadedImages.enumerated() {
+                    #if os(iOS)
                     guard let data = image.jpegData(compressionQuality: 0.8) else { continue }
+                    #else
+                    guard let tiffData = image.tiffRepresentation,
+                          let bitmap = NSBitmapImageRep(data: tiffData),
+                          let data = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.8]) else { continue }
+                    #endif
                     let filename = "image_\(index).jpg"
                     let mediaItem = try await sdk.uploadImage(imageData: data, filename: filename)
                     mediaItems.append(mediaItem)

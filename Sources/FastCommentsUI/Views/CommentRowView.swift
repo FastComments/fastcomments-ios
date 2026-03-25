@@ -71,7 +71,11 @@ public struct CommentRowView: View {
                                 .font(.caption2)
                                 .padding(.horizontal, 4)
                                 .padding(.vertical, 1)
-                                .background(Color(.systemGray6))
+                                #if os(iOS)
+                                .background(Color(uiColor: .systemGray6))
+                                #else
+                                .background(Color(nsColor: .controlBackgroundColor))
+                                #endif
                                 .foregroundStyle(.secondary)
                                 .clipShape(RoundedRectangle(cornerRadius: 2))
                         }

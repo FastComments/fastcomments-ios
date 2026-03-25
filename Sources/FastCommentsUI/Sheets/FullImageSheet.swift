@@ -38,7 +38,9 @@ public struct FullImageSheet: View {
                         }
                     }
                 }
+                #if os(iOS)
                 .tabViewStyle(.page(indexDisplayMode: .automatic))
+                #endif
                 .onAppear { currentPage = startIndex }
 
                 // Counter

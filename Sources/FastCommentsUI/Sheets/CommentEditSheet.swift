@@ -22,14 +22,20 @@ public struct CommentEditSheet: View {
                     .padding(4)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(.separator), lineWidth: 0.5)
+                            #if os(iOS)
+                            .stroke(Color(uiColor: .separator), lineWidth: 0.5)
+                            #else
+                            .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
+                            #endif
                     )
                     .padding()
 
                 Spacer()
             }
             .navigationTitle(NSLocalizedString("edit_comment", bundle: .module, comment: ""))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(NSLocalizedString("cancel", bundle: .module, comment: "")) {

@@ -18,7 +18,11 @@ public struct DateSeparatorRow: View {
 
     private var line: some View {
         Rectangle()
-            .fill(Color(.separator))
+            #if os(iOS)
+            .fill(Color(uiColor: .separator))
+            #else
+            .fill(Color(nsColor: .separatorColor))
+            #endif
             .frame(height: 0.5)
     }
 }

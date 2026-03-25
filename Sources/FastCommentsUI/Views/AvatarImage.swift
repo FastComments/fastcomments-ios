@@ -44,10 +44,15 @@ public struct AvatarImage: View {
                 Circle()
                     .fill(theme.resolveOnlineIndicatorColor())
                     .frame(width: size * 0.3, height: size * 0.3)
-                    .overlay(
+                    .overlay {
+                        #if os(iOS)
                         Circle()
-                            .stroke(Color(.systemBackground), lineWidth: 1.5)
-                    )
+                            .stroke(Color(uiColor: .systemBackground), lineWidth: 1.5)
+                        #else
+                        Circle()
+                            .stroke(Color(nsColor: .windowBackgroundColor), lineWidth: 1.5)
+                        #endif
+                    }
             }
         }
     }

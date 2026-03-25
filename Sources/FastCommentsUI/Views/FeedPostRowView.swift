@@ -77,7 +77,11 @@ public struct FeedPostRowView: View {
                         if let image = phase.image {
                             image.resizable().scaledToFill()
                         } else {
-                            Rectangle().fill(Color(.systemGray5))
+                            #if os(iOS)
+                            Rectangle().fill(Color(uiColor: .systemGray5))
+                            #else
+                            Rectangle().fill(Color(nsColor: .controlBackgroundColor))
+                            #endif
                         }
                     }
                     .frame(maxWidth: .infinity)

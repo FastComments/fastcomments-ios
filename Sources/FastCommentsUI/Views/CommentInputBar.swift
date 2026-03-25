@@ -47,7 +47,11 @@ public struct CommentInputBar: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(Color(.secondarySystemBackground))
+                #if os(iOS)
+                .background(Color(uiColor: .secondarySystemBackground))
+                #else
+                .background(Color(nsColor: .controlBackgroundColor))
+                #endif
             }
 
             // Error message
@@ -128,7 +132,11 @@ public struct CommentInputBar: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                 }
-                .background(Color(.secondarySystemBackground))
+                #if os(iOS)
+                .background(Color(uiColor: .secondarySystemBackground))
+                #else
+                .background(Color(nsColor: .controlBackgroundColor))
+                #endif
             }
 
             Divider()
@@ -173,7 +181,11 @@ public struct CommentInputBar: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
         }
-        .background(Color(.systemBackground))
+        #if os(iOS)
+        .background(Color(uiColor: .systemBackground))
+        #else
+        .background(Color(nsColor: .windowBackgroundColor))
+        #endif
         .sheet(isPresented: $showAddLinkSheet) {
             AddLinkSheet { url, label in
                 let linkHtml = label.isEmpty

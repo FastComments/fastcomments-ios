@@ -14,14 +14,18 @@ public struct AddLinkSheet: View {
             Form {
                 Section {
                     TextField("URL", text: $url)
+                        #if os(iOS)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
+                        #endif
                         .autocorrectionDisabled()
                     TextField(NSLocalizedString("link_label", bundle: .module, comment: ""), text: $label)
                 }
             }
             .navigationTitle(NSLocalizedString("add_link", bundle: .module, comment: ""))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(NSLocalizedString("cancel", bundle: .module, comment: "")) { dismiss() }

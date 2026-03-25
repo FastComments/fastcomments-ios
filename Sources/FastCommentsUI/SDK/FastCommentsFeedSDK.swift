@@ -149,9 +149,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        guard let post = response.feedPost else {
-            throw FastCommentsError(reason: "No post returned from server")
-        }
+        let post = response.feedPost
 
         // Insert at top of feed
         postsById[post.id] = post
@@ -407,7 +405,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
         switch event.type {
         case .newFeedPost:
-            if let post = event.feedPost {
+            if let pubSubPost = event.feedPost, let post = Self.toFeedPost(pubSubPost) {
                 postsById[post.id] = post
                 feedPosts.insert(post, at: 0)
                 if let reacts = post.reacts {
@@ -415,7 +413,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
                 }
             }
         case .updatedFeedPost:
-            if let post = event.feedPost {
+            if let pubSubPost = event.feedPost, let post = Self.toFeedPost(pubSubPost) {
                 postsById[post.id] = post
                 if let idx = feedPosts.firstIndex(where: { $0.id == post.id }) {
                     feedPosts[idx] = post
@@ -425,7 +423,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
                 }
             }
         case .deletedFeedPost:
-            if let post = event.feedPost {
+            if let pubSubPost = event.feedPost, let post = Self.toFeedPost(pubSubPost) {
                 postsById.removeValue(forKey: post.id)
                 feedPosts.removeAll { $0.id == post.id }
                 likeCounts.removeValue(forKey: post.id)
@@ -486,6 +484,41 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
         // Start stats polling
         startStatsPolling()
+    }
+
+    private static func toFeedPost(_ pubSub: PubSubFeedPost) -> FeedPost? {
+        guard let id = pubSub.id, let tenantId = pubSub.tenantId else { return nil }
+        let dateFormatter = ISO8601DateFormatter()
+        return FeedPost(
+            id: id,
+            tenantId: tenantId,
+            title: pubSub.title,
+            fromUserId: pubSub.fromUserId,
+            fromUserDisplayName: pubSub.fromUserDisplayName,
+            fromUserAvatar: pubSub.fromUserAvatar,
+            fromIpHash: pubSub.fromIpHash,
+            tags: pubSub.tags,
+            weight: pubSub.weight,
+            meta: pubSub.meta,
+            contentHTML: pubSub.contentHTML,
+            media: pubSub.media?.compactMap { Self.toFeedPostMediaItem($0) },
+            links: pubSub.links?.compactMap { Self.toFeedPostLink($0) },
+            createdAt: pubSub.createdAt.flatMap { dateFormatter.date(from: $0) } ?? Date(),
+            reacts: pubSub.reacts,
+            commentCount: pubSub.commentCount
+        )
+    }
+
+    private static func toFeedPostMediaItem(_ pubSub: PubSubFeedPostMediaItem) -> FeedPostMediaItem? {
+        let sizes = pubSub.sizes?.compactMap { asset -> FeedPostMediaItemAsset? in
+            guard let w = asset.w, let h = asset.h, let src = asset.src else { return nil }
+            return FeedPostMediaItemAsset(w: w, h: h, src: src)
+        } ?? []
+        return FeedPostMediaItem(title: pubSub.title, linkUrl: pubSub.linkUrl, sizes: sizes)
+    }
+
+    private static func toFeedPostLink(_ pubSub: PubSubFeedPostLink) -> FeedPostLink {
+        FeedPostLink(text: pubSub.text, title: pubSub.title, description: pubSub.description, url: pubSub.url)
     }
 
     private func startStatsPolling() {

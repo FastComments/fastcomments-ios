@@ -1,4 +1,9 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 /// Renders HTML content as an AttributedString.
 /// Falls back to plain text if HTML parsing fails.
@@ -51,7 +56,11 @@ public struct HTMLContentView: View {
                 ],
                 documentAttributes: nil
             )
+            #if os(iOS)
             return try AttributedString(nsAttrString, including: \.uiKit)
+            #else
+            return try AttributedString(nsAttrString, including: \.appKit)
+            #endif
         } catch {
             return nil
         }

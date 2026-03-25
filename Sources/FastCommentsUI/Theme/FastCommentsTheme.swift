@@ -78,7 +78,11 @@ public struct FastCommentsTheme: Sendable {
     }
 
     public func resolveVoteDividerColor() -> Color {
-        voteDividerColor ?? Color(.separator)
+        #if os(iOS)
+        voteDividerColor ?? Color(uiColor: .separator)
+        #else
+        voteDividerColor ?? Color(nsColor: .separatorColor)
+        #endif
     }
 
     public func resolveDialogHeaderBackgroundColor() -> Color {

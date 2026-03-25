@@ -21,9 +21,11 @@ public struct CommentsSheet: View {
 
     public var body: some View {
         NavigationStack {
-            FastCommentsView(sdk: commentsSDK, onUserClick: onUserClick)
+            FastCommentsView(sdk: commentsSDK)
                 .navigationTitle(NSLocalizedString("comments", bundle: .module, comment: ""))
+                #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
+                #endif
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button {

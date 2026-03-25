@@ -105,7 +105,7 @@ public final class FastCommentsSDK: ObservableObject {
 
     /// Initial load of comments. Sets up live events after first successful fetch.
     @discardableResult
-    public func load() async throws -> GetCommentsResponseWithPresencePublicComment {
+    public func load() async throws -> GetCommentsPublic200Response {
         isLoading = true
         defer { isLoading = false }
 
@@ -133,7 +133,7 @@ public final class FastCommentsSDK: ObservableObject {
 
     /// Load next page of comments.
     @discardableResult
-    public func loadMore() async throws -> GetCommentsResponseWithPresencePublicComment {
+    public func loadMore() async throws -> GetCommentsPublic200Response {
         let previousSkip = currentSkip
         let previousPage = currentPage
         currentSkip += pageSize
@@ -169,7 +169,7 @@ public final class FastCommentsSDK: ObservableObject {
 
     /// Load all remaining comments.
     @discardableResult
-    public func loadAll() async throws -> GetCommentsResponseWithPresencePublicComment {
+    public func loadAll() async throws -> GetCommentsPublic200Response {
         let response = try await PublicAPI.getCommentsPublic(
             tenantId: config.tenantId,
             urlId: config.urlId,
@@ -478,19 +478,19 @@ public final class FastCommentsSDK: ObservableObject {
             }
         case .deletedComment:
             if let comment = event.comment {
-                commentsTree.removeComment(commentId: comment.id)
+                commentsTree.removeComment(commentId: comment.id ?? "")
                 commentCountOnServer -= 1
             }
         case .newVote:
-            if let vote = event.vote, let comment = commentsTree.commentsById[vote.commentId] {
+            if let vote = event.vote, let commentId = vote.commentId, let comment = commentsTree.commentsById[commentId] {
                 // Update vote counts on the comment
                 comment.objectWillChange.send()
             }
         case .deletedVote:
-            if let vote = event.vote, let comment = commentsTree.commentsById[vote.commentId] {
+            if let vote = event.vote, let commentId = vote.commentId, let comment = commentsTree.commentsById[commentId] {
                 comment.objectWillChange.send()
             }
-        case .pU:
+        case .presenceUpdate:
             // Presence update: uj = user joins, ul = user leaves
             if let joins = event.uj {
                 for userId in joins {
@@ -556,7 +556,7 @@ public final class FastCommentsSDK: ObservableObject {
 
     // MARK: - Private Helpers
 
-    private func processCommentsResponse(_ response: GetCommentsResponseWithPresencePublicComment, isInitialLoad: Bool) {
+    private func processCommentsResponse(_ response: GetCommentsPublic200Response, isInitialLoad: Bool) {
         commentsTree.build(comments: response.comments)
 
         commentCountOnServer = response.commentCount ?? 0

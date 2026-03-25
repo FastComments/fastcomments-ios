@@ -222,6 +222,7 @@ public final class CommentsTree: ObservableObject {
         } else {
             // Reply to existing comment
             guard let parent = commentsById[comment.parentId!] else { return }
+            allComments.append(renderable)
 
             let parentIndex = visibleNodes.firstIndex(where: { $0.id == parent.id })
 
@@ -370,12 +371,9 @@ public final class CommentsTree: ObservableObject {
             newRootCommentsButton = nil
         }
 
-        // Add all buffered comments
+        // Add all buffered comments to visible nodes
         for comment in newRootComments {
-            if commentsById[comment.id] == nil {
-                let renderable = RenderableComment(comment: comment)
-                addToMapAndRelated(renderable)
-                allComments.insert(renderable, at: 0)
+            if let renderable = commentsById[comment.id] {
                 updatedNodes.insert(renderable, at: 0)
             }
         }

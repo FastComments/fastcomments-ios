@@ -3,12 +3,12 @@ import PackageDescription
 
 let package = Package(
     name: "FastCommentsUI",
-    platforms: [.iOS(.v16)],
+    platforms: [.iOS(.v16), .macOS(.v14)],
     products: [
         .library(name: "FastCommentsUI", targets: ["FastCommentsUI"])
     ],
     dependencies: [
-        .package(url: "git@github.com:FastComments/fastcomments-swift.git", from: "1.2.1")
+        .package(name: "fastcomments-swift", path: "../fastcomments-swift")
     ],
     targets: [
         .target(

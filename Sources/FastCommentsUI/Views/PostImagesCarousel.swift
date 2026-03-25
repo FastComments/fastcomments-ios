@@ -37,7 +37,9 @@ public struct PostImagesCarousel: View {
                     }
                 }
             }
+            #if os(iOS)
             .tabViewStyle(.page(indexDisplayMode: .automatic))
+            #endif
             .frame(height: 300)
 
             // Image counter
@@ -56,7 +58,11 @@ public struct PostImagesCarousel: View {
 
     private var imagePlaceholder: some View {
         Rectangle()
-            .fill(Color(.systemGray5))
+            #if os(iOS)
+            .fill(Color(uiColor: .systemGray5))
+            #else
+            .fill(Color(nsColor: .quaternaryLabelColor))
+            #endif
             .overlay(
                 Image(systemName: "photo")
                     .foregroundStyle(.secondary)
