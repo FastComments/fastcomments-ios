@@ -1,0 +1,38 @@
+import Foundation
+import FastCommentsSwift
+
+/// Helpers for dispatching live events to the appropriate handler.
+enum LiveEventHandler {
+
+    /// Convert a PubSubComment to a PublicComment for tree operations.
+    static func toPublicComment(_ pubSub: PubSubComment) -> PublicComment {
+        PublicComment(
+            id: pubSub.id,
+            userId: pubSub.userId,
+            commenterName: pubSub.commenterName,
+            commenterLink: pubSub.commenterLink,
+            commentHTML: pubSub.commentHTML,
+            parentId: pubSub.parentId,
+            date: ISO8601DateFormatter().date(from: pubSub.date),
+            votes: pubSub.votes,
+            votesUp: pubSub.votesUp,
+            votesDown: pubSub.votesDown,
+            verified: pubSub.verified,
+            avatarSrc: pubSub.avatarSrc,
+            hasImages: pubSub.hasImages,
+            isByAdmin: pubSub.isByAdmin,
+            isByModerator: pubSub.isByModerator,
+            isPinned: pubSub.isPinned,
+            isLocked: pubSub.isLocked,
+            displayLabel: pubSub.displayLabel,
+            rating: pubSub.rating,
+            badges: pubSub.badges,
+            viewCount: pubSub.viewCount,
+            isDeleted: pubSub.isDeleted,
+            isDeletedUser: pubSub.isDeletedUser,
+            isSpam: pubSub.isSpam,
+            anonUserId: pubSub.anonUserId,
+            feedbackIds: pubSub.feedbackIds
+        )
+    }
+}

@@ -1,0 +1,249 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "just_now" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Just now" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gerade eben" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ahora mismo" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "À l'instant" } }
+      }
+    },
+    "no_comments_yet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No comments yet. Be the first to comment!" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch keine Kommentare. Sei der Erste!" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Aún no hay comentarios. ¡Sé el primero!" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Pas encore de commentaires. Soyez le premier !" } }
+      }
+    },
+    "no_posts_yet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No posts yet" } }
+      }
+    },
+    "comment_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Write a comment..." } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kommentar schreiben..." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Escribe un comentario..." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Écrire un commentaire..." } }
+      }
+    },
+    "reply_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Write a reply..." } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Antwort schreiben..." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Escribe una respuesta..." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Écrire une réponse..." } }
+      }
+    },
+    "replying_to_%@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Replying to %@" } }
+      }
+    },
+    "show_replies_%lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show Replies (%lld)" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Antworten anzeigen (%lld)" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Mostrar respuestas (%lld)" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Afficher les réponses (%lld)" } }
+      }
+    },
+    "hide_replies" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hide Replies" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Antworten ausblenden" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ocultar respuestas" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Masquer les réponses" } }
+      }
+    },
+    "next_%lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Next (%lld)" } }
+      }
+    },
+    "load_all_%lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Load All (%lld)" } }
+      }
+    },
+    "show_new_comments_%lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show %lld new comments" } }
+      }
+    },
+    "show_new_replies_%lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show %lld new replies" } }
+      }
+    },
+    "reply" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reply" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Antworten" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Responder" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Répondre" } }
+      }
+    },
+    "edit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit" } }
+      }
+    },
+    "edit_comment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit Comment" } }
+      }
+    },
+    "delete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete" } }
+      }
+    },
+    "delete_confirm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Are you sure you want to delete this?" } }
+      }
+    },
+    "flag" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Flag" } }
+      }
+    },
+    "comment_deleted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This comment has been deleted." } }
+      }
+    },
+    "load_more_replies" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Load more replies" } }
+      }
+    },
+    "comments" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Comments" } }
+      }
+    },
+    "cancel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } }
+      }
+    },
+    "save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } }
+      }
+    },
+    "submit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Submit" } }
+      }
+    },
+    "login" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Login" } }
+      }
+    },
+    "login_to_vote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter your name and email to vote" } }
+      }
+    },
+    "login_to_comment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter your name and email to comment" } }
+      }
+    },
+    "name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Name" } }
+      }
+    },
+    "email" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Email" } }
+      }
+    },
+    "badge_awarded" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Badge Awarded!" } }
+      }
+    },
+    "ok" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OK" } }
+      }
+    },
+    "add_link" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add Link" } }
+      }
+    },
+    "link_label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Label (optional)" } }
+      }
+    },
+    "add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add" } }
+      }
+    },
+    "create_post" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create Post" } }
+      }
+    },
+    "write_post_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "What's on your mind?" } }
+      }
+    },
+    "post" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Post" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}
