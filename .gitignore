@@ -1,2 +1,6 @@
 PLAN.txt
 TODO.txt
+.build/
+Package.resolved
+.swiftpm/
+.DS_Store
