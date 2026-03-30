@@ -2408,6 +2408,17 @@
         }
       }
     },
+    "comment_post_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to post comment. Please try again."
+          }
+        }
+      }
+    },
     "comment_deleted_successfully": {
       "extractionState": "manual",
       "localizations": {

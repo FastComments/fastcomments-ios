@@ -4,7 +4,7 @@ import FastCommentsSwift
 
 /// Wraps a PublicComment with UI-specific state for rendering.
 public final class RenderableComment: RenderableNode {
-    public let comment: PublicComment
+    public var comment: PublicComment
 
     @Published public var isRepliesShown: Bool = false
     @Published public var isOnline: Bool = false

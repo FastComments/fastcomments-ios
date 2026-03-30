@@ -224,13 +224,35 @@ public final class CommentsTree: ObservableObject {
             guard let parent = commentsById[comment.parentId!] else { return }
             allComments.append(renderable)
 
+            // Update parent's child tracking so the "Show Replies" button appears
+            let currentChildCount = parent.comment.childCount ?? 0
+            parent.comment.childCount = currentChildCount + 1
+            parent.comment.hasChildren = true
+
+            // Add to parent's children array for toggleRepliesVisible to find
+            if parent.comment.children == nil {
+                parent.comment.children = []
+            }
+            parent.comment.children?.insert(comment, at: 0)
+
             let parentIndex = visibleNodes.firstIndex(where: { $0.id == parent.id })
 
-            if parent.isRepliesShown && displayNow {
-                var updatedNodes = visibleNodes
-                let insertionIndex = findLastChildIndex(parent, in: updatedNodes) + 1
-                updatedNodes.insert(renderable, at: insertionIndex)
-                visibleNodes = updatedNodes
+            if displayNow {
+                if !parent.isRepliesShown {
+                    // First time expanding — insert ALL existing children, then the new reply
+                    parent.isRepliesShown = true
+                    if let existingChildren = parent.comment.children {
+                        // insertChildrenAfter handles all children including the newly appended one
+                        insertChildrenAfter(parent, children: existingChildren)
+                    }
+                } else {
+                    // Already expanded — insert new reply right after parent
+                    var updatedNodes = visibleNodes
+                    if let parentIdx = updatedNodes.firstIndex(where: { $0.id == parent.id }) {
+                        updatedNodes.insert(renderable, at: parentIdx + 1)
+                    }
+                    visibleNodes = updatedNodes
+                }
                 requestPresenceForComment(renderable)
             } else if parent.isRepliesShown {
                 // Buffer as new child comment
@@ -238,7 +260,7 @@ public final class CommentsTree: ObservableObject {
                 updateNewChildCommentsButton(for: parent)
             }
 
-            // Re-trigger UI update for parent (reply count changed)
+            // Re-trigger UI update for parent (reply count / show replies button changed)
             if parentIndex != nil {
                 parent.objectWillChange.send()
             }
@@ -419,6 +441,17 @@ public final class CommentsTree: ObservableObject {
         }
     }
 
+    /// Clear all presence state (set every comment to offline).
+    /// Call this on WebSocket reconnect before re-fetching presence,
+    /// so stale online states don't linger.
+    public func clearAllPresence() {
+        for comment in allComments {
+            if comment.isOnline {
+                comment.isOnline = false
+            }
+        }
+    }
+
     // MARK: - Counts
 
     public func totalSize() -> Int { allComments.count }
@@ -463,12 +496,19 @@ public final class CommentsTree: ObservableObject {
 
     private func insertChildrenAfter(_ parent: RenderableComment, children: [PublicComment]) {
         var updatedNodes = visibleNodes
-        guard let parentIndex = updatedNodes.firstIndex(where: { $0.id == parent.id }) else { return }
+        guard let parentIndex = updatedNodes.firstIndex(where: { $0.id == parent.id }) else {
+            print("[FC] insertChildrenAfter: parent \(parent.id) not found in visibleNodes")
+            return
+        }
 
         let insertStart = parentIndex + 1
-        for (offset, child) in children.enumerated() {
+        var inserted = 0
+        for child in children {
             if let childRenderable = commentsById[child.id] {
-                updatedNodes.insert(childRenderable, at: insertStart + offset)
+                if !updatedNodes.contains(where: { $0.id == child.id }) {
+                    updatedNodes.insert(childRenderable, at: insertStart + inserted)
+                    inserted += 1
+                }
             }
         }
         visibleNodes = updatedNodes

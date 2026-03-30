@@ -34,7 +34,8 @@ public final class FastCommentsFeedSDK: ObservableObject {
     private var likeCounts: [String: Int] = [:]
     private var myReacts: [String: [String: Bool]] = [:]
     private var lastPostId: String?
-    private var webSocket: WebSocketClient?
+    private let liveEventSubscriber = LiveEventSubscriber()
+    private var liveEventSubscription: SubscribeToChangesResult?
     private var tenantIdWS: String?
     private var urlIdWS: String?
     private var userIdWS: String?
@@ -93,15 +94,15 @@ public final class FastCommentsFeedSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        if !response.feedPosts.isEmpty {
-            for post in response.feedPosts {
+        if !(response.feedPosts ?? []).isEmpty {
+            for post in (response.feedPosts ?? []) {
                 postsById[post.id] = post
                 if let reacts = post.reacts {
                     likeCounts[post.id] = reacts.values.reduce(0, +)
                 }
             }
-            feedPosts.append(contentsOf: response.feedPosts)
-            lastPostId = response.feedPosts.last?.id
+            feedPosts.append(contentsOf: (response.feedPosts ?? []))
+            lastPostId = (response.feedPosts ?? []).last?.id
         }
 
         // Merge myReacts
@@ -111,7 +112,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
             }
         }
 
-        hasMore = !response.feedPosts.isEmpty
+        hasMore = !(response.feedPosts ?? []).isEmpty
         return response
     }
 
@@ -149,7 +150,9 @@ public final class FastCommentsFeedSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        let post = response.feedPost
+        guard let post = response.feedPost else {
+            throw FastCommentsError(reason: "No post returned from API")
+        }
 
         // Insert at top of feed
         postsById[post.id] = post
@@ -306,7 +309,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        for (postId, stats) in response.stats {
+        for (postId, stats) in (response.stats ?? [:]) {
             if let reacts = stats.reacts {
                 likeCounts[postId] = reacts.values.reduce(0, +)
             }
@@ -369,8 +372,8 @@ public final class FastCommentsFeedSDK: ObservableObject {
     // MARK: - Cleanup
 
     public func cleanup() {
-        webSocket?.disconnect()
-        webSocket = nil
+        liveEventSubscription?.close()
+        liveEventSubscription = nil
         statsPollTask?.cancel()
         statsPollTask = nil
     }
@@ -378,24 +381,27 @@ public final class FastCommentsFeedSDK: ObservableObject {
     // MARK: - Live Events (Internal)
 
     func subscribeToLiveEvents() {
-        webSocket?.disconnect()
+        liveEventSubscription?.close()
 
         guard let tenantIdWS = tenantIdWS,
               let urlIdWS = urlIdWS else { return }
 
-        let ws = WebSocketClient()
-        ws.onEvent = { [weak self] event in
-            Task { @MainActor [weak self] in
-                self?.handleLiveEvent(event)
-            }
-        }
-        ws.connect(
-            tenantIdWS: tenantIdWS,
+        let liveConfig = LiveEventConfig(
+            tenantId: config.tenantId,
+            urlId: config.urlId,
             urlIdWS: urlIdWS,
-            userIdWS: userIdWS,
-            basePath: apiConfig.basePath
+            userIdWS: userIdWS ?? "",
+            region: config.region
         )
-        webSocket = ws
+
+        liveEventSubscription = liveEventSubscriber.subscribeToChanges(
+            config: liveConfig,
+            handleLiveEvent: { [weak self] event in
+                Task { @MainActor [weak self] in
+                    self?.handleLiveEvent(event)
+                }
+            }
+        )
     }
 
     func handleLiveEvent(_ event: LiveEvent) {
@@ -439,15 +445,15 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
     private func processFeedResponse(_ response: GetFeedPostsPublic200Response, isInitialLoad: Bool) {
         if isInitialLoad {
-            feedPosts = response.feedPosts
+            feedPosts = (response.feedPosts ?? [])
             postsById.removeAll()
             likeCounts.removeAll()
         } else {
-            feedPosts = response.feedPosts
+            feedPosts = (response.feedPosts ?? [])
             postsById.removeAll()
         }
 
-        for post in response.feedPosts {
+        for post in (response.feedPosts ?? []) {
             postsById[post.id] = post
             if let reacts = post.reacts {
                 likeCounts[post.id] = reacts.values.reduce(0, +)
@@ -459,8 +465,8 @@ public final class FastCommentsFeedSDK: ObservableObject {
         }
 
         currentUser = response.user
-        lastPostId = response.feedPosts.last?.id
-        hasMore = !response.feedPosts.isEmpty
+        lastPostId = (response.feedPosts ?? []).last?.id
+        hasMore = !(response.feedPosts ?? []).isEmpty
 
         // Extract WebSocket params
         let newTenantIdWS = response.tenantIdWS

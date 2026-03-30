@@ -43,6 +43,7 @@ public final class FastCommentsSDK: ObservableObject {
     @Published public private(set) var isDemo: Bool = false
     @Published public private(set) var hasMore: Bool = false
     @Published public private(set) var blockingErrorMessage: String?
+    @Published public private(set) var warningMessage: String?
     @Published public private(set) var isLoading: Bool = false
 
     // MARK: - Public Properties
@@ -67,14 +68,20 @@ public final class FastCommentsSDK: ObservableObject {
     // MARK: - Internal
 
     var broadcastIdsSent: Set<String> = []
+    private var commentsTreeSubscription: AnyCancellable?
     private let apiConfig: FastCommentsSwiftAPIConfiguration
-    private var webSocket: WebSocketClient?
+    private let liveEventSubscriber = LiveEventSubscriber()
+    private var liveEventSubscription: SubscribeToChangesResult?
     private var tenantIdWS: String?
     private var urlIdWS: String?
     private var userIdWS: String?
     private var editKey: String?
     private var sessionId: String?
     private var customConfig: CustomConfigParameters?
+
+    /// Server-provided presence poll state: 0 = disabled, 1 = poll
+    private var presencePollState: Int = 0
+    private var presencePollTask: Task<Void, Never>?
 
     // MARK: - Init
 
@@ -83,6 +90,11 @@ public final class FastCommentsSDK: ObservableObject {
         self.apiConfig = FastCommentsSwiftAPIConfiguration(
             basePath: Self.getAPIBasePath(config: config)
         )
+
+        // Forward commentsTree changes to SDK so SwiftUI re-renders
+        commentsTreeSubscription = commentsTree.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
 
         // Wire presence requests from the tree back to the SDK
         commentsTree.onPresenceNeeded = { [weak self] userIds in
@@ -155,8 +167,8 @@ public final class FastCommentsSDK: ObservableObject {
                 apiConfiguration: apiConfig
             )
 
-            if !response.comments.isEmpty {
-                commentsTree.appendComments(response.comments)
+            if !(response.comments ?? []).isEmpty {
+                commentsTree.appendComments((response.comments ?? []))
             }
             hasMore = response.hasMore ?? false
             return response
@@ -185,7 +197,7 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        commentsTree.build(comments: response.comments)
+        commentsTree.build(comments: (response.comments ?? []))
         commentCountOnServer = response.commentCount ?? 0
         hasMore = false
         return response
@@ -206,7 +218,7 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        return response.comments
+        return (response.comments ?? [])
     }
 
     // MARK: - Comment CRUD
@@ -223,7 +235,8 @@ public final class FastCommentsSDK: ObservableObject {
         broadcastIdsSent.insert(broadcastId)
 
         let commentData = CommentData(
-            commenterName: currentUser?.username ?? currentUser?.displayName ?? "Anonymous",
+            date: Int64(Date().timeIntervalSince1970 * 1000),
+            commenterName: currentUser?.username ?? currentUser?.displayName ?? "",
             commenterEmail: currentUser?.email,
             comment: trimmed,
             userId: currentUser?.id,
@@ -231,7 +244,7 @@ public final class FastCommentsSDK: ObservableObject {
             parentId: parentId,
             mentions: mentions,
             pageTitle: config.pageTitle,
-            url: config.url,
+            url: config.url.isEmpty ? config.urlId : config.url,
             urlId: config.urlId
         )
 
@@ -259,10 +272,12 @@ public final class FastCommentsSDK: ObservableObject {
         }
 
         // Add to tree
-        commentsTree.addComment(response.comment, displayNow: true, sortDirection: defaultSortDirection)
-        commentCountOnServer += 1
-
-        return response.comment
+        if let comment = response.comment {
+            commentsTree.addComment(comment, displayNow: true, sortDirection: defaultSortDirection)
+            commentCountOnServer += 1
+            return comment
+        }
+        throw FastCommentsError(reason: "No comment returned from API")
     }
 
     /// Edit an existing comment's text.
@@ -331,6 +346,30 @@ public final class FastCommentsSDK: ObservableObject {
             throw FastCommentsError(from: response)
         }
 
+        // Update local comment state
+        if let comment = commentsTree.commentsById[commentId] {
+            if isUpvote {
+                // If was downvoted, undo that first
+                if comment.comment.isVotedDown == true {
+                    comment.comment.votesDown = max(0, (comment.comment.votesDown ?? 0) - 1)
+                }
+                comment.comment.votesUp = (comment.comment.votesUp ?? 0) + 1
+                comment.comment.isVotedUp = true
+                comment.comment.isVotedDown = false
+            } else {
+                // If was upvoted, undo that first
+                if comment.comment.isVotedUp == true {
+                    comment.comment.votesUp = max(0, (comment.comment.votesUp ?? 0) - 1)
+                }
+                comment.comment.votesDown = (comment.comment.votesDown ?? 0) + 1
+                comment.comment.isVotedDown = true
+                comment.comment.isVotedUp = false
+            }
+            comment.comment.votes = (comment.comment.votesUp ?? 0) - (comment.comment.votesDown ?? 0)
+            comment.comment.myVoteId = response.voteId
+            comment.objectWillChange.send()
+        }
+
         return response
     }
 
@@ -349,6 +388,20 @@ public final class FastCommentsSDK: ObservableObject {
             sso: config.sso,
             apiConfiguration: apiConfig
         )
+
+        // Update local comment state — undo the vote
+        if let comment = commentsTree.commentsById[commentId] {
+            if comment.comment.isVotedUp == true {
+                comment.comment.votesUp = max(0, (comment.comment.votesUp ?? 0) - 1)
+            } else if comment.comment.isVotedDown == true {
+                comment.comment.votesDown = max(0, (comment.comment.votesDown ?? 0) - 1)
+            }
+            comment.comment.votes = (comment.comment.votesUp ?? 0) - (comment.comment.votesDown ?? 0)
+            comment.comment.isVotedUp = false
+            comment.comment.isVotedDown = false
+            comment.comment.myVoteId = nil
+            comment.objectWillChange.send()
+        }
     }
 
     // MARK: - Moderation
@@ -398,6 +451,50 @@ public final class FastCommentsSDK: ObservableObject {
         )
     }
 
+    // MARK: - Image Upload
+
+    /// Upload an image and return its URL.
+    public func uploadImage(imageData: Data, filename: String) async throws -> String {
+        let boundary = UUID().uuidString
+        let basePath = apiConfig.basePath
+        var urlString = "\(basePath)/upload-image/\(config.tenantId)?urlId=\(config.urlId)&sizePreset=CrossPlatform"
+        if let sso = config.sso {
+            urlString += "&sso=\(sso.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? sso)"
+        }
+        guard let url = URL(string: urlString) else {
+            throw FastCommentsError(reason: "Invalid upload URL")
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(imageData)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        request.httpBody = body
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+            throw FastCommentsError(reason: "Image upload failed")
+        }
+
+        let uploadResponse = try CodableHelper().jsonDecoder.decode(UploadImageResponse.self, from: data)
+        if let imageUrl = uploadResponse.url {
+            return imageUrl
+        }
+        // Pick a mid-size asset (~768-1024w) from the media array
+        if let media = uploadResponse.media, !media.isEmpty {
+            let preferred = media.first(where: { $0.w >= 768 && $0.w <= 1024 }) ?? media.first!
+            return preferred.src
+        }
+        throw FastCommentsError(reason: "No image URL returned from upload")
+    }
+
     // MARK: - User Search (for mentions)
 
     public func searchUsers(query: String) async throws -> [UserSearchResult] {
@@ -408,7 +505,7 @@ public final class FastCommentsSDK: ObservableObject {
             sso: config.sso,
             apiConfiguration: apiConfig
         )
-        return response.users
+        return response.users ?? []
     }
 
     // MARK: - Helpers
@@ -423,39 +520,50 @@ public final class FastCommentsSDK: ObservableObject {
 
     /// Clean up WebSocket connections and timers.
     public func cleanup() {
-        webSocket?.disconnect()
-        webSocket = nil
+        liveEventSubscription?.close()
+        liveEventSubscription = nil
+        presencePollTask?.cancel()
+        presencePollTask = nil
     }
 
     // MARK: - Live Events (Internal)
 
     func subscribeToLiveEvents() {
-        webSocket?.disconnect()
+        liveEventSubscription?.close()
 
         guard let tenantIdWS = tenantIdWS,
               let urlIdWS = urlIdWS else { return }
 
-        let ws = WebSocketClient()
-        ws.onEvent = { [weak self] event in
+        let liveConfig = LiveEventConfig(
+            tenantId: config.tenantId,
+            urlId: config.urlId,
+            urlIdWS: urlIdWS,
+            userIdWS: userIdWS ?? "",
+            region: config.region
+        )
+
+        liveEventSubscriber.setOnConnectionStatusChange { [weak self] isConnected, lastEventTime in
             Task { @MainActor [weak self] in
-                self?.handleLiveEvent(event)
-            }
-        }
-        ws.onConnectionStatusChange = { [weak self] isConnected, _ in
-            Task { @MainActor [weak self] in
+                guard let self else { return }
                 if isConnected {
-                    await self?.fetchUserPresenceStatuses()
+                    let isReconnect = lastEventTime != nil && lastEventTime! > 0
+                    if isReconnect {
+                        self.commentsTree.clearAllPresence()
+                    }
+                    await self.fetchUserPresenceStatuses()
+                    self.startPresencePollingIfNeeded()
                 }
             }
         }
 
-        ws.connect(
-            tenantIdWS: tenantIdWS,
-            urlIdWS: urlIdWS,
-            userIdWS: userIdWS,
-            basePath: apiConfig.basePath
+        liveEventSubscription = liveEventSubscriber.subscribeToChanges(
+            config: liveConfig,
+            handleLiveEvent: { [weak self] event in
+                Task { @MainActor [weak self] in
+                    self?.handleLiveEvent(event)
+                }
+            }
         )
-        webSocket = ws
     }
 
     func handleLiveEvent(_ event: LiveEvent) {
@@ -483,11 +591,24 @@ public final class FastCommentsSDK: ObservableObject {
             }
         case .newVote:
             if let vote = event.vote, let commentId = vote.commentId, let comment = commentsTree.commentsById[commentId] {
-                // Update vote counts on the comment
+                let direction = vote.direction ?? 1
+                if direction > 0 {
+                    comment.comment.votesUp = (comment.comment.votesUp ?? 0) + 1
+                } else {
+                    comment.comment.votesDown = (comment.comment.votesDown ?? 0) + 1
+                }
+                comment.comment.votes = (comment.comment.votesUp ?? 0) - (comment.comment.votesDown ?? 0)
                 comment.objectWillChange.send()
             }
         case .deletedVote:
             if let vote = event.vote, let commentId = vote.commentId, let comment = commentsTree.commentsById[commentId] {
+                let direction = vote.direction ?? 1
+                if direction > 0 {
+                    comment.comment.votesUp = max(0, (comment.comment.votesUp ?? 0) - 1)
+                } else {
+                    comment.comment.votesDown = max(0, (comment.comment.votesDown ?? 0) - 1)
+                }
+                comment.comment.votes = (comment.comment.votesUp ?? 0) - (comment.comment.votesDown ?? 0)
                 comment.objectWillChange.send()
             }
         case .presenceUpdate:
@@ -546,7 +667,7 @@ public final class FastCommentsSDK: ObservableObject {
                 apiConfiguration: apiConfig
             )
 
-            for (userId, isOnline) in response.userIdsOnline {
+            for (userId, isOnline) in (response.userIdsOnline ?? [:]) {
                 commentsTree.updateUserPresence(userId: userId, isOnline: isOnline)
             }
         } catch {
@@ -554,10 +675,27 @@ public final class FastCommentsSDK: ObservableObject {
         }
     }
 
+    /// Start periodic presence polling only if the server indicated poll mode.
+    private func startPresencePollingIfNeeded() {
+        presencePollTask?.cancel()
+        presencePollTask = nil
+
+        guard presencePollState == 1 else { return }
+
+        let interval: TimeInterval = 30.0 + Double.random(in: 0..<10)
+        presencePollTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+                guard !Task.isCancelled, let self else { return }
+                await self.fetchUserPresenceStatuses()
+            }
+        }
+    }
+
     // MARK: - Private Helpers
 
     private func processCommentsResponse(_ response: GetCommentsPublic200Response, isInitialLoad: Bool) {
-        commentsTree.build(comments: response.comments)
+        commentsTree.build(comments: (response.comments ?? []))
 
         commentCountOnServer = response.commentCount ?? 0
         currentUser = response.user
@@ -567,8 +705,9 @@ public final class FastCommentsSDK: ObservableObject {
         hasMore = response.hasMore ?? false
         isClosed = response.isClosed ?? false
         customConfig = response.customConfig
-        currentPage = response.pageNumber
+        currentPage = (response.pageNumber ?? 0)
         currentSkip = 0
+        presencePollState = response.presencePollState ?? 0
 
         // Extract WebSocket parameters
         let newTenantIdWS = response.tenantIdWS
@@ -585,9 +724,12 @@ public final class FastCommentsSDK: ObservableObject {
             subscribeToLiveEvents()
         }
 
-        // Check for blocking errors
-        if let translatedError = response.translatedWarning {
+        // Check for blocking errors (translatedError blocks, translatedWarning does not)
+        if let translatedError = response.translatedError, !translatedError.isEmpty {
             blockingErrorMessage = translatedError
+        }
+        if let translatedWarning = response.translatedWarning, !translatedWarning.isEmpty {
+            warningMessage = translatedWarning
         }
     }
 }
