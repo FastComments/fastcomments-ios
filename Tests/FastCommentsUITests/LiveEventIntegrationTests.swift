@@ -20,7 +20,9 @@ final class LiveEventIntegrationTests: IntegrationTestBase {
             sdk1.commentsTree.commentsById[posted.id] != nil
         }
 
-        XCTAssertNotNil(sdk1.commentsTree.commentsById[posted.id])
+        let received = sdk1.commentsTree.commentsById[posted.id]
+        XCTAssertNotNil(received)
+        XCTAssertTrue(received!.comment.commentHTML.contains("Live comment"), "Live comment should carry the posted text")
 
         sdk1.cleanup()
         sdk2.cleanup()
@@ -181,5 +183,36 @@ final class LiveEventIntegrationTests: IntegrationTestBase {
 
         sdk1.cleanup()
         sdk2.cleanup()
+    }
+
+    func testLivePinPropagation() async throws {
+        let urlId = makeUrlId()
+
+        // SDK1 loads and subscribes to live events
+        let sdk1 = makeSDK(urlId: urlId)
+        try await sdk1.load()
+
+        // Admin SDK posts and pins a comment
+        let adminSDK = makeAdminSDK(urlId: urlId)
+        try await adminSDK.load()
+        let comment = try await adminSDK.postComment(text: "Pin me live")
+
+        // Wait for SDK1 to see the comment
+        try await waitFor(timeout: 5.0) {
+            sdk1.commentsTree.commentsById[comment.id] != nil
+        }
+
+        // Admin pins it
+        try await adminSDK.pinComment(commentId: comment.id)
+
+        // Wait for SDK1 to receive the pin update via live event
+        try await waitFor(timeout: 5.0) {
+            sdk1.commentsTree.commentsById[comment.id]?.comment.isPinned == true
+        }
+
+        XCTAssertEqual(sdk1.commentsTree.commentsById[comment.id]?.comment.isPinned, true)
+
+        sdk1.cleanup()
+        adminSDK.cleanup()
     }
 }

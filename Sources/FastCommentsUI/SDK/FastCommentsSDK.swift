@@ -325,7 +325,7 @@ public final class FastCommentsSDK: ObservableObject {
         broadcastIdsSent.insert(broadcastId)
 
         let request = CommentTextUpdateRequest(comment: newText)
-        _ = try await PublicAPI.setCommentText(
+        let response = try await PublicAPI.setCommentText(
             tenantId: config.tenantId,
             commentId: commentId,
             broadcastId: broadcastId,
@@ -334,6 +334,19 @@ public final class FastCommentsSDK: ObservableObject {
             sso: config.sso,
             apiConfiguration: apiConfig
         )
+
+        guard response.status == .success else {
+            throw FastCommentsError(from: response)
+        }
+
+        // Update local tree with server-rendered HTML
+        if let result = response.comment,
+           let existing = commentsTree.commentsById[commentId] {
+            var updated = existing.comment
+            updated.commentHTML = result.commentHTML
+            updated.approved = result.approved
+            commentsTree.updateComment(updated)
+        }
     }
 
     /// Delete a comment.
@@ -341,7 +354,7 @@ public final class FastCommentsSDK: ObservableObject {
         let broadcastId = UUID().uuidString
         broadcastIdsSent.insert(broadcastId)
 
-        _ = try await PublicAPI.deleteCommentPublic(
+        let response = try await PublicAPI.deleteCommentPublic(
             tenantId: config.tenantId,
             commentId: commentId,
             broadcastId: broadcastId,
@@ -349,6 +362,10 @@ public final class FastCommentsSDK: ObservableObject {
             sso: config.sso,
             apiConfiguration: apiConfig
         )
+
+        guard response.status == .success else {
+            throw FastCommentsError(from: response)
+        }
 
         commentsTree.removeComment(commentId: commentId)
         commentCountOnServer -= 1
@@ -445,49 +462,208 @@ public final class FastCommentsSDK: ObservableObject {
 
     // MARK: - Moderation
 
+    /// Flag a comment.
     public func flagComment(commentId: String) async throws {
-        _ = try await PublicAPI.flagCommentPublic(
+        let response = try await PublicAPI.flagCommentPublic(
             tenantId: config.tenantId,
             commentId: commentId,
             isFlagged: true,
             sso: config.sso,
             apiConfiguration: apiConfig
         )
+
+        guard response.status == .success else {
+            throw FastCommentsError(from: response)
+        }
+
+        // Re-fetch after await — renderable may have been replaced by a live event
+        if let renderable = commentsTree.commentsById[commentId] {
+            renderable.comment.isFlagged = true
+            renderable.objectWillChange.send()
+        }
     }
 
+    /// Unflag a previously flagged comment.
+    public func unflagComment(commentId: String) async throws {
+        let response = try await PublicAPI.flagCommentPublic(
+            tenantId: config.tenantId,
+            commentId: commentId,
+            isFlagged: false,
+            sso: config.sso,
+            apiConfiguration: apiConfig
+        )
+
+        guard response.status == .success else {
+            throw FastCommentsError(from: response)
+        }
+
+        if let renderable = commentsTree.commentsById[commentId] {
+            renderable.comment.isFlagged = false
+            renderable.objectWillChange.send()
+        }
+    }
+
+    /// Block the author of a comment. All comments by that user are marked as blocked.
     public func blockUser(commentId: String) async throws {
-        let params = PublicBlockFromCommentParams(commentIds: nil)
-        _ = try await PublicAPI.blockFromCommentPublic(
+        // Pass all known comment IDs by this author so the response tells us which are blocked
+        let authorCommentIds = getAuthorCommentIds(commentId: commentId)
+        let params = PublicBlockFromCommentParams(commentIds: authorCommentIds.isEmpty ? nil : authorCommentIds)
+        let response = try await PublicAPI.blockFromCommentPublic(
             tenantId: config.tenantId,
             commentId: commentId,
             publicBlockFromCommentParams: params,
             sso: config.sso,
             apiConfiguration: apiConfig
         )
+
+        guard response.status == .success else {
+            throw FastCommentsError(from: response)
+        }
+
+        setBlockedStateForAuthor(commentId: commentId, blocked: true)
     }
 
+    /// Unblock the author of a comment. Restores all their comments to normal.
+    public func unblockUser(commentId: String) async throws {
+        let authorCommentIds = getAuthorCommentIds(commentId: commentId)
+        let params = PublicBlockFromCommentParams(commentIds: authorCommentIds.isEmpty ? nil : authorCommentIds)
+        let response = try await PublicAPI.unBlockCommentPublic(
+            tenantId: config.tenantId,
+            commentId: commentId,
+            publicBlockFromCommentParams: params,
+            sso: config.sso,
+            apiConfiguration: apiConfig
+        )
+
+        guard response.status == .success else {
+            throw FastCommentsError(code: response.code, reason: response.reason, translatedError: response.translatedError)
+        }
+
+        setBlockedStateForAuthor(commentId: commentId, blocked: false)
+    }
+
+    private func getAuthorCommentIds(commentId: String) -> [String] {
+        guard let renderable = commentsTree.commentsById[commentId] else { return [commentId] }
+        let userId = renderable.comment.userId ?? renderable.comment.anonUserId
+        guard let userId = userId, let userComments = commentsTree.commentsByUserId[userId] else {
+            return [commentId]
+        }
+        return userComments.map { $0.comment.id }
+    }
+
+    /// Pin a comment. No-op if already pinned.
     public func pinComment(commentId: String) async throws {
+        guard commentsTree.commentsById[commentId]?.comment.isPinned != true else { return }
+
         let broadcastId = UUID().uuidString
         broadcastIdsSent.insert(broadcastId)
-        _ = try await PublicAPI.pinComment(
+        let response = try await PublicAPI.pinComment(
             tenantId: config.tenantId,
             commentId: commentId,
             broadcastId: broadcastId,
             sso: config.sso,
             apiConfiguration: apiConfig
         )
+
+        guard response.status == .success else {
+            throw FastCommentsError(from: response)
+        }
+
+        // Re-fetch after await — the renderable may have been replaced by a live event
+        if let renderable = commentsTree.commentsById[commentId] {
+            renderable.comment.isPinned = true
+            renderable.objectWillChange.send()
+        }
     }
 
-    public func lockComment(commentId: String) async throws {
+    /// Unpin a comment. No-op if not pinned.
+    public func unpinComment(commentId: String) async throws {
+        guard commentsTree.commentsById[commentId]?.comment.isPinned == true else { return }
+
         let broadcastId = UUID().uuidString
         broadcastIdsSent.insert(broadcastId)
-        _ = try await PublicAPI.lockComment(
+        let response = try await PublicAPI.unPinComment(
             tenantId: config.tenantId,
             commentId: commentId,
             broadcastId: broadcastId,
             sso: config.sso,
             apiConfiguration: apiConfig
         )
+
+        guard response.status == .success else {
+            throw FastCommentsError(from: response)
+        }
+
+        if let renderable = commentsTree.commentsById[commentId] {
+            renderable.comment.isPinned = false
+            renderable.objectWillChange.send()
+        }
+    }
+
+    /// Lock a comment (prevent replies). No-op if already locked.
+    public func lockComment(commentId: String) async throws {
+        guard commentsTree.commentsById[commentId]?.comment.isLocked != true else { return }
+
+        let broadcastId = UUID().uuidString
+        broadcastIdsSent.insert(broadcastId)
+        let response = try await PublicAPI.lockComment(
+            tenantId: config.tenantId,
+            commentId: commentId,
+            broadcastId: broadcastId,
+            sso: config.sso,
+            apiConfiguration: apiConfig
+        )
+
+        guard response.status == .success else {
+            throw FastCommentsError(from: response)
+        }
+
+        if let renderable = commentsTree.commentsById[commentId] {
+            renderable.comment.isLocked = true
+            renderable.objectWillChange.send()
+        }
+    }
+
+    /// Unlock a comment (allow replies again). No-op if not locked.
+    public func unlockComment(commentId: String) async throws {
+        guard commentsTree.commentsById[commentId]?.comment.isLocked == true else { return }
+
+        let broadcastId = UUID().uuidString
+        broadcastIdsSent.insert(broadcastId)
+        let response = try await PublicAPI.unLockComment(
+            tenantId: config.tenantId,
+            commentId: commentId,
+            broadcastId: broadcastId,
+            sso: config.sso,
+            apiConfiguration: apiConfig
+        )
+
+        guard response.status == .success else {
+            throw FastCommentsError(from: response)
+        }
+
+        if let renderable = commentsTree.commentsById[commentId] {
+            renderable.comment.isLocked = false
+            renderable.objectWillChange.send()
+        }
+    }
+
+    // MARK: - Moderation Helpers
+
+    private func setBlockedStateForAuthor(commentId: String, blocked: Bool) {
+        guard let renderable = commentsTree.commentsById[commentId] else { return }
+        let userId = renderable.comment.userId ?? renderable.comment.anonUserId
+        guard let userId = userId else {
+            renderable.comment.isBlocked = blocked
+            renderable.objectWillChange.send()
+            return
+        }
+        if let userComments = commentsTree.commentsByUserId[userId] {
+            for comment in userComments {
+                comment.comment.isBlocked = blocked
+                comment.objectWillChange.send()
+            }
+        }
     }
 
     // MARK: - Image Upload
@@ -607,9 +783,11 @@ public final class FastCommentsSDK: ObservableObject {
 
     func handleLiveEvent(_ event: LiveEvent) {
         // Skip events we broadcasted
-        if let broadcastId = event.broadcastId, broadcastIdsSent.remove(broadcastId) != nil {
+        if let broadcastId = event.broadcastId, broadcastIdsSent.contains(broadcastId) {
+    
             return
         }
+
 
         switch event.type {
         case .newComment:

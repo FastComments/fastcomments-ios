@@ -72,6 +72,30 @@ final class CommentCRUDIntegrationTests: IntegrationTestBase {
         }
     }
 
+    // MARK: - Edit
+
+    func testEditComment() async throws {
+        let sdk = makeSDK()
+        try await sdk.load()
+
+        let comment = try await sdk.postComment(text: "Original text")
+        XCTAssertTrue(comment.commentHTML.contains("Original text"))
+
+        try await sdk.editComment(commentId: comment.id, newText: "Edited text")
+
+        // Local tree should be updated immediately with server-rendered HTML
+        let renderable = sdk.commentsTree.commentsById[comment.id]
+        XCTAssertNotNil(renderable)
+        XCTAssertTrue(renderable!.comment.commentHTML.contains("Edited text"))
+
+        // Reload on fresh SDK to verify persistence
+        let sdk2 = FastCommentsSDK(config: sdk.config)
+        try await sdk2.load()
+        let reloaded = sdk2.commentsTree.commentsById[comment.id]
+        XCTAssertNotNil(reloaded)
+        XCTAssertTrue(reloaded!.comment.commentHTML.contains("Edited text"))
+    }
+
     // MARK: - Delete
 
     func testDeleteComment() async throws {

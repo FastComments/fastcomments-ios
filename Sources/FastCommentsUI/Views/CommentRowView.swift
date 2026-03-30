@@ -14,6 +14,9 @@ public struct CommentRowView: View {
     var onEdit: ((RenderableComment) -> Void)?
     var onDelete: ((RenderableComment) -> Void)?
     var onFlag: ((RenderableComment) -> Void)?
+    var onPin: ((RenderableComment) -> Void)?
+    var onLock: ((RenderableComment) -> Void)?
+    var onBlock: ((RenderableComment) -> Void)?
 
     @Environment(\.fastCommentsTheme) private var theme
     @State private var showMenu = false
@@ -82,7 +85,9 @@ public struct CommentRowView: View {
                     Button {
                         onUserClick?(.comment(comment.comment), UserInfo.from(comment.comment), .name)
                     } label: {
-                        Text(comment.comment.commenterName)
+                        Text(comment.comment.isBlocked == true
+                             ? NSLocalizedString("blocked_user", bundle: .module, comment: "")
+                             : comment.comment.commenterName)
                             .font(theme.resolveCommenterNameFont())
                     }
                     .buttonStyle(.plain)
@@ -91,6 +96,12 @@ public struct CommentRowView: View {
                         Image(systemName: "pin.fill")
                             .font(.system(size: 10))
                             .foregroundStyle(.orange)
+                    }
+
+                    if comment.comment.isLocked == true {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
                     }
 
                     if let badges = comment.comment.badges {
@@ -136,8 +147,43 @@ public struct CommentRowView: View {
                         Label(NSLocalizedString("delete", bundle: .module, comment: ""), systemImage: "trash")
                     }
                 }
-                Button { onFlag?(comment) } label: {
-                    Label(NSLocalizedString("flag", bundle: .module, comment: ""), systemImage: "flag")
+                if sdk.isSiteAdmin {
+                    Button { onPin?(comment) } label: {
+                        Label(
+                            comment.comment.isPinned == true
+                                ? NSLocalizedString("unpin", bundle: .module, comment: "")
+                                : NSLocalizedString("pin", bundle: .module, comment: ""),
+                            systemImage: comment.comment.isPinned == true ? "pin.slash" : "pin"
+                        )
+                    }
+                    Button { onLock?(comment) } label: {
+                        Label(
+                            comment.comment.isLocked == true
+                                ? NSLocalizedString("unlock", bundle: .module, comment: "")
+                                : NSLocalizedString("lock", bundle: .module, comment: ""),
+                            systemImage: comment.comment.isLocked == true ? "lock.open" : "lock"
+                        )
+                    }
+                }
+                if !isOwnComment {
+                    Button { onBlock?(comment) } label: {
+                        Label(
+                            comment.comment.isBlocked == true
+                                ? NSLocalizedString("unblock_user", bundle: .module, comment: "")
+                                : NSLocalizedString("block_user", bundle: .module, comment: ""),
+                            systemImage: comment.comment.isBlocked == true ? "hand.raised.slash" : "hand.raised"
+                        )
+                    }
+                }
+                if !isOwnComment {
+                    Button { onFlag?(comment) } label: {
+                        Label(
+                            comment.comment.isFlagged == true
+                                ? NSLocalizedString("unflag", bundle: .module, comment: "")
+                                : NSLocalizedString("flag", bundle: .module, comment: ""),
+                            systemImage: comment.comment.isFlagged == true ? "flag.slash" : "flag"
+                        )
+                    }
                 }
             } label: {
                 Image(systemName: "ellipsis")
@@ -153,7 +199,12 @@ public struct CommentRowView: View {
 
     @ViewBuilder
     private var contentView: some View {
-        if comment.comment.isDeleted == true {
+        if comment.comment.isBlocked == true {
+            Text(NSLocalizedString("blocked_user_message", bundle: .module, comment: ""))
+                .font(theme.resolveBodyFont())
+                .foregroundStyle(.secondary)
+                .italic()
+        } else if comment.comment.isDeleted == true {
             Text(NSLocalizedString("comment_deleted", bundle: .module, comment: ""))
                 .font(theme.resolveBodyFont())
                 .foregroundStyle(.secondary)
@@ -267,6 +318,11 @@ public struct CommentRowView: View {
 
     private var canDelete: Bool {
         canEdit
+    }
+
+    private var isOwnComment: Bool {
+        guard let userId = sdk.currentUser?.id else { return false }
+        return comment.comment.userId == userId
     }
 }
 

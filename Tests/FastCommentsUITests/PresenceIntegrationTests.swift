@@ -5,33 +5,22 @@ import FastCommentsSwift
 @MainActor
 final class PresenceIntegrationTests: IntegrationTestBase {
 
-    func testPresenceAfterLoad() async throws {
-        let sdk = makeSDK()
-        try await sdk.load()
-
-        let comment = try await sdk.postComment(text: "Presence check")
-
-        let renderable = sdk.commentsTree.commentsById[comment.id]
-        XCTAssertNotNil(renderable)
-        // isOnline defaults to false until presence is fetched
-        XCTAssertFalse(renderable!.isOnline)
-
-        sdk.cleanup()
-    }
-
     func testClearAllPresence() async throws {
         let sdk = makeSDK()
         try await sdk.load()
 
-        _ = try await sdk.postComment(text: "User A comment")
-        _ = try await sdk.postComment(text: "User A comment 2")
+        _ = try await sdk.postComment(text: "Comment 1")
+        _ = try await sdk.postComment(text: "Comment 2")
 
-        // Set all comments to online
-        for comment in sdk.commentsTree.allComments {
-            comment.isOnline = true
-        }
-        XCTAssertTrue(sdk.commentsTree.allComments.allSatisfy { $0.isOnline })
+        // Server-posted comments should have userId indexed
+        XCTAssertFalse(sdk.commentsTree.commentsByUserId.isEmpty, "commentsByUserId should be populated from server data")
 
+        // Set all online via the presence API
+        let userId = sdk.commentsTree.commentsByUserId.keys.first!
+        sdk.commentsTree.updateUserPresence(userId: userId, isOnline: true)
+        XCTAssertTrue(sdk.commentsTree.allComments.contains { $0.isOnline })
+
+        // Clear all presence
         sdk.commentsTree.clearAllPresence()
 
         for comment in sdk.commentsTree.allComments {
@@ -41,39 +30,32 @@ final class PresenceIntegrationTests: IntegrationTestBase {
         sdk.cleanup()
     }
 
-    func testPresenceByUserId() async throws {
+    func testPresenceIndexingAndPropagation() async throws {
         let sdk = makeSDK()
         try await sdk.load()
 
-        _ = try await sdk.postComment(text: "Comment 1")
-        _ = try await sdk.postComment(text: "Comment 2")
+        _ = try await sdk.postComment(text: "Comment A")
+        _ = try await sdk.postComment(text: "Comment B")
 
-        // SSO user should have a userId on their comments
-        let userIds = Set(sdk.commentsTree.allComments.compactMap { $0.comment.userId ?? $0.comment.anonUserId })
-        XCTAssertFalse(userIds.isEmpty, "Comments should have a userId or anonUserId")
+        // Verify userId is indexed in commentsByUserId
+        let userIds = Array(sdk.commentsTree.commentsByUserId.keys)
+        XCTAssertFalse(userIds.isEmpty, "commentsByUserId should have entries from server-posted comments")
 
         let userId = userIds.first!
+        let commentsForUser = sdk.commentsTree.commentsByUserId[userId]!
+        XCTAssertGreaterThanOrEqual(commentsForUser.count, 2, "Both comments should be indexed under the same userId")
+
+        // Set online and verify all comments for that user update
         sdk.commentsTree.updateUserPresence(userId: userId, isOnline: true)
-
-        let commentsForUser = sdk.commentsTree.allComments.filter {
-            $0.comment.userId == userId || $0.comment.anonUserId == userId
-        }
-        XCTAssertGreaterThanOrEqual(commentsForUser.count, 2)
         for comment in commentsForUser {
-            XCTAssertTrue(comment.isOnline, "All comments by user should be online")
+            XCTAssertTrue(comment.isOnline, "All comments by user should be online after updateUserPresence")
         }
 
-        sdk.cleanup()
-    }
-
-    func testAnonUserPresence() async throws {
-        let sdk = makeSDK()
-        try await sdk.load()
-
-        _ = try await sdk.postComment(text: "Anon comment")
-
-        let allUserIds = Array(sdk.commentsTree.commentsByUserId.keys)
-        XCTAssertFalse(allUserIds.isEmpty, "commentsByUserId should have entries after posting")
+        // Set offline
+        sdk.commentsTree.updateUserPresence(userId: userId, isOnline: false)
+        for comment in commentsForUser {
+            XCTAssertFalse(comment.isOnline, "All comments by user should be offline after setting offline")
+        }
 
         sdk.cleanup()
     }

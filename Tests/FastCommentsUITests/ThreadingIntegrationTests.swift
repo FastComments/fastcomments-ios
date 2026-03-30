@@ -92,11 +92,13 @@ final class ThreadingIntegrationTests: IntegrationTestBase {
 
         let root = try await sdk.postComment(text: "Root")
         let child = try await sdk.postComment(text: "Child", parentId: root.id)
-        _ = try await sdk.postComment(text: "Grandchild", parentId: child.id)
+        let grandchild = try await sdk.postComment(text: "Grandchild", parentId: child.id)
 
         try await sdk.deleteComment(commentId: root.id)
 
         XCTAssertNil(sdk.commentsTree.commentsById[root.id])
+        XCTAssertNil(sdk.commentsTree.commentsById[child.id])
+        XCTAssertNil(sdk.commentsTree.commentsById[grandchild.id])
     }
 
     func testLoadChildrenPagination() async throws {

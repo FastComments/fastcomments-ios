@@ -34,4 +34,40 @@ public struct FastCommentsError: LocalizedError, Sendable {
         self.reason = response.reason
         self.translatedError = response.translatedError
     }
+
+    public init(from response: PinComment200Response) {
+        self.code = response.code
+        self.reason = response.reason
+        self.translatedError = response.translatedError
+    }
+
+    public init(from response: LockComment200Response) {
+        self.code = response.code
+        self.reason = response.reason
+        self.translatedError = response.translatedError
+    }
+
+    public init(from response: FlagCommentPublic200Response) {
+        self.code = response.code
+        self.reason = response.reason
+        self.translatedError = response.translatedError
+    }
+
+    public init(from response: BlockFromCommentPublic200Response) {
+        self.code = response.code
+        self.reason = response.reason
+        self.translatedError = response.translatedError
+    }
+
+    public init(from response: SetCommentText200Response) {
+        self.code = response.code
+        self.reason = response.reason
+        self.translatedError = response.translatedError
+    }
+
+    public init(from response: DeleteCommentPublic200Response) {
+        self.code = response.code
+        self.reason = response.reason
+        self.translatedError = response.translatedError
+    }
 }

@@ -27,6 +27,7 @@ final class FeedIntegrationTests: IntegrationTestBase {
         let post = try await feedSDK.createPost(params: params)
 
         XCTAssertFalse(post.id.isEmpty)
+        XCTAssertEqual(post.title, "Test Feed Post")
         XCTAssertEqual(feedSDK.feedPosts.first?.id, post.id, "New post should be at top of feed")
 
         // Cleanup feed post
@@ -106,6 +107,9 @@ final class FeedIntegrationTests: IntegrationTestBase {
         )
         let post = try await feedSDK.createPost(params: params)
 
+        // React so we have like state to verify
+        try await feedSDK.reactPost(postId: post.id, reactionType: "like")
+
         let savedState = feedSDK.savePaginationState()
 
         // Create a new feed SDK and restore
@@ -114,6 +118,8 @@ final class FeedIntegrationTests: IntegrationTestBase {
 
         XCTAssertEqual(feedSDK2.feedPosts.count, feedSDK.feedPosts.count)
         XCTAssertEqual(feedSDK2.hasMore, feedSDK.hasMore)
+        XCTAssertEqual(feedSDK2.getLikeCount(postId: post.id), 1)
+        XCTAssertTrue(feedSDK2.hasUserReacted(postId: post.id, reactType: "like"))
 
         // Cleanup
         try? await feedSDK.deletePost(postId: post.id)

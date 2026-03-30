@@ -108,15 +108,15 @@ class IntegrationTestBase: XCTestCase {
 
     var tenantId: String { testTenantId! }
 
-    /// Create a simple SSO token for a regular test user.
+    /// Create a secure SSO token for a regular test user.
     private func makeSSOToken(userId: String = UUID().uuidString) -> String {
-        let sso = FastCommentsSSO.createSimple(
-            simpleSSOUserData: SimpleSSOUserData(
-                username: "Tester \(userId.prefix(6))",
-                email: "tester-\(userId.prefix(8))@fctest.com",
-                avatar: ""
-            )
+        let userData = SecureSSOUserData(
+            id: userId,
+            email: "tester-\(userId.prefix(8))@fctest.com",
+            username: "Tester \(userId.prefix(6))",
+            avatar: ""
         )
+        let sso = try! FastCommentsSSO.createSecure(apiKey: testTenantApiKey!, secureSSOUserData: userData)
         return try! sso.prepareToSend()!
     }
 

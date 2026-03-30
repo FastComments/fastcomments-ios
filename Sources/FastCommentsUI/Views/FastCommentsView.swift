@@ -153,7 +153,40 @@ public struct FastCommentsView: View {
                 onEdit: { editingComment = $0 },
                 onDelete: { showDeleteAlert = $0 },
                 onFlag: { comment in
-                    Task { try? await sdk.flagComment(commentId: comment.comment.id) }
+                    Task {
+                        if comment.comment.isFlagged == true {
+                            try? await sdk.unflagComment(commentId: comment.comment.id)
+                        } else {
+                            try? await sdk.flagComment(commentId: comment.comment.id)
+                        }
+                    }
+                },
+                onPin: { comment in
+                    Task {
+                        if comment.comment.isPinned == true {
+                            try? await sdk.unpinComment(commentId: comment.comment.id)
+                        } else {
+                            try? await sdk.pinComment(commentId: comment.comment.id)
+                        }
+                    }
+                },
+                onLock: { comment in
+                    Task {
+                        if comment.comment.isLocked == true {
+                            try? await sdk.unlockComment(commentId: comment.comment.id)
+                        } else {
+                            try? await sdk.lockComment(commentId: comment.comment.id)
+                        }
+                    }
+                },
+                onBlock: { comment in
+                    Task {
+                        if comment.comment.isBlocked == true {
+                            try? await sdk.unblockUser(commentId: comment.comment.id)
+                        } else {
+                            try? await sdk.blockUser(commentId: comment.comment.id)
+                        }
+                    }
                 }
             )
 

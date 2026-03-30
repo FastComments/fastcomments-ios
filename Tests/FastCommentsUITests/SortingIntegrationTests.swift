@@ -117,29 +117,25 @@ final class SortingIntegrationTests: IntegrationTestBase {
         }
     }
 
-    func testPinnedCommentStaysFirst() async throws {
-        let sdk = makeSDK()
+    func testPinnedCommentStaysFirstAcrossAllSortDirections() async throws {
+        let sdk = makeAdminSDK()
         try await sdk.load()
 
         let a = try await sdk.postComment(text: "Will be pinned")
         try await Task.sleep(nanoseconds: 100_000_000)
         _ = try await sdk.postComment(text: "Not pinned")
 
-        // Pin via admin API
-        _ = try await DefaultAPI.updateComment(
-            tenantId: tenantId,
-            id: a.id,
-            updatableCommentParams: UpdatableCommentParams(isPinned: true),
-            apiConfiguration: adminApiConfig
-        )
+        try await sdk.pinComment(commentId: a.id)
 
-        // Reload and verify pinned comment is first
-        let sdk2 = FastCommentsSDK(config: sdk.config)
-        sdk2.defaultSortDirection = .nf
-        try await sdk2.load()
+        // Verify pinned is first across all sort directions
+        for direction: SortDirections in [.nf, .of, .mr] {
+            let reloadSDK = FastCommentsSDK(config: sdk.config)
+            reloadSDK.defaultSortDirection = direction
+            try await reloadSDK.load()
 
-        let visibleComments = sdk2.commentsTree.visibleNodes.compactMap { $0 as? RenderableComment }
-        XCTAssertGreaterThanOrEqual(visibleComments.count, 2)
-        XCTAssertEqual(visibleComments.first?.id, a.id, "Pinned comment should appear first")
+            let visibleComments = reloadSDK.commentsTree.visibleNodes.compactMap { $0 as? RenderableComment }
+            XCTAssertGreaterThanOrEqual(visibleComments.count, 2)
+            XCTAssertEqual(visibleComments.first?.id, a.id, "Pinned comment should appear first with sort direction \(direction)")
+        }
     }
 }
