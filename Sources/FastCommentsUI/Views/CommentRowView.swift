@@ -185,7 +185,7 @@ public struct CommentRowView: View {
                 }
             )
 
-            if let onReply = onReply, comment.comment.isLocked != true {
+            if let onReply = onReply, comment.comment.isLocked != true, !sdk.isClosed {
                 Button {
                     onReply(comment)
                 } label: {

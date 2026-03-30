@@ -63,13 +63,13 @@ public struct FastCommentsView: View {
                             }
                         }
                         .padding(.vertical, theme.commentStyle == .card ? 8 : 0)
-                    }
 
-                    PaginationControls(
-                        sdk: sdk,
-                        onLoadMore: { try? await sdk.loadMore() },
-                        onLoadAll: { try? await sdk.loadAll() }
-                    )
+                        PaginationControls(
+                            sdk: sdk,
+                            onLoadMore: { try? await sdk.loadMore() },
+                            onLoadAll: { try? await sdk.loadAll() }
+                        )
+                    }
                 }
             }
             .padding(.bottom, 60) // Space for input bar
@@ -84,6 +84,13 @@ public struct FastCommentsView: View {
                         onCommentPosted?(comment)
                     }
                 )
+            } else {
+                Text(NSLocalizedString("comments_closed", bundle: .module, comment: ""))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(theme.resolveInputBarBackgroundColor())
             }
         }
         .demoBanner(isDemo: sdk.isDemo, warningMessage: sdk.warningMessage)
@@ -107,6 +114,14 @@ public struct FastCommentsView: View {
                 if let comment = showDeleteAlert {
                     Task { try? await sdk.deleteComment(commentId: comment.comment.id) }
                 }
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { sdk.badgeAwardToShow != nil },
+            set: { if !$0 { sdk.badgeAwardToShow = nil } }
+        )) {
+            if let badges = sdk.badgeAwardToShow {
+                BadgeAwardSheet(badges: badges)
             }
         }
     }

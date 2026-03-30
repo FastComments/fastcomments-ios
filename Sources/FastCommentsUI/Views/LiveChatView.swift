@@ -56,13 +56,15 @@ public struct LiveChatView: View {
                 }
             }
 
-            CommentInputBar(
-                sdk: sdk,
-                replyingTo: .constant(nil),
-                onCommentPosted: { comment in
-                    onCommentPosted?(comment)
-                }
-            )
+            if !sdk.isClosed {
+                CommentInputBar(
+                    sdk: sdk,
+                    replyingTo: .constant(nil),
+                    onCommentPosted: { comment in
+                        onCommentPosted?(comment)
+                    }
+                )
+            }
         }
         .demoBanner(isDemo: sdk.isDemo, warningMessage: sdk.warningMessage)
     }

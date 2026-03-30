@@ -47,6 +47,17 @@ public struct CommentInputBar: View {
         #endif
     }
 
+    /// Merges global SDK toolbar buttons with per-instance buttons, de-duplicated by ID.
+    private var mergedCustomButtons: [any CustomToolbarButton] {
+        var buttons = sdk.globalCustomToolbarButtons
+        for button in customToolbarButtons {
+            if !buttons.contains(where: { $0.id == button.id }) {
+                buttons.append(button)
+            }
+        }
+        return buttons
+    }
+
     public var body: some View {
         VStack(spacing: 0) {
             // Mention suggestions overlay
@@ -105,61 +116,79 @@ public struct CommentInputBar: View {
             }
 
             // Formatting toolbar
-            if !sdk.disableToolbar {
+            if !sdk.disableToolbar && sdk.toolbarEnabled {
                 Divider()
                     .opacity(0.5)
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 4) {
-                        #if os(iOS)
-                        toolbarButton(icon: "bold", accessibilityKey: "format_bold") {
-                            editorContext.toggleBold()
-                        }
-                        toolbarButton(icon: "italic", accessibilityKey: "format_italic") {
-                            editorContext.toggleItalic()
-                        }
-                        toolbarButton(icon: "strikethrough", accessibilityKey: "format_strikethrough") {
-                            editorContext.toggleStrikethrough()
-                        }
-                        toolbarButton(icon: "link", accessibilityKey: "add_link") {
-                            showAddLinkSheet = true
-                        }
-
-                        PhotosPicker(
-                            selection: $selectedPhotoItem,
-                            matching: .images
-                        ) {
-                            if isUploadingImage {
-                                ProgressView()
-                                    .scaleEffect(0.6)
-                                    .frame(width: 36, height: 30)
-                            } else {
-                                Image(systemName: "photo")
+                        if sdk.defaultFormattingButtonsEnabled {
+                            #if os(iOS)
+                            toolbarButton(icon: "bold", accessibilityKey: "format_bold") {
+                                editorContext.toggleBold()
+                            }
+                            toolbarButton(icon: "italic", accessibilityKey: "format_italic") {
+                                editorContext.toggleItalic()
+                            }
+                            toolbarButton(icon: "strikethrough", accessibilityKey: "format_strikethrough") {
+                                editorContext.toggleStrikethrough()
+                            }
+                            Button {
+                                editorContext.toggleCode()
+                            } label: {
+                                Image(systemName: "chevron.left.forwardslash.chevron.right")
                                     .font(.system(size: 15, weight: .medium))
                                     .foregroundStyle(theme.resolveActionButtonColor())
                                     .frame(width: 36, height: 30)
                             }
-                        }
-                        .disabled(isUploadingImage)
-                        .onChange(of: selectedPhotoItem) { newItem in
-                            guard let newItem else { return }
-                            Task { await handleImagePicked(newItem) }
-                            selectedPhotoItem = nil
-                        }
-                        #else
-                        toolbarButton(icon: "bold", accessibilityKey: "format_bold") {
-                            text += "<b></b>"
-                        }
-                        toolbarButton(icon: "italic", accessibilityKey: "format_italic") {
-                            text += "<i></i>"
-                        }
-                        toolbarButton(icon: "link", accessibilityKey: "add_link") {
-                            showAddLinkSheet = true
-                        }
-                        #endif
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(NSLocalizedString("format_code", bundle: .module, comment: ""))
+                            .simultaneousGesture(
+                                LongPressGesture(minimumDuration: 0.5)
+                                    .onEnded { _ in
+                                        editorContext.toggleCodeBlock()
+                                    }
+                            )
+                            toolbarButton(icon: "link", accessibilityKey: "add_link") {
+                                showAddLinkSheet = true
+                            }
 
-                        // Custom toolbar buttons
-                        ForEach(customToolbarButtons.filter { $0.isVisible() }, id: \.id) { button in
+                            PhotosPicker(
+                                selection: $selectedPhotoItem,
+                                matching: .images
+                            ) {
+                                if isUploadingImage {
+                                    ProgressView()
+                                        .scaleEffect(0.6)
+                                        .frame(width: 36, height: 30)
+                                } else {
+                                    Image(systemName: "photo")
+                                        .font(.system(size: 15, weight: .medium))
+                                        .foregroundStyle(theme.resolveActionButtonColor())
+                                        .frame(width: 36, height: 30)
+                                }
+                            }
+                            .disabled(isUploadingImage)
+                            .onChange(of: selectedPhotoItem) { newItem in
+                                guard let newItem else { return }
+                                Task { await handleImagePicked(newItem) }
+                                selectedPhotoItem = nil
+                            }
+                            #else
+                            toolbarButton(icon: "bold", accessibilityKey: "format_bold") {
+                                text += "<b></b>"
+                            }
+                            toolbarButton(icon: "italic", accessibilityKey: "format_italic") {
+                                text += "<i></i>"
+                            }
+                            toolbarButton(icon: "link", accessibilityKey: "add_link") {
+                                showAddLinkSheet = true
+                            }
+                            #endif
+                        }
+
+                        // Custom toolbar buttons (global + per-instance, de-duped)
+                        ForEach(mergedCustomButtons.filter { $0.isVisible() }, id: \.id) { button in
                             Button {
                                 button.onClick(text: plainTextBinding)
                             } label: {

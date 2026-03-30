@@ -64,6 +64,7 @@ enum AttributedStringHTMLConverter {
         case italic
         case strikethrough
         case code
+        case codeBlock
         case link(URL)
 
         var openTag: String {
@@ -72,6 +73,7 @@ enum AttributedStringHTMLConverter {
             case .italic: return "<i>"
             case .strikethrough: return "<strike>"
             case .code: return "<code>"
+            case .codeBlock: return "<pre><code>"
             case .link(let url): return "<a href=\"\(escapeHTML(url.absoluteString))\">"
             }
         }
@@ -82,13 +84,15 @@ enum AttributedStringHTMLConverter {
             case .italic: return "</i>"
             case .strikethrough: return "</strike>"
             case .code: return "</code>"
+            case .codeBlock: return "</code></pre>"
             case .link: return "</a>"
             }
         }
 
         static func == (lhs: Tag, rhs: Tag) -> Bool {
             switch (lhs, rhs) {
-            case (.bold, .bold), (.italic, .italic), (.strikethrough, .strikethrough), (.code, .code): return true
+            case (.bold, .bold), (.italic, .italic), (.strikethrough, .strikethrough),
+                 (.code, .code), (.codeBlock, .codeBlock): return true
             case (.link(let a), .link(let b)): return a == b
             default: return false
             }
@@ -103,7 +107,11 @@ enum AttributedStringHTMLConverter {
         if let font = attrs[.font] as? UIFont {
             let traits = font.fontDescriptor.symbolicTraits
             if traits.contains(.traitMonoSpace) {
-                tags.append(.code)
+                if attrs[.codeBlock] as? Bool == true {
+                    tags.append(.codeBlock)
+                } else {
+                    tags.append(.code)
+                }
             } else {
                 if traits.contains(.traitBold) { tags.append(.bold) }
                 if traits.contains(.traitItalic) { tags.append(.italic) }

@@ -45,6 +45,9 @@ public final class FastCommentsSDK: ObservableObject {
     @Published public private(set) var blockingErrorMessage: String?
     @Published public private(set) var warningMessage: String?
     @Published public private(set) var isLoading: Bool = false
+    @Published public var toolbarEnabled: Bool = true
+    @Published public var defaultFormattingButtonsEnabled: Bool = true
+    @Published public var badgeAwardToShow: [CommentUserBadgeInfo]?
 
     // MARK: - Public Properties
 
@@ -63,6 +66,36 @@ public final class FastCommentsSDK: ObservableObject {
 
     public var disableToolbar: Bool {
         customConfig?.disableToolbar ?? false
+    }
+
+    /// Enable or disable the comment toolbar programmatically.
+    public func setCommentToolbarEnabled(_ enabled: Bool) {
+        toolbarEnabled = enabled
+    }
+
+    /// Enable or disable default formatting buttons (bold, italic, etc.) programmatically.
+    public func setDefaultFormattingButtonsEnabled(_ enabled: Bool) {
+        defaultFormattingButtonsEnabled = enabled
+    }
+
+    // MARK: - Global Toolbar Buttons
+
+    @Published public private(set) var globalCustomToolbarButtons: [any CustomToolbarButton] = []
+
+    /// Add a custom toolbar button that will appear on all comment input instances.
+    public func addGlobalCustomToolbarButton(_ button: any CustomToolbarButton) {
+        guard !globalCustomToolbarButtons.contains(where: { $0.id == button.id }) else { return }
+        globalCustomToolbarButtons.append(button)
+    }
+
+    /// Remove a global custom toolbar button by ID.
+    public func removeGlobalCustomToolbarButton(id: String) {
+        globalCustomToolbarButtons.removeAll { $0.id == id }
+    }
+
+    /// Clear all global custom toolbar buttons.
+    public func clearGlobalCustomToolbarButtons() {
+        globalCustomToolbarButtons.removeAll()
     }
 
     // MARK: - Internal
@@ -128,7 +161,9 @@ public final class FastCommentsSDK: ObservableObject {
             direction: defaultSortDirection,
             sso: config.sso,
             skip: 0,
+            skipChildren: 0,
             limit: pageSize,
+            limitChildren: pageSize,
             countChildren: true,
             includeConfig: true,
             countAll: true,
@@ -159,7 +194,9 @@ public final class FastCommentsSDK: ObservableObject {
                 direction: defaultSortDirection,
                 sso: config.sso,
                 skip: currentSkip,
+                skipChildren: currentSkip,
                 limit: pageSize,
+                limitChildren: pageSize,
                 countChildren: true,
                 countAll: true,
                 asTree: true,
@@ -210,7 +247,9 @@ public final class FastCommentsSDK: ObservableObject {
             urlId: config.urlId,
             sso: config.sso,
             skip: skip,
+            skipChildren: skip,
             limit: limit,
+            limitChildren: limit,
             countChildren: true,
             asTree: true,
             maxTreeDepth: 1,
@@ -628,8 +667,33 @@ public final class FastCommentsSDK: ObservableObject {
                 isClosed = closed
             }
         case .updateBadges:
-            // Badge updates for comments
-            break
+            guard let userId = event.userId,
+                  let eventBadges = event.badges, !eventBadges.isEmpty else { break }
+
+            let convertedBadges = eventBadges.compactMap { LiveEventHandler.toCommentUserBadgeInfo($0) }
+            guard !convertedBadges.isEmpty else { break }
+
+            let isCurrentUser = currentUser?.id != nil && currentUser?.id == userId
+
+            if let userComments = commentsTree.commentsByUserId[userId], !userComments.isEmpty {
+                // Determine which badges are new
+                let existingBadges = userComments[0].comment.badges ?? []
+                let existingIds = Set(existingBadges.map(\.id))
+                let newBadges = convertedBadges.filter { !existingIds.contains($0.id) }
+
+                // Update badges on all user's comments
+                for comment in userComments {
+                    comment.comment.badges = convertedBadges
+                    comment.objectWillChange.send()
+                }
+
+                // Show badge award sheet for current user
+                if isCurrentUser && !newBadges.isEmpty {
+                    badgeAwardToShow = newBadges
+                }
+            } else if isCurrentUser {
+                badgeAwardToShow = convertedBadges
+            }
         case .newConfig:
             // Server pushed config change
             break

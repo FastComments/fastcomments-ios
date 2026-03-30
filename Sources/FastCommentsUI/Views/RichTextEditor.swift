@@ -92,6 +92,51 @@ public final class RichTextEditorContext: ObservableObject {
         textView.undoManager?.endUndoGrouping()
     }
 
+    func toggleCodeBlock() {
+        guard let textView else { return }
+        let range = textView.selectedRange
+
+        textView.undoManager?.beginUndoGrouping()
+        if range.length > 0 {
+            let mutable = NSMutableAttributedString(attributedString: textView.attributedText)
+            let isCodeBlock = mutable.attribute(.codeBlock, at: range.location, effectiveRange: nil) as? Bool ?? false
+
+            if isCodeBlock {
+                let baseFont = UIFont.preferredFont(forTextStyle: .subheadline)
+                mutable.addAttribute(.font, value: baseFont, range: range)
+                mutable.removeAttribute(.backgroundColor, range: range)
+                mutable.removeAttribute(.codeBlock, range: range)
+            } else {
+                let codeFont = UIFont.monospacedSystemFont(
+                    ofSize: UIFont.preferredFont(forTextStyle: .subheadline).pointSize,
+                    weight: .regular
+                )
+                mutable.addAttribute(.font, value: codeFont, range: range)
+                mutable.addAttribute(.backgroundColor, value: UIColor.systemGray5, range: range)
+                mutable.addAttribute(.codeBlock, value: true, range: range)
+            }
+            textView.attributedText = mutable
+            textView.selectedRange = range
+            notifyChange()
+        } else {
+            var attrs = textView.typingAttributes
+            let isCodeBlock = attrs[.codeBlock] as? Bool ?? false
+
+            if isCodeBlock {
+                attrs[.font] = UIFont.preferredFont(forTextStyle: .subheadline)
+                attrs.removeValue(forKey: .backgroundColor)
+                attrs.removeValue(forKey: .codeBlock)
+            } else {
+                let currentFont = attrs[.font] as? UIFont ?? UIFont.preferredFont(forTextStyle: .subheadline)
+                attrs[.font] = UIFont.monospacedSystemFont(ofSize: currentFont.pointSize, weight: .regular)
+                attrs[.backgroundColor] = UIColor.systemGray5
+                attrs[.codeBlock] = true
+            }
+            textView.typingAttributes = attrs
+        }
+        textView.undoManager?.endUndoGrouping()
+    }
+
     func applyLink(url: URL, label: String) {
         guard let textView else { return }
         let range = textView.selectedRange
@@ -323,5 +368,6 @@ struct RichTextEditor: UIViewRepresentable {
 extension NSAttributedString.Key {
     static let mentionUserId = NSAttributedString.Key("com.fastcomments.mentionUserId")
     static let imageURL = NSAttributedString.Key("com.fastcomments.imageURL")
+    static let codeBlock = NSAttributedString.Key("com.fastcomments.codeBlock")
 }
 #endif
