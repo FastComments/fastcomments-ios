@@ -157,11 +157,9 @@ public final class FastCommentsSDK: ObservableObject {
         let response = try await PublicAPI.getCommentsPublic(
             tenantId: config.tenantId,
             urlId: config.urlId,
-            page: 0,
             direction: defaultSortDirection,
             sso: config.sso,
             skip: 0,
-            skipChildren: 0,
             limit: pageSize,
             limitChildren: pageSize,
             countChildren: true,
@@ -170,9 +168,11 @@ public final class FastCommentsSDK: ObservableObject {
             locale: config.locale,
             includeNotificationCount: true,
             asTree: true,
-            maxTreeDepth: 2,
+            maxTreeDepth: 1,
             apiConfiguration: apiConfig
         )
+
+        print("[FC] load: returned \(response.comments?.count ?? 0) comments, hasMore=\(response.hasMore ?? false), commentCount=\(response.commentCount ?? -1)")
 
         processCommentsResponse(response, isInitialLoad: true)
         return response
@@ -190,7 +190,6 @@ public final class FastCommentsSDK: ObservableObject {
             let response = try await PublicAPI.getCommentsPublic(
                 tenantId: config.tenantId,
                 urlId: config.urlId,
-                page: currentPage,
                 direction: defaultSortDirection,
                 sso: config.sso,
                 skip: currentSkip,
@@ -198,16 +197,23 @@ public final class FastCommentsSDK: ObservableObject {
                 limit: pageSize,
                 limitChildren: pageSize,
                 countChildren: true,
-                countAll: true,
                 asTree: true,
-                maxTreeDepth: 2,
+                maxTreeDepth: 0,
                 apiConfiguration: apiConfig
             )
 
-            if !(response.comments ?? []).isEmpty {
-                commentsTree.appendComments((response.comments ?? []))
+            let comments = response.comments ?? []
+            print("[FC] loadMore: skip=\(currentSkip) limit=\(pageSize) returned \(comments.count) comments, hasMore=\(response.hasMore ?? false), commentCount=\(response.commentCount ?? -1)")
+
+            if !comments.isEmpty {
+                commentsTree.appendComments(comments)
             }
-            hasMore = response.hasMore ?? false
+            if let serverCount = response.commentCount {
+                commentCountOnServer = serverCount
+            }
+            // Server's hasMore is based on precalculated page numbers which we don't use.
+            // With asTree + skip/limit, we know there's no more if we got fewer than we asked for.
+            hasMore = comments.count >= pageSize
             return response
         } catch {
             currentSkip = previousSkip
@@ -222,7 +228,6 @@ public final class FastCommentsSDK: ObservableObject {
         let response = try await PublicAPI.getCommentsPublic(
             tenantId: config.tenantId,
             urlId: config.urlId,
-            page: 0,
             direction: defaultSortDirection,
             sso: config.sso,
             skip: 0,

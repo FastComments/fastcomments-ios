@@ -23,58 +23,55 @@ public struct FastCommentsView: View {
     }
 
     public var body: some View {
-        ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                if sdk.isLoading && sdk.commentsTree.visibleNodes.isEmpty {
-                    Spacer()
-                    ProgressView()
-                        .scaleEffect(1.2)
-                    Spacer()
-                } else if let error = sdk.blockingErrorMessage {
-                    Spacer()
-                    VStack(spacing: 12) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.title2)
-                            .foregroundStyle(.secondary)
-                        Text(error)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding()
-                    Spacer()
-                } else if sdk.commentsTree.visibleNodes.isEmpty {
-                    Spacer()
-                    VStack(spacing: 12) {
-                        Image(systemName: "bubble.left.and.bubble.right")
-                            .font(.system(size: 36))
-                            .foregroundStyle(.quaternary)
-                        Text(NSLocalizedString("no_comments_yet", bundle: .module, comment: ""))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding()
-                    Spacer()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: theme.commentSpacing) {
-                            ForEach(sdk.commentsTree.visibleNodes) { node in
-                                nodeView(for: node)
-                            }
+        VStack(spacing: 0) {
+            if sdk.isLoading && sdk.commentsTree.visibleNodes.isEmpty {
+                Spacer()
+                ProgressView()
+                    .scaleEffect(1.2)
+                Spacer()
+            } else if let error = sdk.blockingErrorMessage {
+                Spacer()
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                    Text(error)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding()
+                Spacer()
+            } else if sdk.commentsTree.visibleNodes.isEmpty {
+                Spacer()
+                VStack(spacing: 12) {
+                    Image(systemName: "bubble.left.and.bubble.right")
+                        .font(.system(size: 36))
+                        .foregroundStyle(.quaternary)
+                    Text(NSLocalizedString("no_comments_yet", bundle: .module, comment: ""))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding()
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: theme.commentSpacing) {
+                        ForEach(sdk.commentsTree.visibleNodes) { node in
+                            nodeView(for: node)
                         }
-                        .padding(.vertical, theme.commentStyle == .card ? 8 : 0)
-
-                        PaginationControls(
-                            sdk: sdk,
-                            onLoadMore: { try? await sdk.loadMore() },
-                            onLoadAll: { try? await sdk.loadAll() }
-                        )
                     }
+                    .padding(.vertical, theme.commentStyle == .card ? 8 : 0)
+
+                    PaginationControls(
+                        sdk: sdk,
+                        onLoadMore: { try? await sdk.loadMore() },
+                        onLoadAll: { try? await sdk.loadAll() }
+                    )
                 }
             }
-            .padding(.bottom, 60) // Space for input bar
-
-            // Comment input
+        }
+        .safeAreaInset(edge: .bottom) {
             if !sdk.isClosed {
                 CommentInputBar(
                     sdk: sdk,

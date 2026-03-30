@@ -8,8 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		06D7021922189E1CE29470EF /* SecureSSOExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A860CA0B281DA2ED08F35C9A /* SecureSSOExampleView.swift */; };
+		11E8A62485679667B88E5D07 /* PaginationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08FFFDABE9EA2DBF40D6A195 /* PaginationUITests.swift */; };
 		20E85780CC8A5B12BA1A230E /* ScreenshotTourView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB079430F62DC9B6CB9C598 /* ScreenshotTourView.swift */; };
 		4FEF7DC49693C587091FD538 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9A77220F4365E6FD85DF80D /* ContentView.swift */; };
+		8932A44ED17A146A953491DB /* PaginationDebugTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E627BD12100CA42BD17FAB5 /* PaginationDebugTest.swift */; };
 		923C1649CD795633AF9E2608 /* SimpleSSOExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2692943945F57CC263B43785 /* SimpleSSOExampleView.swift */; };
 		928FA1F62814064ABA8522F0 /* CommentsExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29E377BB9CBDD3F98FAF56E9 /* CommentsExampleView.swift */; };
 		94C0E0D1325F660AF7E516C5 /* FastCommentsExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F04B846AE062EFC20BF179A3 /* FastCommentsExampleApp.swift */; };
@@ -20,8 +22,19 @@
 		F1E0F4E5B59EE4EEDAA481A8 /* FeedCustomButtonsExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 791DB661CF451256DF9C0799 /* FeedCustomButtonsExampleView.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		FA00C017D30328B1283BAAA2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CDEADFD49CB6D5F3873F9D01 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D62E38E036BA08FEB413E4BF;
+			remoteInfo = FastCommentsExample;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		02E6E7F34AC41B5EE9CC0907 /* FeedExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedExampleView.swift; sourceTree = "<group>"; };
+		08FFFDABE9EA2DBF40D6A195 /* PaginationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaginationUITests.swift; sourceTree = "<group>"; };
 		10907611EA2DD1AF8828F72A /* LiveChatExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveChatExampleView.swift; sourceTree = "<group>"; };
 		2692943945F57CC263B43785 /* SimpleSSOExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleSSOExampleView.swift; sourceTree = "<group>"; };
 		29E377BB9CBDD3F98FAF56E9 /* CommentsExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommentsExampleView.swift; sourceTree = "<group>"; };
@@ -29,7 +42,9 @@
 		59B0CB01CF6CC047F9CB4087 /* ToolbarShowcaseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarShowcaseView.swift; sourceTree = "<group>"; };
 		791DB661CF451256DF9C0799 /* FeedCustomButtonsExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedCustomButtonsExampleView.swift; sourceTree = "<group>"; };
 		7C7ABE5B2667408633F1431A /* FastCommentsExample.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FastCommentsExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E627BD12100CA42BD17FAB5 /* PaginationDebugTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaginationDebugTest.swift; sourceTree = "<group>"; };
 		A860CA0B281DA2ED08F35C9A /* SecureSSOExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureSSOExampleView.swift; sourceTree = "<group>"; };
+		C801B9ADA415FEB9DCD126C8 /* FastCommentsUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FastCommentsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E9A77220F4365E6FD85DF80D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		F04B846AE062EFC20BF179A3 /* FastCommentsExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FastCommentsExampleApp.swift; sourceTree = "<group>"; };
 		F1A4C6A42FEC137090F25CE3 /* fastcomments-ios */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "fastcomments-ios"; path = ..; sourceTree = SOURCE_ROOT; };
@@ -47,10 +62,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		11DE0C4B73E3C44C5C99F74E /* FastCommentsUITests */ = {
+			isa = PBXGroup;
+			children = (
+				9E627BD12100CA42BD17FAB5 /* PaginationDebugTest.swift */,
+				08FFFDABE9EA2DBF40D6A195 /* PaginationUITests.swift */,
+			);
+			path = FastCommentsUITests;
+			sourceTree = "<group>";
+		};
 		5BBB37A886537A1F2E49F46C = {
 			isa = PBXGroup;
 			children = (
 				C0A6397AF8B096F33B630267 /* FastCommentsExample */,
+				11DE0C4B73E3C44C5C99F74E /* FastCommentsUITests */,
 				94BCF04A3A36F3D3F70A6121 /* Packages */,
 				D29B802D66B05FCE19C3D7E8 /* Products */,
 			);
@@ -85,6 +110,7 @@
 			isa = PBXGroup;
 			children = (
 				7C7ABE5B2667408633F1431A /* FastCommentsExample.app */,
+				C801B9ADA415FEB9DCD126C8 /* FastCommentsUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -92,6 +118,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		61AEB92FB8177252E155584F /* FastCommentsUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 02A3025E8459145B3B0C3397 /* Build configuration list for PBXNativeTarget "FastCommentsUITests" */;
+			buildPhases = (
+				820AF4BE1DC3C546A61A0F55 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BA8DA14683A1B61CE07C55E2 /* PBXTargetDependency */,
+			);
+			name = FastCommentsUITests;
+			packageProductDependencies = (
+			);
+			productName = FastCommentsUITests;
+			productReference = C801B9ADA415FEB9DCD126C8 /* FastCommentsUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		D62E38E036BA08FEB413E4BF /* FastCommentsExample */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 1D7B9A742AB83E54033BC741 /* Build configuration list for PBXNativeTarget "FastCommentsExample" */;
@@ -120,6 +164,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
+					61AEB92FB8177252E155584F = {
+						TestTargetID = D62E38E036BA08FEB413E4BF;
+					};
 				};
 			};
 			buildConfigurationList = 7823A8BAE51FF755991AE932 /* Build configuration list for PBXProject "FastCommentsExample" */;
@@ -140,6 +187,7 @@
 			projectRoot = "";
 			targets = (
 				D62E38E036BA08FEB413E4BF /* FastCommentsExample */,
+				61AEB92FB8177252E155584F /* FastCommentsUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -162,9 +210,44 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		820AF4BE1DC3C546A61A0F55 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8932A44ED17A146A953491DB /* PaginationDebugTest.swift in Sources */,
+				11E8A62485679667B88E5D07 /* PaginationUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		BA8DA14683A1B61CE07C55E2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D62E38E036BA08FEB413E4BF /* FastCommentsExample */;
+			targetProxy = FA00C017D30328B1283BAAA2 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		02BD36FA6F3FF7C1A94F78D8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fastcomments.FastCommentsUITests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = FastCommentsExample;
+			};
+			name = Debug;
+		};
 		16ECFBBA90DF5584BAA00D00 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -186,6 +269,24 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
+		};
+		4D6B06D1126025EDF92EE476 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fastcomments.FastCommentsUITests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = FastCommentsExample;
+			};
+			name = Release;
 		};
 		95F7C51CF6789B0992407EB2 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -331,6 +432,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		02A3025E8459145B3B0C3397 /* Build configuration list for PBXNativeTarget "FastCommentsUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				02BD36FA6F3FF7C1A94F78D8 /* Debug */,
+				4D6B06D1126025EDF92EE476 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		1D7B9A742AB83E54033BC741 /* Build configuration list for PBXNativeTarget "FastCommentsExample" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

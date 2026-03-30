@@ -9,6 +9,10 @@ public struct PaginationControls: View {
     @Environment(\.fastCommentsTheme) private var theme
     @State private var isLoadingMore = false
 
+    private var nextCount: Int {
+        min(sdk.getCountRemainingToShow(), sdk.pageSize)
+    }
+
     public var body: some View {
         if sdk.hasMore {
             HStack(spacing: 12) {
@@ -26,7 +30,7 @@ public struct PaginationControls: View {
                         }
                         Text(String(
                             format: NSLocalizedString("next_%lld", bundle: .module, comment: ""),
-                            sdk.pageSize
+                            nextCount
                         ))
                     }
                     .font(.subheadline.weight(.medium))
@@ -38,7 +42,7 @@ public struct PaginationControls: View {
                 }
                 .disabled(isLoadingMore)
 
-                if sdk.shouldShowLoadAll() {
+                if sdk.shouldShowLoadAll() && sdk.commentCountOnServer < 2000 {
                     Button {
                         Task {
                             isLoadingMore = true
@@ -48,7 +52,7 @@ public struct PaginationControls: View {
                     } label: {
                         Text(String(
                             format: NSLocalizedString("load_all_%lld", bundle: .module, comment: ""),
-                            sdk.getCountRemainingToShow()
+                            sdk.commentCountOnServer
                         ))
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(theme.resolveActionButtonColor())

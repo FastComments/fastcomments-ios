@@ -127,43 +127,51 @@ final class CommentCRUDIntegrationTests: IntegrationTestBase {
 
     // MARK: - Pagination
 
-    func testPaginationViaLoadAll() async throws {
-        let totalComments = 5
+    func testPaginationViaLoadMore() async throws {
+        let totalComments = 35
         let sdk = makeSDK()
         try await sdk.load()
 
+        // Create 35 root comments (exceeds default pageSize of 30)
         for i in 1...totalComments {
             _ = try await sdk.postComment(text: "Comment \(i)")
         }
 
-        // Reload with a small page size — first page won't have everything
+        // Reload fresh with default page size
         let sdk2 = FastCommentsSDK(config: sdk.config)
-        sdk2.pageSize = 2
         try await sdk2.load()
 
         let firstPageSize = sdk2.commentsTree.totalSize()
-        XCTAssertGreaterThan(firstPageSize, 0)
+        print("[FC] Pagination test: firstPage=\(firstPageSize) hasMore=\(sdk2.hasMore) commentCountOnServer=\(sdk2.commentCountOnServer)")
 
-        // loadAll must bring back ALL comments regardless of initial page
-        try await sdk2.loadAll()
-        XCTAssertEqual(sdk2.commentsTree.totalSize(), totalComments)
-        XCTAssertFalse(sdk2.hasMore)
+        XCTAssertGreaterThan(firstPageSize, 0, "First page should have comments")
+        XCTAssertTrue(sdk2.hasMore, "35 comments with default pageSize 30 should have more")
+
+        // Load next page
+        try await sdk2.loadMore()
+        let afterLoadMore = sdk2.commentsTree.totalSize()
+        print("[FC] Pagination test: afterLoadMore=\(afterLoadMore) hasMore=\(sdk2.hasMore)")
+
+        XCTAssertGreaterThan(afterLoadMore, firstPageSize, "loadMore should have fetched additional comments")
+        XCTAssertEqual(afterLoadMore, totalComments, "All 35 comments should now be loaded")
+        XCTAssertFalse(sdk2.hasMore, "No more pages after loading all")
     }
 
     func testLoadAll() async throws {
-        let totalComments = 8
+        let totalComments = 35
         let sdk = makeSDK()
-        sdk.pageSize = 3
         try await sdk.load()
 
         for i in 1...totalComments {
             _ = try await sdk.postComment(text: "Comment \(i)")
         }
 
-        // Reload with small page size then loadAll to fetch everything at once
+        // Reload then loadAll to fetch everything at once
         let sdk2 = FastCommentsSDK(config: sdk.config)
-        sdk2.pageSize = 3
         try await sdk2.load()
+
+        let firstPageSize = sdk2.commentsTree.totalSize()
+        XCTAssertTrue(sdk2.hasMore, "Should have more before loadAll")
 
         try await sdk2.loadAll()
 
