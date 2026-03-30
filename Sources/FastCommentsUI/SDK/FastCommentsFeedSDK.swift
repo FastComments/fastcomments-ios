@@ -183,7 +183,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
     // MARK: - Reactions
 
     /// Toggle a reaction on a feed post (optimistic update with rollback).
-    public func reactPost(postId: String, reactionType: String = "like") async throws {
+    public func reactPost(postId: String, reactionType: String = "l") async throws {
         let isUndo = hasUserReacted(postId: postId, reactType: reactionType)
 
         // Optimistic update

@@ -63,9 +63,9 @@ final class FeedIntegrationTests: IntegrationTestBase {
         )
         let post = try await feedSDK.createPost(params: params)
 
-        try await feedSDK.reactPost(postId: post.id, reactionType: "like")
+        try await feedSDK.reactPost(postId: post.id, reactionType: "l")
 
-        XCTAssertTrue(feedSDK.hasUserReacted(postId: post.id, reactType: "like"))
+        XCTAssertTrue(feedSDK.hasUserReacted(postId: post.id, reactType: "l"))
         XCTAssertEqual(feedSDK.getLikeCount(postId: post.id), 1)
 
         // Cleanup
@@ -84,12 +84,12 @@ final class FeedIntegrationTests: IntegrationTestBase {
         let post = try await feedSDK.createPost(params: params)
 
         // React
-        try await feedSDK.reactPost(postId: post.id, reactionType: "like")
-        XCTAssertTrue(feedSDK.hasUserReacted(postId: post.id, reactType: "like"))
+        try await feedSDK.reactPost(postId: post.id, reactionType: "l")
+        XCTAssertTrue(feedSDK.hasUserReacted(postId: post.id, reactType: "l"))
 
         // Unreact (toggle)
-        try await feedSDK.reactPost(postId: post.id, reactionType: "like")
-        XCTAssertFalse(feedSDK.hasUserReacted(postId: post.id, reactType: "like"))
+        try await feedSDK.reactPost(postId: post.id, reactionType: "l")
+        XCTAssertFalse(feedSDK.hasUserReacted(postId: post.id, reactType: "l"))
         XCTAssertEqual(feedSDK.getLikeCount(postId: post.id), 0)
 
         // Cleanup
@@ -108,7 +108,7 @@ final class FeedIntegrationTests: IntegrationTestBase {
         let post = try await feedSDK.createPost(params: params)
 
         // React so we have like state to verify
-        try await feedSDK.reactPost(postId: post.id, reactionType: "like")
+        try await feedSDK.reactPost(postId: post.id, reactionType: "l")
 
         let savedState = feedSDK.savePaginationState()
 
@@ -119,7 +119,7 @@ final class FeedIntegrationTests: IntegrationTestBase {
         XCTAssertEqual(feedSDK2.feedPosts.count, feedSDK.feedPosts.count)
         XCTAssertEqual(feedSDK2.hasMore, feedSDK.hasMore)
         XCTAssertEqual(feedSDK2.getLikeCount(postId: post.id), 1)
-        XCTAssertTrue(feedSDK2.hasUserReacted(postId: post.id, reactType: "like"))
+        XCTAssertTrue(feedSDK2.hasUserReacted(postId: post.id, reactType: "l"))
 
         // Cleanup
         try? await feedSDK.deletePost(postId: post.id)

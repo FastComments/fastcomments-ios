@@ -123,9 +123,9 @@ public struct FeedPostRowView: View {
                 }
 
                 actionButton(
-                    icon: sdk.hasUserReacted(postId: post.id, reactType: "like") ? "heart.fill" : "heart",
+                    icon: sdk.hasUserReacted(postId: post.id, reactType: "l") ? "heart.fill" : "heart",
                     count: sdk.getLikeCount(postId: post.id) > 0 ? sdk.getLikeCount(postId: post.id) : nil,
-                    tint: sdk.hasUserReacted(postId: post.id, reactType: "like") ? .red : nil
+                    tint: sdk.hasUserReacted(postId: post.id, reactType: "l") ? .red : nil
                 ) {
                     Task { try? await sdk.reactPost(postId: post.id) }
                 }

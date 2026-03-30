@@ -22,7 +22,7 @@ final class FeedStateTests: XCTestCase {
         state.hasMore = true
         state.pageSize = 20
         state.newPostsCount = 3
-        state.myReacts = ["post-1": ["like": true]]
+        state.myReacts = ["post-1": ["l": true]]
         state.likeCounts = ["post-1": 5, "post-2": 10]
 
         let data = try JSONEncoder().encode(state)
@@ -32,7 +32,7 @@ final class FeedStateTests: XCTestCase {
         XCTAssertTrue(decoded.hasMore)
         XCTAssertEqual(decoded.pageSize, 20)
         XCTAssertEqual(decoded.newPostsCount, 3)
-        XCTAssertEqual(decoded.myReacts["post-1"]?["like"], true)
+        XCTAssertEqual(decoded.myReacts["post-1"]?["l"], true)
         XCTAssertEqual(decoded.likeCounts["post-1"], 5)
         XCTAssertEqual(decoded.likeCounts["post-2"], 10)
     }
@@ -40,10 +40,10 @@ final class FeedStateTests: XCTestCase {
     func testMyReacts() {
         var state = FeedState()
 
-        state.myReacts["post-1"] = ["like": true]
+        state.myReacts["post-1"] = ["l": true]
         state.myReacts["post-1"]?["heart"] = true
 
-        XCTAssertEqual(state.myReacts["post-1"]?["like"], true)
+        XCTAssertEqual(state.myReacts["post-1"]?["l"], true)
         XCTAssertEqual(state.myReacts["post-1"]?["heart"], true)
         XCTAssertNil(state.myReacts["post-2"])
     }
