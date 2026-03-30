@@ -1,7 +1,7 @@
 import SwiftUI
 import FastCommentsSwift
 
-/// Displays a user badge (image or text label).
+/// Displays a user badge (image or text label) with polished styling.
 public struct BadgeView: View {
     let badge: CommentUserBadgeInfo
 
@@ -22,20 +22,20 @@ public struct BadgeView: View {
     private var badgeLabel: some View {
         if let label = badge.displayLabel {
             Text(label)
-                .font(.system(size: 10, weight: .medium))
-                .padding(.horizontal, 4)
-                .padding(.vertical, 1)
+                .font(.system(size: 10, weight: .semibold))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
                 .background(badgeBackgroundColor)
                 .foregroundStyle(badgeTextColor)
-                .clipShape(RoundedRectangle(cornerRadius: 3))
+                .clipShape(Capsule())
         }
     }
 
     private var badgeBackgroundColor: Color {
         if let hex = badge.backgroundColor {
-            return Color(hex: hex) ?? .gray.opacity(0.2)
+            return Color(hex: hex) ?? .gray.opacity(0.15)
         }
-        return .gray.opacity(0.2)
+        return .gray.opacity(0.15)
     }
 
     private var badgeTextColor: Color {

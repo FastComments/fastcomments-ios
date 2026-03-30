@@ -13,27 +13,13 @@ public struct PostImagesCarousel: View {
             TabView(selection: $currentPage) {
                 ForEach(Array(mediaItems.enumerated()), id: \.offset) { index, item in
                     if let asset = item.sizes.first, let url = URL(string: asset.src) {
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                            case .failure:
-                                imagePlaceholder
-                            case .empty:
-                                ProgressView()
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            @unknown default:
-                                imagePlaceholder
+                        SmartImage(url: url, contentMode: .fill)
+                            .clipped()
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                onImageTap?(item, index)
                             }
-                        }
-                        .clipped()
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            onImageTap?(item, index)
-                        }
-                        .tag(index)
+                            .tag(index)
                     }
                 }
             }

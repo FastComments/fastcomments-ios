@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Circular avatar image with optional online indicator.
-/// Uses AsyncImage for zero-dependency image loading.
+/// Circular avatar image with optional online indicator and smooth loading.
 public struct AvatarImage: View {
     let url: String?
     var size: CGFloat = 36
@@ -26,10 +25,15 @@ public struct AvatarImage: View {
                         image
                             .resizable()
                             .scaledToFill()
+                            .transition(.opacity.combined(with: .scale(scale: 0.8)))
                     case .failure:
                         placeholderView
                     case .empty:
                         placeholderView
+                            .overlay {
+                                ProgressView()
+                                    .scaleEffect(0.5)
+                            }
                     @unknown default:
                         placeholderView
                     }
@@ -43,25 +47,46 @@ public struct AvatarImage: View {
             if showOnlineIndicator && isOnline {
                 Circle()
                     .fill(theme.resolveOnlineIndicatorColor())
-                    .frame(width: size * 0.3, height: size * 0.3)
+                    .frame(width: onlineIndicatorSize, height: onlineIndicatorSize)
                     .overlay {
-                        #if os(iOS)
                         Circle()
-                            .stroke(Color(uiColor: .systemBackground), lineWidth: 1.5)
-                        #else
-                        Circle()
-                            .stroke(Color(nsColor: .windowBackgroundColor), lineWidth: 1.5)
-                        #endif
+                            .stroke(onlineIndicatorBorderColor, lineWidth: 2)
                     }
+                    .offset(x: 1, y: 1)
             }
         }
     }
 
+    private var onlineIndicatorSize: CGFloat {
+        max(size * 0.28, 8)
+    }
+
+    private var onlineIndicatorBorderColor: Color {
+        #if os(iOS)
+        Color(uiColor: .systemBackground)
+        #else
+        Color(nsColor: .windowBackgroundColor)
+        #endif
+    }
+
     private var placeholderView: some View {
-        Image(systemName: "person.circle.fill")
-            .resizable()
-            .scaledToFit()
+        Circle()
+            .fill(placeholderBackground)
             .frame(width: size, height: size)
-            .foregroundStyle(.secondary)
+            .overlay {
+                Image(systemName: "person.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: size * 0.45, height: size * 0.45)
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+    }
+
+    private var placeholderBackground: some ShapeStyle {
+        #if os(iOS)
+        Color(uiColor: .systemGray4)
+        #else
+        Color(nsColor: .systemGray)
+        #endif
     }
 }

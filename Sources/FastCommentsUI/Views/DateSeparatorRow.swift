@@ -4,25 +4,23 @@ import SwiftUI
 public struct DateSeparatorRow: View {
     let separator: DateSeparator
 
+    @Environment(\.fastCommentsTheme) private var theme
+
     public var body: some View {
-        HStack {
+        HStack(spacing: 12) {
             line
             Text(separator.formattedDate)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.tertiary)
             line
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
         .padding(.horizontal, 16)
     }
 
     private var line: some View {
         Rectangle()
-            #if os(iOS)
-            .fill(Color(uiColor: .separator))
-            #else
-            .fill(Color(nsColor: .separatorColor))
-            #endif
+            .fill(theme.resolveSeparatorColor().opacity(0.5))
             .frame(height: 0.5)
     }
 }

@@ -26,6 +26,14 @@ public struct FeedPostCreateView: View {
 
     private let maxImages = 10
 
+    public init(sdk: FastCommentsFeedSDK, customToolbarButtons: [any FeedCustomToolbarButton] = [],
+                onPostCreated: ((FeedPost) -> Void)? = nil, onCancelled: (() -> Void)? = nil) {
+        self.sdk = sdk
+        self.customToolbarButtons = customToolbarButtons
+        self.onPostCreated = onPostCreated
+        self.onCancelled = onCancelled
+    }
+
     public var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -87,7 +95,7 @@ public struct FeedPostCreateView: View {
                             )
                     }
                     .disabled(loadedImages.count >= maxImages)
-                    .onChange(of: selectedItems) { _, newItems in
+                    .onChange(of: selectedItems) { newItems in
                         Task { await loadImages(newItems) }
                     }
 

@@ -2,7 +2,6 @@ import SwiftUI
 import FastCommentsSwift
 
 /// Live chat view with auto-scroll to bottom, date separators, and compact comment layout.
-/// Mirrors LiveChatView.java from Android.
 public struct LiveChatView: View {
     @ObservedObject var sdk: FastCommentsSDK
     var voteStyle: VoteStyle = ._1
@@ -11,7 +10,6 @@ public struct LiveChatView: View {
     var onCommentDeleted: ((String) -> Void)?
     var onUserClick: ((UserClickContext, UserInfo, UserClickSource) -> Void)?
 
-    @State private var replyingTo: RenderableComment?
     @State private var autoScrollToBottom = true
 
     public init(sdk: FastCommentsSDK) {
@@ -34,7 +32,7 @@ public struct LiveChatView: View {
                                     sdk: sdk,
                                     nestingLevel: 0,
                                     voteStyle: voteStyle,
-                                    onReply: { replyingTo = $0 },
+                                    onReply: nil,
                                     onToggleReplies: nil,
                                     onUserClick: onUserClick
                                 )
@@ -49,7 +47,7 @@ public struct LiveChatView: View {
                             .id("bottom")
                     }
                 }
-                .onChange(of: sdk.commentsTree.visibleNodes.count) { _, _ in
+                .onChange(of: sdk.commentsTree.visibleNodes.count) { _ in
                     if autoScrollToBottom {
                         withAnimation(.easeOut(duration: 0.2)) {
                             proxy.scrollTo("bottom", anchor: .bottom)
@@ -60,12 +58,37 @@ public struct LiveChatView: View {
 
             CommentInputBar(
                 sdk: sdk,
-                replyingTo: $replyingTo,
+                replyingTo: .constant(nil),
                 onCommentPosted: { comment in
                     onCommentPosted?(comment)
                 }
             )
         }
-        .demoBanner(isDemo: sdk.isDemo)
+        .demoBanner(isDemo: sdk.isDemo, warningMessage: sdk.warningMessage)
+    }
+}
+
+// MARK: - Modifier-style API
+
+extension LiveChatView {
+    /// Called when a message is sent.
+    public func onCommentPosted(_ handler: @escaping (PublicComment) -> Void) -> LiveChatView {
+        var copy = self
+        copy.onCommentPosted = handler
+        return copy
+    }
+
+    /// Called when a message is deleted.
+    public func onCommentDeleted(_ handler: @escaping (String) -> Void) -> LiveChatView {
+        var copy = self
+        copy.onCommentDeleted = handler
+        return copy
+    }
+
+    /// Handle user avatar/name taps.
+    public func onUserClick(_ handler: @escaping (UserClickContext, UserInfo, UserClickSource) -> Void) -> LiveChatView {
+        var copy = self
+        copy.onUserClick = handler
+        return copy
     }
 }

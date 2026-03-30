@@ -1,13 +1,14 @@
 import SwiftUI
 
 /// Sheet for editing a comment's text.
-/// Mirrors CommentEditDialog.java from Android.
 public struct CommentEditSheet: View {
     let currentText: String
     var onSave: ((String) -> Void)?
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.fastCommentsTheme) private var theme
     @State private var editText: String = ""
+    @FocusState private var isFocused: Bool
 
     public init(currentText: String, onSave: ((String) -> Void)? = nil) {
         self.currentText = currentText
@@ -16,17 +17,19 @@ public struct CommentEditSheet: View {
 
     public var body: some View {
         NavigationStack {
-            VStack {
+            VStack(spacing: 0) {
                 TextEditor(text: $editText)
                     .font(.body)
-                    .padding(4)
+                    .focused($isFocused)
+                    .padding(12)
+                    .scrollContentBackground(.hidden)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(editorBackground)
+                    )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            #if os(iOS)
-                            .stroke(Color(uiColor: .separator), lineWidth: 0.5)
-                            #else
-                            .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
-                            #endif
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isFocused ? theme.resolveActionButtonColor().opacity(0.5) : Color.clear, lineWidth: 1.5)
                     )
                     .padding()
 
@@ -47,13 +50,22 @@ public struct CommentEditSheet: View {
                         onSave?(editText)
                         dismiss()
                     }
+                    .fontWeight(.semibold)
                     .disabled(editText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
             .onAppear {
-                // Strip HTML for editing
                 editText = currentText.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+                isFocused = true
             }
         }
+    }
+
+    private var editorBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .tertiarySystemFill)
+        #else
+        Color(nsColor: .controlBackgroundColor)
+        #endif
     }
 }

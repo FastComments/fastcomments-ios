@@ -2,10 +2,10 @@ import SwiftUI
 import FastCommentsSwift
 
 /// Main comments view displaying a threaded comment list with input bar.
-/// Mirrors FastCommentsView.java from Android.
 public struct FastCommentsView: View {
     @ObservedObject var sdk: FastCommentsSDK
     var voteStyle: VoteStyle = ._0
+    var customToolbarButtons: [any CustomToolbarButton] = []
 
     var onCommentPosted: ((PublicComment) -> Void)?
     var onReplyClick: ((RenderableComment) -> Void)?
@@ -16,9 +16,10 @@ public struct FastCommentsView: View {
     @State private var editingComment: RenderableComment?
     @State private var showDeleteAlert: RenderableComment?
 
-    public init(sdk: FastCommentsSDK, voteStyle: VoteStyle = ._0) {
+    public init(sdk: FastCommentsSDK, voteStyle: VoteStyle = ._0, customToolbarButtons: [any CustomToolbarButton] = []) {
         self.sdk = sdk
         self.voteStyle = voteStyle
+        self.customToolbarButtons = customToolbarButtons
     }
 
     public var body: some View {
@@ -27,30 +28,41 @@ public struct FastCommentsView: View {
                 if sdk.isLoading && sdk.commentsTree.visibleNodes.isEmpty {
                     Spacer()
                     ProgressView()
+                        .scaleEffect(1.2)
                     Spacer()
                 } else if let error = sdk.blockingErrorMessage {
                     Spacer()
-                    Text(error)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding()
+                    VStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.title2)
+                            .foregroundStyle(.secondary)
+                        Text(error)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
                     Spacer()
                 } else if sdk.commentsTree.visibleNodes.isEmpty {
                     Spacer()
-                    Text(NSLocalizedString("no_comments_yet", bundle: .module, comment: ""))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding()
+                    VStack(spacing: 12) {
+                        Image(systemName: "bubble.left.and.bubble.right")
+                            .font(.system(size: 36))
+                            .foregroundStyle(.quaternary)
+                        Text(NSLocalizedString("no_comments_yet", bundle: .module, comment: ""))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding()
                     Spacer()
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 0) {
+                        LazyVStack(spacing: theme.commentSpacing) {
                             ForEach(sdk.commentsTree.visibleNodes) { node in
                                 nodeView(for: node)
                             }
                         }
+                        .padding(.vertical, theme.commentStyle == .card ? 8 : 0)
                     }
 
                     PaginationControls(
@@ -67,13 +79,14 @@ public struct FastCommentsView: View {
                 CommentInputBar(
                     sdk: sdk,
                     replyingTo: $replyingTo,
+                    customToolbarButtons: customToolbarButtons,
                     onCommentPosted: { comment in
                         onCommentPosted?(comment)
                     }
                 )
             }
         }
-        .demoBanner(isDemo: sdk.isDemo)
+        .demoBanner(isDemo: sdk.isDemo, warningMessage: sdk.warningMessage)
         .sheet(item: $editingComment) { comment in
             CommentEditSheet(
                 currentText: comment.comment.commentHTML,
@@ -128,7 +141,11 @@ public struct FastCommentsView: View {
                     Task { try? await sdk.flagComment(commentId: comment.comment.id) }
                 }
             )
-            Divider().padding(.leading, 12)
+
+            if theme.commentStyle == .flat {
+                Divider()
+                    .padding(.leading, 14)
+            }
         } else if let button = node as? RenderableButton {
             NewCommentsButton(button: button) {
                 switch button.buttonType {
@@ -146,8 +163,33 @@ public struct FastCommentsView: View {
     }
 }
 
+// MARK: - Modifier-style API
+
+extension FastCommentsView {
+    /// Handle user avatar/name taps.
+    public func onUserClick(_ handler: @escaping (UserClickContext, UserInfo, UserClickSource) -> Void) -> FastCommentsView {
+        var copy = self
+        copy.onUserClick = handler
+        return copy
+    }
+
+    /// Called when a comment is successfully posted.
+    public func onCommentPosted(_ handler: @escaping (PublicComment) -> Void) -> FastCommentsView {
+        var copy = self
+        copy.onCommentPosted = handler
+        return copy
+    }
+
+    /// Called when the reply button is tapped.
+    public func onReplyClick(_ handler: @escaping (RenderableComment) -> Void) -> FastCommentsView {
+        var copy = self
+        copy.onReplyClick = handler
+        return copy
+    }
+}
+
 // Make RenderableComment conform to Identifiable for .sheet(item:)
-extension RenderableComment: @retroactive Hashable {
+extension RenderableComment: Hashable {
     public static func == (lhs: RenderableComment, rhs: RenderableComment) -> Bool {
         lhs.id == rhs.id
     }

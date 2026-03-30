@@ -1,8 +1,7 @@
 import SwiftUI
 import FastCommentsSwift
 
-/// Renders a single feed post. Switches layout based on FeedPostType.
-/// Mirrors FeedPostsAdapter.java view types from Android.
+/// Renders a single feed post with header, content, media, and action bar.
 public struct FeedPostRowView: View {
     let post: FeedPost
     @ObservedObject var sdk: FastCommentsFeedSDK
@@ -18,13 +17,13 @@ public struct FeedPostRowView: View {
     @Environment(\.fastCommentsTheme) private var theme
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             // Header: avatar, name, date
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Button {
                     onUserClick?(.feedPost(post), UserInfo.from(post), .avatar)
                 } label: {
-                    AvatarImage(url: post.fromUserAvatar, size: 40)
+                    AvatarImage(url: post.fromUserAvatar, size: 42)
                 }
                 .buttonStyle(.plain)
 
@@ -33,19 +32,18 @@ public struct FeedPostRowView: View {
                         onUserClick?(.feedPost(post), UserInfo.from(post), .name)
                     } label: {
                         Text(post.fromUserDisplayName ?? "Anonymous")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
+                            .font(theme.resolveCommenterNameFont())
                     }
                     .buttonStyle(.plain)
 
                     Text(RelativeDateFormatter.format(post.createdAt))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .font(theme.resolveCaptionFont())
+                        .foregroundStyle(.tertiary)
                 }
 
                 Spacer()
 
-                // Delete menu (only for own posts)
+                // Delete menu
                 if post.fromUserId == sdk.currentUser?.id {
                     Menu {
                         Button(role: .destructive) { onDelete?(post) } label: {
@@ -53,42 +51,35 @@ public struct FeedPostRowView: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis")
-                            .foregroundStyle(.secondary)
-                            .padding(8)
+                            .foregroundStyle(.tertiary)
+                            .frame(width: 32, height: 32)
+                            .contentShape(Rectangle())
                     }
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 14)
 
             // Content
             if let contentHTML = post.contentHTML, !contentHTML.isEmpty {
                 HTMLContentView(html: contentHTML)
-                    .font(.subheadline)
-                    .padding(.horizontal, 12)
+                    .font(theme.resolveBodyFont())
+                    .padding(.horizontal, 14)
             }
 
-            // Media (based on post type)
+            // Media
             let postType = FeedPostType.determine(from: post)
             switch postType {
             case .singleImage:
                 if let media = post.media, let item = media.first,
                    let asset = item.sizes.first, let url = URL(string: asset.src) {
-                    AsyncImage(url: url) { phase in
-                        if let image = phase.image {
-                            image.resizable().scaledToFill()
-                        } else {
-                            #if os(iOS)
-                            Rectangle().fill(Color(uiColor: .systemGray5))
-                            #else
-                            Rectangle().fill(Color(nsColor: .controlBackgroundColor))
-                            #endif
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 250)
-                    .clipped()
-                    .contentShape(Rectangle())
-                    .onTapGesture { onMediaClick?(item, 0) }
+                    SmartImage(url: url, contentMode: .fill)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 260)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius.inner))
+                        .padding(.horizontal, 14)
+                        .contentShape(Rectangle())
+                        .onTapGesture { onMediaClick?(item, 0) }
                 }
 
             case .multiImage:
@@ -98,72 +89,94 @@ public struct FeedPostRowView: View {
 
             case .task:
                 if let links = post.links {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 6) {
                         ForEach(Array(links.enumerated()), id: \.offset) { _, link in
                             if let urlString = link.url, let url = URL(string: urlString) {
                                 Link(destination: url) {
-                                    HStack {
+                                    HStack(spacing: 6) {
                                         Image(systemName: "link")
+                                            .font(.caption)
                                         Text(link.text ?? link.title ?? urlString)
                                             .lineLimit(1)
                                     }
                                     .font(.subheadline)
                                     .foregroundStyle(theme.resolveLinkColor())
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(theme.resolveLinkColor().opacity(0.08))
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
                                 }
                             }
                         }
                     }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 14)
                 }
 
             case .textOnly:
                 EmptyView()
             }
 
-            // Action bar: comment, like, share
-            HStack(spacing: 24) {
-                Button { onComment?(post) } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "bubble.right")
-                        if let count = post.commentCount, count > 0 {
-                            Text("\(count)")
-                        }
-                    }
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+            // Action bar
+            HStack(spacing: 0) {
+                actionButton(icon: "bubble.right", count: post.commentCount) {
+                    onComment?(post)
                 }
-                .buttonStyle(.plain)
 
-                Button {
+                actionButton(
+                    icon: sdk.hasUserReacted(postId: post.id, reactType: "like") ? "heart.fill" : "heart",
+                    count: sdk.getLikeCount(postId: post.id) > 0 ? sdk.getLikeCount(postId: post.id) : nil,
+                    tint: sdk.hasUserReacted(postId: post.id, reactType: "like") ? .red : nil
+                ) {
                     Task { try? await sdk.reactPost(postId: post.id) }
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: sdk.hasUserReacted(postId: post.id, reactType: "like") ? "heart.fill" : "heart")
-                            .foregroundStyle(sdk.hasUserReacted(postId: post.id, reactType: "like") ? .red : .secondary)
-                        let count = sdk.getLikeCount(postId: post.id)
-                        if count > 0 {
-                            Text("\(count)")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .font(.subheadline)
                 }
-                .buttonStyle(.plain)
 
-                Button { onShare?(post) } label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                actionButton(icon: "square.and.arrow.up") {
+                    onShare?(post)
                 }
-                .buttonStyle(.plain)
 
                 Spacer()
             }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
+            .padding(.horizontal, 8)
+            .padding(.bottom, 10)
         }
-        .padding(.top, 12)
+        .padding(.top, 14)
         .contentShape(Rectangle())
         .onTapGesture { onPostClick?(post) }
+    }
+
+    // MARK: - Action Button
+
+    private func actionButton(icon: String, count: Int? = nil, tint: Color? = nil, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 15))
+                    .foregroundStyle(tint ?? .secondary)
+                if let count = count, count > 0 {
+                    Text("\(count)")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var imagePlaceholder: some View {
+        Rectangle()
+            #if os(iOS)
+            .fill(Color(uiColor: .systemGray6))
+            #else
+            .fill(Color(nsColor: .quaternaryLabelColor))
+            #endif
+            .overlay(
+                Image(systemName: "photo")
+                    .font(.title3)
+                    .foregroundStyle(.quaternary)
+            )
     }
 }

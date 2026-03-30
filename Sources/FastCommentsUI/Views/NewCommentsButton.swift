@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Button showing "Show N new comments/replies".
+/// Button showing "Show N new comments/replies" with polished styling.
 public struct NewCommentsButton: View {
     let button: RenderableButton
     var onTap: (() -> Void)?
@@ -11,15 +11,19 @@ public struct NewCommentsButton: View {
         Button {
             onTap?()
         } label: {
-            HStack {
-                Image(systemName: "arrow.down.circle")
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.system(size: 14))
                 Text(buttonText)
+                    .font(.subheadline.weight(.medium))
             }
-            .font(.subheadline)
-            .fontWeight(.medium)
             .foregroundStyle(theme.resolveLoadMoreButtonTextColor())
-            .padding(.vertical, 8)
+            .padding(.vertical, 10)
             .frame(maxWidth: .infinity)
+            .background(theme.resolveLoadMoreButtonTextColor().opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
     }

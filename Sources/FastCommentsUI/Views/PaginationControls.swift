@@ -11,7 +11,7 @@ public struct PaginationControls: View {
 
     public var body: some View {
         if sdk.hasMore {
-            HStack(spacing: 16) {
+            HStack(spacing: 12) {
                 Button {
                     Task {
                         isLoadingMore = true
@@ -19,14 +19,22 @@ public struct PaginationControls: View {
                         isLoadingMore = false
                     }
                 } label: {
-                    if isLoadingMore {
-                        ProgressView()
-                    } else {
+                    HStack(spacing: 4) {
+                        if isLoadingMore {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                        }
                         Text(String(
                             format: NSLocalizedString("next_%lld", bundle: .module, comment: ""),
                             sdk.pageSize
                         ))
                     }
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(theme.resolveActionButtonColor())
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(theme.resolveActionButtonColor().opacity(0.08))
+                    .clipShape(Capsule())
                 }
                 .disabled(isLoadingMore)
 
@@ -42,13 +50,18 @@ public struct PaginationControls: View {
                             format: NSLocalizedString("load_all_%lld", bundle: .module, comment: ""),
                             sdk.getCountRemainingToShow()
                         ))
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(theme.resolveActionButtonColor())
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(theme.resolveActionButtonColor().opacity(0.08))
+                        .clipShape(Capsule())
                     }
                     .disabled(isLoadingMore)
                 }
             }
-            .font(.subheadline)
-            .foregroundStyle(theme.resolveActionButtonColor())
-            .padding()
+            .buttonStyle(.plain)
+            .padding(.vertical, 12)
         }
     }
 }

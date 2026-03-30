@@ -2,7 +2,6 @@ import SwiftUI
 import FastCommentsSwift
 
 /// Feed view with pull-to-refresh, infinite scroll, and post interaction callbacks.
-/// Mirrors FastCommentsFeedView.java from Android.
 public struct FastCommentsFeedView: View {
     @ObservedObject var sdk: FastCommentsFeedSDK
 
@@ -24,21 +23,28 @@ public struct FastCommentsFeedView: View {
                 VStack {
                     Spacer()
                     ProgressView()
+                        .scaleEffect(1.2)
                     Spacer()
                 }
             } else if let error = sdk.blockingErrorMessage {
-                VStack {
+                VStack(spacing: 12) {
                     Spacer()
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
                     Text(error)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                        .padding()
+                        .padding(.horizontal)
                     Spacer()
                 }
             } else if sdk.feedPosts.isEmpty {
-                VStack {
+                VStack(spacing: 12) {
                     Spacer()
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 36))
+                        .foregroundStyle(.quaternary)
                     Text(NSLocalizedString("no_posts_yet", bundle: .module, comment: ""))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -60,6 +66,7 @@ public struct FastCommentsFeedView: View {
                                 onDelete: { showDeleteAlert = $0 }
                             )
                             Divider()
+                                .padding(.horizontal, 14)
 
                             // Infinite scroll trigger
                             if post.id == sdk.feedPosts.last?.id && sdk.hasMore {
@@ -93,7 +100,8 @@ public struct FastCommentsFeedView: View {
         }
     }
 
-    // Modifier-style callbacks
+    // MARK: - Modifier-style API
+
     public func onPostSelected(_ handler: @escaping (FeedPost) -> Void) -> FastCommentsFeedView {
         var copy = self
         copy.onPostSelected = handler
@@ -103,6 +111,24 @@ public struct FastCommentsFeedView: View {
     public func onCommentsRequested(_ handler: @escaping (FeedPost) -> Void) -> FastCommentsFeedView {
         var copy = self
         copy.onCommentsRequested = handler
+        return copy
+    }
+
+    public func onSharePost(_ handler: @escaping (FeedPost) -> Void) -> FastCommentsFeedView {
+        var copy = self
+        copy.onSharePost = handler
+        return copy
+    }
+
+    public func onUserClick(_ handler: @escaping (UserClickContext, UserInfo, UserClickSource) -> Void) -> FastCommentsFeedView {
+        var copy = self
+        copy.onUserClick = handler
+        return copy
+    }
+
+    public func onMediaClick(_ handler: @escaping (FeedPostMediaItem, Int) -> Void) -> FastCommentsFeedView {
+        var copy = self
+        copy.onMediaClick = handler
         return copy
     }
 }

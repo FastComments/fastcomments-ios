@@ -6,6 +6,8 @@ struct MentionSuggestionsList: View {
     let suggestions: [UserSearchResult]
     var onSelect: ((UserSearchResult) -> Void)?
 
+    @Environment(\.fastCommentsTheme) private var theme
+
     var body: some View {
         if !suggestions.isEmpty {
             VStack(spacing: 0) {
@@ -13,20 +15,29 @@ struct MentionSuggestionsList: View {
                     Button {
                         onSelect?(user)
                     } label: {
-                        HStack(spacing: 8) {
-                            AvatarImage(url: user.avatarSrc, size: 24)
-                            Text(user.displayName ?? user.name)
-                                .font(.subheadline)
-                                .lineLimit(1)
+                        HStack(spacing: 10) {
+                            AvatarImage(url: user.avatarSrc, size: 28)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(user.displayName ?? user.name)
+                                    .font(.subheadline.weight(.medium))
+                                    .lineLimit(1)
+                                if let displayName = user.displayName, displayName != user.name {
+                                    Text(user.name)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
                             Spacer()
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
                     }
                     .buttonStyle(.plain)
 
                     if user.id != suggestions.last?.id {
                         Divider()
+                            .padding(.leading, 52)
                     }
                 }
             }
@@ -35,8 +46,9 @@ struct MentionSuggestionsList: View {
             #else
             .background(Color(nsColor: .windowBackgroundColor))
             #endif
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .shadow(color: .black.opacity(0.12), radius: 12, y: 6)
+            .padding(.horizontal, 12)
         }
     }
 }
