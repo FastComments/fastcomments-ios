@@ -1,0 +1,26 @@
+name: FastCommentsExample
+options:
+  bundleIdPrefix: com.fastcomments
+  deploymentTarget:
+    iOS: "16.0"
+  xcodeVersion: "16.0"
+packages:
+  FastCommentsUI:
+    path: ..
+targets:
+  FastCommentsExample:
+    type: application
+    platform: iOS
+    sources:
+      - FastCommentsExample
+    dependencies:
+      - package: FastCommentsUI
+    settings:
+      base:
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: YES

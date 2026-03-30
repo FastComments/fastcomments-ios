@@ -14,14 +14,14 @@ struct LiveChatExampleView: View {
         let userData = SimpleSSOUserData(
             username: "ChatUser",
             email: "chat@example.com",
-            avatar: nil
+            avatar: "https://i.pravatar.cc/150?u=chat"
         )
         let sso = FastCommentsSSO.createSimple(simpleSSOUserData: userData)
         let token = try? sso.prepareToSend()
 
         let config = FastCommentsWidgetConfig(
             tenantId: "demo",
-            urlId: "example-live-chat",
+            urlId: "test",
             sso: token
         )
 
@@ -35,7 +35,7 @@ struct LiveChatExampleView: View {
     }()
 
     var body: some View {
-        // 3. Embed the live chat view
+        // 3. Embed the live chat view with modifier-style callbacks
         LiveChatView(sdk: sdk)
             .onCommentPosted { comment in
                 print("Sent: \(comment.commentHTML)")
