@@ -4,3 +4,4 @@ TODO.txt
 Package.resolved
 .swiftpm/
 .DS_Store
+**/TestConfig.swift
