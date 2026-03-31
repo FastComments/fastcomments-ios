@@ -241,17 +241,22 @@ public final class FastCommentsFeedSDK: ObservableObject {
     public func uploadImage(imageData: Data, filename: String) async throws -> FeedPostMediaItem {
         let boundary = UUID().uuidString
         let basePath = apiConfig.basePath
-        let urlString = "\(basePath)/upload-image/\(config.tenantId)?urlId=FEEDS&sizePreset=CrossPlatform"
-        guard let url = URL(string: urlString) else {
+        let encodedTenantId = config.tenantId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? config.tenantId
+        var components = URLComponents(string: "\(basePath)/upload-image/\(encodedTenantId)")!
+        components.queryItems = [
+            URLQueryItem(name: "urlId", value: "FEEDS"),
+            URLQueryItem(name: "sizePreset", value: "CrossPlatform"),
+        ]
+        if let sso = config.sso {
+            components.queryItems?.append(URLQueryItem(name: "sso", value: sso))
+        }
+        guard let url = components.url else {
             throw FastCommentsError(reason: "Invalid upload URL")
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        if let sso = config.sso {
-            request.url = URL(string: urlString + "&sso=\(sso)")
-        }
 
         // Build multipart body
         var body = Data()

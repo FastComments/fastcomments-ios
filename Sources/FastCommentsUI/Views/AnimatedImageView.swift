@@ -47,6 +47,12 @@ private struct AnimatedImageView: UIViewRepresentable {
     let url: URL
     var contentMode: ContentMode = .fill
 
+    private static let imageCache: NSCache<NSString, UIImage> = {
+        let cache = NSCache<NSString, UIImage>()
+        cache.countLimit = 50
+        return cache
+    }()
+
     func makeUIView(context: Context) -> UIImageView {
         let imageView = UIImageView()
         imageView.contentMode = contentMode == .fill ? .scaleAspectFill : .scaleAspectFit
@@ -59,16 +65,25 @@ private struct AnimatedImageView: UIViewRepresentable {
     func updateUIView(_ imageView: UIImageView, context: Context) {
         guard context.coordinator.loadedURL != url else { return }
         context.coordinator.loadedURL = url
+
+        let key = url.absoluteString as NSString
+
+        // Check cache first
+        if let cached = Self.imageCache.object(forKey: key) {
+            imageView.image = cached
+            return
+        }
+
         imageView.image = nil
 
-        let task = URLSession.shared.dataTask(with: url) { data, _, _ in
+        URLSession.shared.dataTask(with: url) { data, _, _ in
             guard let data else { return }
-            let image = UIImage.animatedImage(with: data)
+            guard let image = UIImage.animatedImage(with: data) else { return }
+            Self.imageCache.setObject(image, forKey: key)
             DispatchQueue.main.async {
                 imageView.image = image
             }
-        }
-        task.resume()
+        }.resume()
     }
 
     func makeCoordinator() -> Coordinator {

@@ -100,7 +100,8 @@ public struct VoteControls: View {
         withAnimation(.spring(duration: 0.3, bounce: 0.5)) {
             voteAnimation = true
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 300_000_000)
             withAnimation(.spring(duration: 0.2)) {
                 voteAnimation = false
             }

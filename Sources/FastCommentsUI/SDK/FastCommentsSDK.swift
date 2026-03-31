@@ -707,11 +707,16 @@ public final class FastCommentsSDK: ObservableObject {
     public func uploadImage(imageData: Data, filename: String) async throws -> String {
         let boundary = UUID().uuidString
         let basePath = apiConfig.basePath
-        var urlString = "\(basePath)/upload-image/\(config.tenantId)?urlId=\(config.urlId)&sizePreset=CrossPlatform"
+        let encodedTenantId = config.tenantId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? config.tenantId
+        var components = URLComponents(string: "\(basePath)/upload-image/\(encodedTenantId)")!
+        components.queryItems = [
+            URLQueryItem(name: "urlId", value: config.urlId),
+            URLQueryItem(name: "sizePreset", value: "CrossPlatform"),
+        ]
         if let sso = config.sso {
-            urlString += "&sso=\(sso.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? sso)"
+            components.queryItems?.append(URLQueryItem(name: "sso", value: sso))
         }
-        guard let url = URL(string: urlString) else {
+        guard let url = components.url else {
             throw FastCommentsError(reason: "Invalid upload URL")
         }
 
@@ -759,6 +764,11 @@ public final class FastCommentsSDK: ObservableObject {
     }
 
     // MARK: - Helpers
+
+    /// Display a temporary warning message to the user.
+    public func showWarning(_ message: String) {
+        warningMessage = message
+    }
 
     public func shouldShowLoadAll() -> Bool {
         hasMore && commentCountOnServer > 0

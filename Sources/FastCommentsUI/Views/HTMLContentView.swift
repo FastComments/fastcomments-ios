@@ -173,6 +173,8 @@ public struct HTMLContentView: View {
 
     // MARK: - HTML → AttributedString
 
+    // @MainActor required: NSAttributedString(data:options:.html) uses WebKit internally
+    // and must run on the main thread. Removing this will crash.
     @MainActor
     private static func parseHTMLToAttributedString(_ html: String, linkColor: Color) -> AttributedString? {
         let fullHTML = """
