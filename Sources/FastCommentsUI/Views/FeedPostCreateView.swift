@@ -20,6 +20,7 @@ public struct FeedPostCreateView: View {
     @State private var postContent: String = ""
     @State private var selectedItems: [PhotosPickerItem] = []
     @State private var loadedImages: [UIImage] = []
+    @State private var imageFileURLs: [URL] = []
     @State private var isPosting: Bool = false
     @State private var errorMessage: String?
     @State private var uploadProgress: Double = 0
@@ -138,6 +139,7 @@ public struct FeedPostCreateView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(NSLocalizedString("cancel", bundle: .module, comment: "")) {
+                        cleanupTempFiles()
                         onCancelled?()
                         dismiss()
                     }
@@ -162,35 +164,46 @@ public struct FeedPostCreateView: View {
     // MARK: - Private
 
     private func loadImages(_ items: [PhotosPickerItem]) async {
+        cleanupTempFiles()
         var images: [UIImage] = []
+        var urls: [URL] = []
         for item in items {
-            if let data = try? await item.loadTransferable(type: Data.self),
-               let image = UIImage(data: data) {
-                images.append(image)
+            guard let file = try? await item.loadTransferable(type: ImageFileTransferable.self) else { continue }
+            urls.append(file.url)
+            if let thumb = generateThumbnail(from: file.url) {
+                images.append(thumb)
             }
         }
         loadedImages = images
+        imageFileURLs = urls
+    }
+
+    private func generateThumbnail(from url: URL) -> UIImage? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceThumbnailMaxPixelSize: 160,
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        return UIImage(cgImage: cgImage)
     }
 
     private func submitPost() async {
         isPosting = true
         errorMessage = nil
+        defer {
+            cleanupTempFiles()
+            isPosting = false
+        }
 
         do {
             // Upload images if any
             var mediaItems: [FeedPostMediaItem] = []
-            if !loadedImages.isEmpty {
-                let totalImages = Double(loadedImages.count)
-                for (index, image) in loadedImages.enumerated() {
-                    #if os(iOS)
-                    guard let data = image.jpegData(compressionQuality: 0.8) else { continue }
-                    #else
-                    guard let tiffData = image.tiffRepresentation,
-                          let bitmap = NSBitmapImageRep(data: tiffData),
-                          let data = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.8]) else { continue }
-                    #endif
-                    let filename = "image_\(index).jpg"
-                    let mediaItem = try await sdk.uploadImage(imageData: data, filename: filename)
+            if !imageFileURLs.isEmpty {
+                let totalImages = Double(imageFileURLs.count)
+                for (index, fileURL) in imageFileURLs.enumerated() {
+                    let mediaItem = try await sdk.uploadImage(fileURL: fileURL)
                     mediaItems.append(mediaItem)
                     uploadProgress = Double(index + 1) / totalImages
                 }
@@ -211,7 +224,12 @@ public struct FeedPostCreateView: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
 
-        isPosting = false
+    private func cleanupTempFiles() {
+        for url in imageFileURLs {
+            try? FileManager.default.removeItem(at: url)
+        }
+        imageFileURLs.removeAll()
     }
 }

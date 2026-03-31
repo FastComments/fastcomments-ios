@@ -42,6 +42,7 @@ public struct CommentsSheet: View {
         }
         .onDisappear {
             commentsSDK.cleanup()
+            Task { try? await feedSDK.fetchPostStats(postIds: [post.id]) }
         }
     }
 }

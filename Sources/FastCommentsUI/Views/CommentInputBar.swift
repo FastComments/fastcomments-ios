@@ -415,24 +415,27 @@ public struct CommentInputBar: View {
         defer { isUploadingImage = false }
 
         do {
-            guard let data = try await item.loadTransferable(type: Data.self) else { return }
-            let filename = "image_\(UUID().uuidString.prefix(8)).jpg"
+            guard let file = try await item.loadTransferable(type: ImageFileTransferable.self) else { return }
 
-            // Convert to JPEG if needed
-            guard let image = UIImage(data: data),
-                  let jpegData = image.jpegData(compressionQuality: 0.8) else { return }
+            let imageUrl = try await sdk.uploadImage(fileURL: file.url)
+            defer { try? FileManager.default.removeItem(at: file.url) }
 
-            let imageUrl = try await sdk.uploadImage(imageData: jpegData, filename: filename)
+            // Generate a thumbnail for WYSIWYG display from the file on disk
+            guard let source = CGImageSourceCreateWithURL(file.url as CFURL, nil),
+                  let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                      kCGImageSourceThumbnailMaxPixelSize: 300,
+                      kCGImageSourceCreateThumbnailFromImageAlways: true,
+                      kCGImageSourceCreateThumbnailWithTransform: true,
+                  ] as CFDictionary) else { return }
+            let thumb = UIImage(cgImage: cgImage)
 
             // Insert image into the editor
-            let imgTag = "<img src=\"\(imageUrl)\" />"
             let mutable = NSMutableAttributedString(attributedString: attributedText)
 
-            // Create an image attachment for WYSIWYG display
             let thumbWidth: CGFloat = 150
-            let thumbHeight = thumbWidth * image.size.height / image.size.width
+            let thumbHeight = thumbWidth * thumb.size.height / thumb.size.width
             let attachment = NSTextAttachment()
-            attachment.image = image.preparingThumbnail(of: CGSize(width: thumbWidth, height: thumbHeight)) ?? image
+            attachment.image = thumb
             attachment.bounds = CGRect(x: 0, y: 0, width: thumbWidth, height: thumbHeight)
 
             let attachmentString = NSMutableAttributedString(attachment: attachment)

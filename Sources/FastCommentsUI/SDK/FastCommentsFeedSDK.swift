@@ -237,61 +237,30 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
     // MARK: - Image Upload
 
-    /// Upload a single image for a feed post. Uses multipart form upload.
-    public func uploadImage(imageData: Data, filename: String) async throws -> FeedPostMediaItem {
-        let boundary = UUID().uuidString
-        let basePath = apiConfig.basePath
-        let encodedTenantId = config.tenantId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? config.tenantId
-        var components = URLComponents(string: "\(basePath)/upload-image/\(encodedTenantId)")!
-        components.queryItems = [
-            URLQueryItem(name: "urlId", value: "FEEDS"),
-            URLQueryItem(name: "sizePreset", value: "CrossPlatform"),
-        ]
-        if let sso = config.sso {
-            components.queryItems?.append(URLQueryItem(name: "sso", value: sso))
-        }
-        guard let url = components.url else {
-            throw FastCommentsError(reason: "Invalid upload URL")
-        }
+    /// Upload a single image for a feed post using the generated API.
+    public func uploadImage(fileURL: URL) async throws -> FeedPostMediaItem {
+        let response = try await PublicAPI.uploadImage(
+            tenantId: config.tenantId,
+            file: fileURL,
+            sizePreset: .crossPlatform,
+            urlId: "FEEDS",
+            apiConfiguration: apiConfig
+        )
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-
-        // Build multipart body
-        var body = Data()
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
-        body.append(imageData)
-        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
-
-        request.httpBody = body
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
-            throw FastCommentsError(reason: "Image upload failed")
-        }
-
-        struct UploadResponse: Codable {
-            let status: String
-            let media: FeedPostMediaItem?
-        }
-
-        let uploadResponse = try JSONDecoder().decode(UploadResponse.self, from: data)
-        guard let media = uploadResponse.media else {
+        guard let assets = response.media, !assets.isEmpty else {
             throw FastCommentsError(reason: "No media item returned from upload")
         }
 
-        return media
+        return FeedPostMediaItem(
+            sizes: assets.map { FeedPostMediaItemAsset(w: $0.w, h: $0.h, src: $0.src) }
+        )
     }
 
     /// Upload multiple images. Returns all successfully uploaded items.
-    public func uploadImages(images: [(Data, String)]) async throws -> [FeedPostMediaItem] {
+    public func uploadImages(fileURLs: [URL]) async throws -> [FeedPostMediaItem] {
         try await withThrowingTaskGroup(of: FeedPostMediaItem.self) { group in
-            for (data, filename) in images {
-                group.addTask { try await self.uploadImage(imageData: data, filename: filename) }
+            for url in fileURLs {
+                group.addTask { try await self.uploadImage(fileURL: url) }
             }
             var results: [FeedPostMediaItem] = []
             for try await item in group {
@@ -370,7 +339,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
     /// Create a FastCommentsSDK configured for viewing comments on a specific feed post.
     public func createCommentsSDK(for post: FeedPost) -> FastCommentsSDK {
         var commentConfig = config
-        commentConfig.urlId = post.id
+        commentConfig.urlId = "post:" + post.id
         return FastCommentsSDK(config: commentConfig)
     }
 

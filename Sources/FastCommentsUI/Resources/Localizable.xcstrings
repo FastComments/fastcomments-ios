@@ -665,6 +665,17 @@
         }
       }
     },
+    "ok": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
     "badge_awarded": {
       "extractionState": "manual",
       "localizations": {
@@ -2573,6 +2584,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Комментарии закрыты."
+          }
+        }
+      }
+    },
+    "create_post": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create Post"
           }
         }
       }

@@ -704,46 +704,20 @@ public final class FastCommentsSDK: ObservableObject {
     // MARK: - Image Upload
 
     /// Upload an image and return its URL.
-    public func uploadImage(imageData: Data, filename: String) async throws -> String {
-        let boundary = UUID().uuidString
-        let basePath = apiConfig.basePath
-        let encodedTenantId = config.tenantId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? config.tenantId
-        var components = URLComponents(string: "\(basePath)/upload-image/\(encodedTenantId)")!
-        components.queryItems = [
-            URLQueryItem(name: "urlId", value: config.urlId),
-            URLQueryItem(name: "sizePreset", value: "CrossPlatform"),
-        ]
-        if let sso = config.sso {
-            components.queryItems?.append(URLQueryItem(name: "sso", value: sso))
-        }
-        guard let url = components.url else {
-            throw FastCommentsError(reason: "Invalid upload URL")
-        }
+    public func uploadImage(fileURL: URL) async throws -> String {
+        let response = try await PublicAPI.uploadImage(
+            tenantId: config.tenantId,
+            file: fileURL,
+            sizePreset: .crossPlatform,
+            urlId: config.urlId,
+            apiConfiguration: apiConfig
+        )
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-
-        var body = Data()
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
-        body.append(imageData)
-        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
-        request.httpBody = body
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
-            throw FastCommentsError(reason: "Image upload failed")
-        }
-
-        let uploadResponse = try CodableHelper().jsonDecoder.decode(UploadImageResponse.self, from: data)
-        if let imageUrl = uploadResponse.url {
+        if let imageUrl = response.url {
             return imageUrl
         }
         // Pick a mid-size asset (~768-1024w) from the media array
-        if let media = uploadResponse.media, !media.isEmpty {
+        if let media = response.media, !media.isEmpty {
             let preferred = media.first(where: { $0.w >= 768 && $0.w <= 1024 }) ?? media.first!
             return preferred.src
         }
