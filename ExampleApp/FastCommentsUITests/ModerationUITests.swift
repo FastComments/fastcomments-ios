@@ -50,14 +50,20 @@ final class ModerationUITests: UITestBase {
         launchApp(urlId: urlId, ssoToken: userBSSO)
         XCTAssertTrue(app.staticTexts["Flag this comment"].waitForExistence(timeout: 10))
 
-        // Flag — should not throw
+        // Flag
         tapMenu(commentId: commentId, action: "Flag")
 
-        // After flagging, menu should show "Unflag" instead
+        // Wait for flag API to complete and isFlagged to update before re-opening menu
         let menu = app.buttons["menu-\(commentId)"]
-        menu.tap()
+        pollUntil(timeout: 5) {
+            menu.tap()
+            let hasUnflag = self.app.buttons["Unflag"].waitForExistence(timeout: 0.5)
+            if !hasUnflag { self.app.tap() } // dismiss menu if Unflag not there yet
+            return hasUnflag
+        }
+
         let unflagButton = app.buttons["Unflag"]
-        XCTAssertTrue(unflagButton.waitForExistence(timeout: 5), "Menu should show 'Unflag' after flagging")
+        XCTAssertTrue(unflagButton.exists, "Menu should show 'Unflag' after flagging")
         // Dismiss menu
         app.tap()
     }
