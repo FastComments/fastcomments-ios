@@ -10,9 +10,11 @@ final class VoteUITests: UITestBase {
 
         typeComment("Vote on me")
 
+        // Wait for comment to appear in UI (confirms it was posted)
+        XCTAssertTrue(app.staticTexts["Vote on me"].waitForExistence(timeout: 10))
+
         guard let commentId = fetchLatestCommentId(urlId: urlId) else {
-            XCTFail("Could not fetch comment ID")
-            return
+            return // XCTFail already called by fetchLatestCommentId
         }
 
         let voteUp = app.buttons["vote-up-\(commentId)"]
