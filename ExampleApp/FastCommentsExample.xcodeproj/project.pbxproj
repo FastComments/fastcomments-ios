@@ -10,15 +10,20 @@
 		06D7021922189E1CE29470EF /* SecureSSOExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A860CA0B281DA2ED08F35C9A /* SecureSSOExampleView.swift */; };
 		11E8A62485679667B88E5D07 /* PaginationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08FFFDABE9EA2DBF40D6A195 /* PaginationUITests.swift */; };
 		20E85780CC8A5B12BA1A230E /* ScreenshotTourView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB079430F62DC9B6CB9C598 /* ScreenshotTourView.swift */; };
+		24BB6333387D6FE2E05D7080 /* ThreadingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 024EBFC10581F751358D41BE /* ThreadingUITests.swift */; };
 		4FEF7DC49693C587091FD538 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9A77220F4365E6FD85DF80D /* ContentView.swift */; };
+		549304BBDDE912BCBFB08F6E /* CommentCRUDUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C6047179DF41F51F8670BB1 /* CommentCRUDUITests.swift */; };
+		74518BE814DC2CD76568AD8E /* VoteUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10E93CBF0BA951A24E978EEB /* VoteUITests.swift */; };
 		923C1649CD795633AF9E2608 /* SimpleSSOExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2692943945F57CC263B43785 /* SimpleSSOExampleView.swift */; };
 		928FA1F62814064ABA8522F0 /* CommentsExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29E377BB9CBDD3F98FAF56E9 /* CommentsExampleView.swift */; };
 		94C0E0D1325F660AF7E516C5 /* FastCommentsExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F04B846AE062EFC20BF179A3 /* FastCommentsExampleApp.swift */; };
+		9BDB3338805188E0DD2AEF55 /* ModerationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E57B502B267BB97E947D99 /* ModerationUITests.swift */; };
 		A52D94CE7E23E0460DA75CA5 /* LiveChatExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10907611EA2DD1AF8828F72A /* LiveChatExampleView.swift */; };
 		B6FD40809A8EC0B10C4D05DB /* FeedExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E6E7F34AC41B5EE9CC0907 /* FeedExampleView.swift */; };
 		CCEDE2DB86EA56A98A6E7D93 /* FastCommentsUI in Frameworks */ = {isa = PBXBuildFile; productRef = 42419200B1CAAB35610CEFAD /* FastCommentsUI */; };
 		E06DE1F41877B35BB3A0CCF2 /* ToolbarShowcaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59B0CB01CF6CC047F9CB4087 /* ToolbarShowcaseView.swift */; };
 		F1E0F4E5B59EE4EEDAA481A8 /* FeedCustomButtonsExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 791DB661CF451256DF9C0799 /* FeedCustomButtonsExampleView.swift */; };
+		F8EDEC5D0F819A755D94DDD5 /* UITestBase.swift in Sources */ = {isa = PBXBuildFile; fileRef = C92A52059B50BA720778264C /* UITestBase.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -32,9 +37,12 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		024EBFC10581F751358D41BE /* ThreadingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThreadingUITests.swift; sourceTree = "<group>"; };
 		02E6E7F34AC41B5EE9CC0907 /* FeedExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedExampleView.swift; sourceTree = "<group>"; };
 		08FFFDABE9EA2DBF40D6A195 /* PaginationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaginationUITests.swift; sourceTree = "<group>"; };
+		0C6047179DF41F51F8670BB1 /* CommentCRUDUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommentCRUDUITests.swift; sourceTree = "<group>"; };
 		10907611EA2DD1AF8828F72A /* LiveChatExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveChatExampleView.swift; sourceTree = "<group>"; };
+		10E93CBF0BA951A24E978EEB /* VoteUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoteUITests.swift; sourceTree = "<group>"; };
 		2692943945F57CC263B43785 /* SimpleSSOExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleSSOExampleView.swift; sourceTree = "<group>"; };
 		29E377BB9CBDD3F98FAF56E9 /* CommentsExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommentsExampleView.swift; sourceTree = "<group>"; };
 		3AB079430F62DC9B6CB9C598 /* ScreenshotTourView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotTourView.swift; sourceTree = "<group>"; };
@@ -43,6 +51,8 @@
 		7C7ABE5B2667408633F1431A /* FastCommentsExample.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FastCommentsExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A860CA0B281DA2ED08F35C9A /* SecureSSOExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureSSOExampleView.swift; sourceTree = "<group>"; };
 		C801B9ADA415FEB9DCD126C8 /* FastCommentsUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FastCommentsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C92A52059B50BA720778264C /* UITestBase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestBase.swift; sourceTree = "<group>"; };
+		D1E57B502B267BB97E947D99 /* ModerationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModerationUITests.swift; sourceTree = "<group>"; };
 		E9A77220F4365E6FD85DF80D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		F04B846AE062EFC20BF179A3 /* FastCommentsExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FastCommentsExampleApp.swift; sourceTree = "<group>"; };
 		F1A4C6A42FEC137090F25CE3 /* fastcomments-ios */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "fastcomments-ios"; path = ..; sourceTree = SOURCE_ROOT; };
@@ -63,7 +73,12 @@
 		11DE0C4B73E3C44C5C99F74E /* FastCommentsUITests */ = {
 			isa = PBXGroup;
 			children = (
+				0C6047179DF41F51F8670BB1 /* CommentCRUDUITests.swift */,
+				D1E57B502B267BB97E947D99 /* ModerationUITests.swift */,
 				08FFFDABE9EA2DBF40D6A195 /* PaginationUITests.swift */,
+				024EBFC10581F751358D41BE /* ThreadingUITests.swift */,
+				C92A52059B50BA720778264C /* UITestBase.swift */,
+				10E93CBF0BA951A24E978EEB /* VoteUITests.swift */,
 			);
 			path = FastCommentsUITests;
 			sourceTree = "<group>";
@@ -211,7 +226,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				549304BBDDE912BCBFB08F6E /* CommentCRUDUITests.swift in Sources */,
+				9BDB3338805188E0DD2AEF55 /* ModerationUITests.swift in Sources */,
 				11E8A62485679667B88E5D07 /* PaginationUITests.swift in Sources */,
+				24BB6333387D6FE2E05D7080 /* ThreadingUITests.swift in Sources */,
+				F8EDEC5D0F819A755D94DDD5 /* UITestBase.swift in Sources */,
+				74518BE814DC2CD76568AD8E /* VoteUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

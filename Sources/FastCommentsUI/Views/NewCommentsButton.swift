@@ -26,6 +26,7 @@ public struct NewCommentsButton: View {
             .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("new-comments-button")
     }
 
     private var buttonText: String {

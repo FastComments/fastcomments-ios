@@ -23,6 +23,7 @@ public struct CommentEditSheet: View {
                     .focused($isFocused)
                     .padding(12)
                     .scrollContentBackground(.hidden)
+                    .accessibilityIdentifier("edit-comment-input")
                     .background(
                         RoundedRectangle(cornerRadius: 12)
                             .fill(editorBackground)
@@ -52,6 +53,7 @@ public struct CommentEditSheet: View {
                     }
                     .fontWeight(.semibold)
                     .disabled(editText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .accessibilityIdentifier("edit-comment-save")
                 }
             }
             .onAppear {

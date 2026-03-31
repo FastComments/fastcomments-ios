@@ -251,6 +251,7 @@ public struct CommentInputBar: View {
                         context: editorContext
                     )
                     .frame(minHeight: 36)
+                    .accessibilityIdentifier("comment-input")
                 }
                 .background(
                     RoundedRectangle(cornerRadius: 20)
@@ -301,6 +302,7 @@ public struct CommentInputBar: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(isSending || isEmpty)
+                .accessibilityIdentifier("comment-submit")
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)

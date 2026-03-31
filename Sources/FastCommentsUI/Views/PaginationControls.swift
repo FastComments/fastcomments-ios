@@ -41,6 +41,7 @@ public struct PaginationControls: View {
                     .clipShape(Capsule())
                 }
                 .disabled(isLoadingMore)
+                .accessibilityIdentifier("pagination-next")
 
                 if sdk.shouldShowLoadAll() && sdk.commentCountOnServer < 2000 {
                     Button {
@@ -62,6 +63,7 @@ public struct PaginationControls: View {
                         .clipShape(Capsule())
                     }
                     .disabled(isLoadingMore)
+                    .accessibilityIdentifier("pagination-load-all")
                 }
             }
             .buttonStyle(.plain)

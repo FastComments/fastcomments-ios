@@ -91,17 +91,20 @@ public struct CommentRowView: View {
                             .font(theme.resolveCommenterNameFont())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("commenter-name-\(comment.comment.id)")
 
                     if comment.comment.isPinned == true {
                         Image(systemName: "pin.fill")
                             .font(.system(size: 10))
                             .foregroundStyle(.orange)
+                            .accessibilityIdentifier("pin-icon-\(comment.comment.id)")
                     }
 
                     if comment.comment.isLocked == true {
                         Image(systemName: "lock.fill")
                             .font(.system(size: 10))
                             .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("lock-icon-\(comment.comment.id)")
                     }
 
                     if let badges = comment.comment.badges {
@@ -192,6 +195,7 @@ public struct CommentRowView: View {
                     .frame(width: 32, height: 32)
                     .contentShape(Rectangle())
             }
+            .accessibilityIdentifier("menu-\(comment.comment.id)")
         }
     }
 
@@ -204,14 +208,17 @@ public struct CommentRowView: View {
                 .font(theme.resolveBodyFont())
                 .foregroundStyle(.secondary)
                 .italic()
+                .accessibilityIdentifier("comment-text-\(comment.comment.id)")
         } else if comment.comment.isDeleted == true {
             Text(NSLocalizedString("comment_deleted", bundle: .module, comment: ""))
                 .font(theme.resolveBodyFont())
                 .foregroundStyle(.secondary)
                 .italic()
+                .accessibilityIdentifier("comment-text-\(comment.comment.id)")
         } else {
             HTMLContentView(html: comment.comment.commentHTML)
                 .font(theme.resolveBodyFont())
+                .accessibilityIdentifier("comment-text-\(comment.comment.id)")
         }
     }
 
@@ -248,6 +255,7 @@ public struct CommentRowView: View {
                     .foregroundStyle(theme.resolveReplyButtonColor())
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("reply-\(comment.comment.id)")
             }
 
             Spacer()

@@ -38,12 +38,14 @@ public struct VoteControls: View {
                     .scaleEffect(voteAnimation && comment.comment.isVotedUp == true ? 1.2 : 1.0)
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("vote-up-\(comment.comment.id)")
 
             Text(voteCountText)
                 .font(.caption.weight(.medium))
                 .foregroundStyle(voteCount == 0 ? theme.resolveVoteCountZeroColor() : theme.resolveVoteCountColor())
                 .monospacedDigit()
                 .animation(theme.animateVotes ? .spring(duration: 0.3) : nil, value: voteCount)
+                .accessibilityIdentifier("vote-count-\(comment.comment.id)")
 
             Button {
                 triggerAnimation()
@@ -59,6 +61,7 @@ public struct VoteControls: View {
                     .scaleEffect(voteAnimation && comment.comment.isVotedDown == true ? 1.2 : 1.0)
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("vote-down-\(comment.comment.id)")
         }
     }
 
@@ -87,6 +90,7 @@ public struct VoteControls: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("vote-up-\(comment.comment.id)")
     }
 
     // MARK: - Helpers
