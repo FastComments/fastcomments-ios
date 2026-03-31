@@ -49,7 +49,7 @@ struct ContentView: View {
                             icon: "paintbrush",
                             iconColor: .indigo,
                             title: "Custom Toolbar",
-                            description: "Add custom buttons to the comment input toolbar"
+                            description: "Global and per-instance custom toolbar buttons"
                         )
                     }
                 }
