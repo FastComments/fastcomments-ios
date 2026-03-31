@@ -191,20 +191,23 @@ class UITestBase: XCTestCase {
         return element
     }
 
-    func seedComment(urlId: String, text: String, ssoToken: String) {
+    func seedComment(urlId: String, text: String, ssoToken: String, parentId: String? = nil) {
         let encodedSSO = ssoToken.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
         let url = URL(string: "\(host)/comments/\(testTenantId!)/?broadcastId=\(UUID().uuidString)&urlId=\(urlId)&sso=\(encodedSSO)")!
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "comment": text,
             "commenterName": "Tester",
             "commenterEmail": "tester@fctest.com",
             "url": urlId,
             "urlId": urlId
         ]
+        if let parentId = parentId {
+            body["parentId"] = parentId
+        }
         request.httpBody = try! JSONSerialization.data(withJSONObject: body)
         _ = try? syncFetchRaw(url: request)
     }

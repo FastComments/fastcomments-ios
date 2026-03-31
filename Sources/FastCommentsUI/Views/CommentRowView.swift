@@ -283,6 +283,7 @@ public struct CommentRowView: View {
                     .foregroundStyle(theme.resolveToggleRepliesButtonColor())
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("toggle-replies-\(comment.comment.id)")
             }
         }
 
