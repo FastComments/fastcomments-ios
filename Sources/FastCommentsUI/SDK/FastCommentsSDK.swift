@@ -1,6 +1,9 @@
 import Foundation
 import Combine
 import FastCommentsSwift
+import os.log
+
+private let fcLog = Logger(subsystem: "com.fastcomments", category: "SDK")
 
 /// Configuration for the FastComments widget. Wraps the parameters needed
 /// to identify a tenant, page, and optional SSO session.
@@ -160,7 +163,7 @@ public final class FastCommentsSDK: ObservableObject {
             direction: defaultSortDirection,
             sso: config.sso,
             skip: 0,
-            limit: pageSize,
+            limit: pageSize + 1,
             limitChildren: pageSize,
             countChildren: true,
             includeConfig: true,
@@ -172,9 +175,30 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        print("[FC] load: returned \(response.comments?.count ?? 0) comments, hasMore=\(response.hasMore ?? false), commentCount=\(response.commentCount ?? -1)")
+        // Determine hasMore by checking if we got more root comments than pageSize
+        var comments = response.comments ?? []
+        let rootComments = comments.filter { $0.parentId == nil }
+        let clientHasMore = rootComments.count > pageSize
 
-        processCommentsResponse(response, isInitialLoad: true)
+        // Trim the extra probe comment if present
+        if clientHasMore, let lastRoot = rootComments.last {
+            comments.removeAll { $0.id == lastRoot.id }
+            // Also remove its children
+            func removeChildren(of parentId: String) {
+                let children = comments.filter { $0.parentId == parentId }
+                comments.removeAll { $0.parentId == parentId }
+                for child in children { removeChildren(of: child.id) }
+            }
+            removeChildren(of: lastRoot.id)
+        }
+
+        // Build a modified response with trimmed comments
+        var trimmedResponse = response
+        trimmedResponse.comments = comments
+
+        fcLog.info("load: returned \(response.comments?.count ?? 0) roots=\(rootComments.count) hasMore=\(clientHasMore, privacy: .public) commentCount=\(response.commentCount ?? -1)")
+
+        processCommentsResponse(trimmedResponse, isInitialLoad: true, clientHasMore: clientHasMore)
         return response
     }
 
@@ -183,7 +207,9 @@ public final class FastCommentsSDK: ObservableObject {
     public func loadMore() async throws -> GetCommentsPublic200Response {
         let previousSkip = currentSkip
         let previousPage = currentPage
-        currentSkip += pageSize
+        // With asTree, skip is based on root comment count, not pageSize
+        let rootCount = commentsTree.visibleNodes.filter { ($0 as? RenderableComment)?.comment.parentId == nil }.count
+        currentSkip = rootCount
         currentPage += 1
 
         do {
@@ -193,27 +219,31 @@ public final class FastCommentsSDK: ObservableObject {
                 direction: defaultSortDirection,
                 sso: config.sso,
                 skip: currentSkip,
-                skipChildren: currentSkip,
-                limit: pageSize,
-                limitChildren: pageSize,
+                limit: pageSize + 1,
                 countChildren: true,
                 asTree: true,
                 maxTreeDepth: 0,
                 apiConfiguration: apiConfig
             )
 
-            let comments = response.comments ?? []
-            print("[FC] loadMore: skip=\(currentSkip) limit=\(pageSize) returned \(comments.count) comments, hasMore=\(response.hasMore ?? false), commentCount=\(response.commentCount ?? -1)")
+            var comments = response.comments ?? []
+            let rootComments = comments.filter { $0.parentId == nil }
+            let moreAvailable = rootComments.count > pageSize
+
+            // Trim the extra probe comment
+            if moreAvailable, let lastRoot = rootComments.last {
+                comments.removeAll { $0.id == lastRoot.id }
+            }
+
+            fcLog.info("loadMore: skip=\(self.currentSkip) limit=\(self.pageSize) returned=\(rootComments.count) roots, trimmed to \(comments.count), hasMore=\(moreAvailable, privacy: .public)")
 
             if !comments.isEmpty {
-                commentsTree.appendComments(comments)
+                self.commentsTree.appendComments(comments)
             }
             if let serverCount = response.commentCount {
                 commentCountOnServer = serverCount
             }
-            // Server's hasMore is based on precalculated page numbers which we don't use.
-            // With asTree + skip/limit, we know there's no more if we got fewer than we asked for.
-            hasMore = comments.count >= pageSize
+            hasMore = moreAvailable
             return response
         } catch {
             currentSkip = previousSkip
@@ -941,7 +971,7 @@ public final class FastCommentsSDK: ObservableObject {
 
     // MARK: - Private Helpers
 
-    private func processCommentsResponse(_ response: GetCommentsPublic200Response, isInitialLoad: Bool) {
+    private func processCommentsResponse(_ response: GetCommentsPublic200Response, isInitialLoad: Bool, clientHasMore: Bool? = nil) {
         commentsTree.build(comments: (response.comments ?? []))
 
         commentCountOnServer = response.commentCount ?? 0
@@ -949,7 +979,7 @@ public final class FastCommentsSDK: ObservableObject {
         isSiteAdmin = response.isSiteAdmin ?? false
         hasBillingIssue = response.hasBillingIssue ?? false
         isDemo = response.isDemo ?? false
-        hasMore = response.hasMore ?? false
+        hasMore = clientHasMore ?? (response.hasMore ?? false)
         isClosed = response.isClosed ?? false
         customConfig = response.customConfig
         currentPage = (response.pageNumber ?? 0)

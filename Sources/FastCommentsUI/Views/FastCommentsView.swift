@@ -55,19 +55,34 @@ public struct FastCommentsView: View {
                 .padding()
                 Spacer()
             } else {
-                ScrollView {
-                    LazyVStack(spacing: theme.commentSpacing) {
-                        ForEach(sdk.commentsTree.visibleNodes) { node in
-                            nodeView(for: node)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: theme.commentSpacing) {
+                            ForEach(sdk.commentsTree.visibleNodes) { node in
+                                nodeView(for: node)
+                                    .id(node.id)
+                            }
                         }
-                    }
-                    .padding(.vertical, theme.commentStyle == .card ? 8 : 0)
+                        .padding(.vertical, theme.commentStyle == .card ? 8 : 0)
 
-                    PaginationControls(
-                        sdk: sdk,
-                        onLoadMore: { try? await sdk.loadMore() },
-                        onLoadAll: { try? await sdk.loadAll() }
-                    )
+                        PaginationControls(
+                            sdk: sdk,
+                            onLoadMore: {
+                                let anchorId = sdk.commentsTree.visibleNodes.last?.id
+                                try? await sdk.loadMore()
+                                if let anchorId {
+                                    proxy.scrollTo(anchorId, anchor: .bottom)
+                                }
+                            },
+                            onLoadAll: {
+                                let anchorId = sdk.commentsTree.visibleNodes.last?.id
+                                try? await sdk.loadAll()
+                                if let anchorId {
+                                    proxy.scrollTo(anchorId, anchor: .bottom)
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }

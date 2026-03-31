@@ -11,7 +11,6 @@
 		11E8A62485679667B88E5D07 /* PaginationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08FFFDABE9EA2DBF40D6A195 /* PaginationUITests.swift */; };
 		20E85780CC8A5B12BA1A230E /* ScreenshotTourView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB079430F62DC9B6CB9C598 /* ScreenshotTourView.swift */; };
 		4FEF7DC49693C587091FD538 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9A77220F4365E6FD85DF80D /* ContentView.swift */; };
-		8932A44ED17A146A953491DB /* PaginationDebugTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E627BD12100CA42BD17FAB5 /* PaginationDebugTest.swift */; };
 		923C1649CD795633AF9E2608 /* SimpleSSOExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2692943945F57CC263B43785 /* SimpleSSOExampleView.swift */; };
 		928FA1F62814064ABA8522F0 /* CommentsExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29E377BB9CBDD3F98FAF56E9 /* CommentsExampleView.swift */; };
 		94C0E0D1325F660AF7E516C5 /* FastCommentsExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F04B846AE062EFC20BF179A3 /* FastCommentsExampleApp.swift */; };
@@ -42,7 +41,6 @@
 		59B0CB01CF6CC047F9CB4087 /* ToolbarShowcaseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarShowcaseView.swift; sourceTree = "<group>"; };
 		791DB661CF451256DF9C0799 /* FeedCustomButtonsExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedCustomButtonsExampleView.swift; sourceTree = "<group>"; };
 		7C7ABE5B2667408633F1431A /* FastCommentsExample.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FastCommentsExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		9E627BD12100CA42BD17FAB5 /* PaginationDebugTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaginationDebugTest.swift; sourceTree = "<group>"; };
 		A860CA0B281DA2ED08F35C9A /* SecureSSOExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureSSOExampleView.swift; sourceTree = "<group>"; };
 		C801B9ADA415FEB9DCD126C8 /* FastCommentsUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FastCommentsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E9A77220F4365E6FD85DF80D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -65,7 +63,6 @@
 		11DE0C4B73E3C44C5C99F74E /* FastCommentsUITests */ = {
 			isa = PBXGroup;
 			children = (
-				9E627BD12100CA42BD17FAB5 /* PaginationDebugTest.swift */,
 				08FFFDABE9EA2DBF40D6A195 /* PaginationUITests.swift */,
 			);
 			path = FastCommentsUITests;
@@ -214,7 +211,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8932A44ED17A146A953491DB /* PaginationDebugTest.swift in Sources */,
 				11E8A62485679667B88E5D07 /* PaginationUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
