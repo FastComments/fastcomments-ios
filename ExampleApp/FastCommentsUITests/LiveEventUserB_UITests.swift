@@ -2,15 +2,12 @@ import XCTest
 import CommonCrypto
 
 /// Actor role — runs on Simulator B.
-/// Reads tenant config from sync server, performs UI actions, signals UserA.
 final class LiveEventUserB_UITests: UITestBase {
 
     override func setUpWithError() throws {
-        // Do NOT call super — UserB does not create its own tenant.
         SyncClient.currentRole = "userB"
         continueAfterFailure = true
 
-        // Wait for UserA to share config
         SyncClient.waitFor(role: "userA", round: "setup")
         let config = SyncClient.getData(round: "setup")
 
@@ -20,20 +17,18 @@ final class LiveEventUserB_UITests: UITestBase {
         XCTAssertNotNil(testTenantId, "Should have tenantId from UserA")
     }
 
-    override func tearDownWithError() throws {
-        // Do NOT clean up — UserA owns the tenant.
-    }
+    override func tearDownWithError() throws {}
 
     func testLiveEvents_UserB() {
         let config = SyncClient.getData(round: "setup")
         let urlId = config["urlId"] as! String
         let ssoTokenB = config["ssoTokenB"] as! String
+        let ssoTokenBAdmin = config["ssoTokenBAdmin"] as! String
 
         // --- Phase 1: Post a live comment ---
         SyncClient.waitFor(role: "userA", round: "phase1")
 
         launchApp(urlId: urlId, ssoToken: ssoTokenB)
-        sleep(2)
 
         let commentText = "Live from B \(Int(Date().timeIntervalSince1970))"
         typeComment(commentText)
@@ -45,33 +40,79 @@ final class LiveEventUserB_UITests: UITestBase {
         // --- Phase 2: Vote on UserA's comment ---
         SyncClient.waitFor(role: "userA", round: "phase2")
         let phase2Data = SyncClient.getData(round: "phase2_setup")
-        let commentId = phase2Data["commentId"] as! String
+        let voteCommentId = phase2Data["commentId"] as! String
 
-        // Reload to see UserA's seeded comment
         app.terminate()
         launchApp(urlId: urlId, ssoToken: ssoTokenB)
-        sleep(3)
 
-        let voteUp = app.descendants(matching: .any)["vote-up-\(commentId)"]
-        if voteUp.waitForExistence(timeout: 10) {
-            voteUp.tap()
-            sleep(1)
-        } else {
-            XCTFail("Vote button not found for \(commentId)")
-        }
+        let voteUp = app.descendants(matching: .any)["vote-up-\(voteCommentId)"]
+        XCTAssertTrue(voteUp.waitForExistence(timeout: 15), "Vote button should exist")
+        voteUp.tap()
 
         SyncClient.signalReady(round: "phase2")
 
         // --- Phase 3: Presence ---
-        // Just stay on the page — our presence is enough for UserA to detect
         SyncClient.waitFor(role: "userA", round: "phase3")
 
-        // Reload to trigger presence join
         app.terminate()
         launchApp(urlId: urlId, ssoToken: ssoTokenB)
-        sleep(3)
+        _ = app.textViews["comment-input"].waitForExistence(timeout: 10)
 
         SyncClient.signalReady(round: "phase3")
+
+        // --- Phase 4: Seed a comment then delete it ---
+        SyncClient.waitFor(role: "userA", round: "phase4_ready")
+
+        let deleteText = "Delete me live \(Int(Date().timeIntervalSince1970))"
+        seedComment(urlId: urlId, text: deleteText, ssoToken: ssoTokenB)
+
+        SyncClient.postData(round: "phase4_posted", data: ["text": deleteText])
+        SyncClient.signalReady(round: "phase4_posted")
+
+        SyncClient.waitFor(role: "userA", round: "phase4_seen")
+
+        app.terminate()
+        launchApp(urlId: urlId, ssoToken: ssoTokenB)
+        XCTAssertTrue(app.staticTexts[deleteText].waitForExistence(timeout: 10))
+
+        guard let deleteCommentId = fetchLatestCommentId(urlId: urlId) else {
+            XCTFail("Could not get delete comment ID")
+            SyncClient.signalReady(round: "phase4_deleted")
+            return
+        }
+
+        tapMenu(commentId: deleteCommentId, action: "Delete")
+        let deleteBtn = app.alerts.buttons["Delete"]
+        XCTAssertTrue(deleteBtn.waitForExistence(timeout: 5))
+        deleteBtn.tap()
+
+        pollUntil { !self.app.staticTexts[deleteText].exists }
+
+        SyncClient.signalReady(round: "phase4_deleted")
+
+        // --- Phase 5: Pin via menu (admin SSO) ---
+        SyncClient.waitFor(role: "userA", round: "phase5")
+        let phase5Data = SyncClient.getData(round: "phase5_setup")
+        let pinCommentId = phase5Data["commentId"] as! String
+
+        app.terminate()
+        launchApp(urlId: urlId, ssoToken: ssoTokenBAdmin)
+
+        tapMenu(commentId: pinCommentId, action: "Pin")
+
+        SyncClient.signalReady(round: "phase5")
+
+        // --- Phase 6: Lock via menu (admin SSO) ---
+        SyncClient.waitFor(role: "userA", round: "phase6")
+        let phase6Data = SyncClient.getData(round: "phase6_setup")
+        let lockCommentId = phase6Data["commentId"] as! String
+
+        app.terminate()
+        launchApp(urlId: urlId, ssoToken: ssoTokenBAdmin)
+
+        tapMenu(commentId: lockCommentId, action: "Lock")
+
+        SyncClient.signalReady(round: "phase6")
         SyncClient.waitFor(role: "userA", round: "done")
     }
 }

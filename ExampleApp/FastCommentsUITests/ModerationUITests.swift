@@ -6,12 +6,11 @@ final class ModerationUITests: UITestBase {
         let urlId = makeUrlId()
         let sso = makeSecureSSOToken()
 
-        // Seed and pin via API
+        // Pin via admin API, then verify icon renders
         seedComment(urlId: urlId, text: "Pinned comment", ssoToken: sso)
         guard let commentId = fetchLatestCommentId(urlId: urlId) else { return }
         adminUpdateComment(commentId: commentId, params: ["isPinned": true])
 
-        // Launch and verify pin icon
         launchApp(urlId: urlId, ssoToken: sso)
         XCTAssertTrue(app.staticTexts["Pinned comment"].waitForExistence(timeout: 10))
 
@@ -23,80 +22,16 @@ final class ModerationUITests: UITestBase {
         let urlId = makeUrlId()
         let sso = makeSecureSSOToken()
 
-        // Seed and lock via API
+        // Lock via admin API, then verify icon renders
         seedComment(urlId: urlId, text: "Locked comment", ssoToken: sso)
         guard let commentId = fetchLatestCommentId(urlId: urlId) else { return }
         adminUpdateComment(commentId: commentId, params: ["isLocked": true])
 
-        // Launch and verify lock icon
         launchApp(urlId: urlId, ssoToken: sso)
         XCTAssertTrue(app.staticTexts["Locked comment"].waitForExistence(timeout: 10))
 
         let lockIcon = app.descendants(matching: .any)["lock-icon-\(commentId)"]
         XCTAssertTrue(lockIcon.waitForExistence(timeout: 5), "Lock icon should be visible")
-    }
-
-    // TODO: Block via menu doesn't update UI in test — needs investigation
-    func _skip_testBlockShowsBlockedText() {
-        let urlId = makeUrlId()
-        let userASSO = makeSecureSSOToken(userId: "user-a")
-        let userBSSO = makeSecureSSOToken(userId: "user-b")
-
-        // User A seeds a comment via API
-        seedComment(urlId: urlId, text: "Block my author", ssoToken: userASSO)
-
-        guard let commentId = fetchLatestCommentId(urlId: urlId) else {
-            XCTFail("Could not fetch comment ID")
-            return
-        }
-
-        // Launch as User B
-        launchApp(urlId: urlId, ssoToken: userBSSO)
-
-        XCTAssertTrue(app.staticTexts["Block my author"].waitForExistence(timeout: 10))
-
-        // User B blocks User A
-        tapMenu(commentId: commentId, action: "Block User")
-        sleep(2)
-
-        // Should now show "Blocked User" and blocked message
-        XCTAssertTrue(
-            app.staticTexts["Blocked User"].waitForExistence(timeout: 5),
-            "Should show 'Blocked User' after blocking"
-        )
-    }
-
-    // TODO: Unblock via menu doesn't update UI in test — needs investigation
-    func _skip_testUnblockRestoresComment() {
-        let urlId = makeUrlId()
-        let userASSO = makeSecureSSOToken(userId: "user-a-unblock")
-        let userBSSO = makeSecureSSOToken(userId: "user-b-unblock")
-
-        seedComment(urlId: urlId, text: "Block then unblock", ssoToken: userASSO)
-
-        guard let commentId = fetchLatestCommentId(urlId: urlId) else {
-            XCTFail("Could not fetch comment ID")
-            return
-        }
-
-        // Launch as User B
-        launchApp(urlId: urlId, ssoToken: userBSSO)
-        XCTAssertTrue(app.staticTexts["Block then unblock"].waitForExistence(timeout: 10))
-
-        // Block
-        tapMenu(commentId: commentId, action: "Block User")
-        sleep(2)
-        XCTAssertTrue(app.staticTexts["Blocked User"].waitForExistence(timeout: 5))
-
-        // Unblock
-        tapMenu(commentId: commentId, action: "Unblock User")
-        sleep(2)
-
-        // Original text should be restored
-        XCTAssertTrue(
-            app.staticTexts["Block then unblock"].waitForExistence(timeout: 5),
-            "Original comment text should be restored after unblocking"
-        )
     }
 
     func testFlagViaMenu() {
@@ -117,7 +52,6 @@ final class ModerationUITests: UITestBase {
 
         // Flag — should not throw
         tapMenu(commentId: commentId, action: "Flag")
-        sleep(2)
 
         // After flagging, menu should show "Unflag" instead
         let menu = app.buttons["menu-\(commentId)"]
@@ -126,5 +60,50 @@ final class ModerationUITests: UITestBase {
         XCTAssertTrue(unflagButton.waitForExistence(timeout: 5), "Menu should show 'Unflag' after flagging")
         // Dismiss menu
         app.tap()
+    }
+
+    // MARK: - Known Issues
+    // These tests document bugs that need fixing. They are expected to fail.
+    // Tracked at: https://github.com/FastComments/fastcomments-ios/issues
+
+    func testBlockShowsBlockedText() throws {
+        let urlId = makeUrlId()
+        let userASSO = makeSecureSSOToken(userId: "user-a-block")
+        let userBSSO = makeSecureSSOToken(userId: "user-b-block")
+
+        seedComment(urlId: urlId, text: "Block my author", ssoToken: userASSO)
+        guard let commentId = fetchLatestCommentId(urlId: urlId) else { return }
+
+        launchApp(urlId: urlId, ssoToken: userBSSO)
+        XCTAssertTrue(app.staticTexts["Block my author"].waitForExistence(timeout: 10))
+
+        tapMenu(commentId: commentId, action: "Block User")
+
+        XCTAssertTrue(
+            app.staticTexts["Blocked User"].waitForExistence(timeout: 5),
+            "Should show 'Blocked User' after blocking (known issue: UI may not re-render)"
+        )
+    }
+
+    func testUnblockRestoresComment() throws {
+        let urlId = makeUrlId()
+        let userASSO = makeSecureSSOToken(userId: "user-a-unblock")
+        let userBSSO = makeSecureSSOToken(userId: "user-b-unblock")
+
+        seedComment(urlId: urlId, text: "Block then unblock", ssoToken: userASSO)
+        guard let commentId = fetchLatestCommentId(urlId: urlId) else { return }
+
+        launchApp(urlId: urlId, ssoToken: userBSSO)
+        XCTAssertTrue(app.staticTexts["Block then unblock"].waitForExistence(timeout: 10))
+
+        tapMenu(commentId: commentId, action: "Block User")
+        XCTAssertTrue(app.staticTexts["Blocked User"].waitForExistence(timeout: 5), "Block should work")
+
+        tapMenu(commentId: commentId, action: "Unblock User")
+
+        XCTAssertTrue(
+            app.staticTexts["Block then unblock"].waitForExistence(timeout: 5),
+            "Original text should be restored after unblocking"
+        )
     }
 }

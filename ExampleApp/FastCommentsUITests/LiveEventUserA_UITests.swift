@@ -2,7 +2,6 @@ import XCTest
 import CommonCrypto
 
 /// Observer role — runs on Simulator A.
-/// Creates tenant, shares config, launches app, waits for UserB to act, asserts UI updates.
 final class LiveEventUserA_UITests: UITestBase {
 
     override func setUpWithError() throws {
@@ -15,19 +14,20 @@ final class LiveEventUserA_UITests: UITestBase {
         let urlId = "live-\(Int(Date().timeIntervalSince1970))"
         let ssoTokenA = makeSecureSSOToken(userId: "userA-live")
         let ssoTokenB = makeSecureSSOToken(userId: "userB-live")
+        let ssoTokenBAdmin = makeSecureSSOToken(userId: "userB-live", isAdmin: true)
 
-        // Share config with UserB
         SyncClient.postData(round: "setup", data: [
             "tenantId": testTenantId!,
             "apiKey": testTenantApiKey!,
             "urlId": urlId,
             "ssoTokenB": ssoTokenB,
+            "ssoTokenBAdmin": ssoTokenBAdmin,
         ])
         SyncClient.signalReady(round: "setup")
 
-        // Launch app and wait for WebSocket
+        // Launch and wait for WebSocket (input bar means app is loaded)
         launchApp(urlId: urlId, ssoToken: ssoTokenA)
-        sleep(3)
+        _ = app.textViews["comment-input"].waitForExistence(timeout: 10)
 
         // --- Phase 1: Live comment ---
         SyncClient.signalReady(round: "phase1")
@@ -38,11 +38,10 @@ final class LiveEventUserA_UITests: UITestBase {
 
         XCTAssertTrue(
             app.staticTexts[commentText].waitForExistence(timeout: 15),
-            "Live comment should appear on UserA's screen"
+            "Live comment '\(commentText)' should appear on UserA"
         )
 
         // --- Phase 2: Live vote ---
-        // UserA seeds a comment for voting
         seedComment(urlId: urlId, text: "Vote target from A", ssoToken: ssoTokenA)
         guard let voteCommentId = fetchLatestCommentId(urlId: urlId) else {
             XCTFail("Could not get vote target comment ID")
@@ -52,37 +51,78 @@ final class LiveEventUserA_UITests: UITestBase {
         SyncClient.postData(round: "phase2_setup", data: ["commentId": voteCommentId])
         SyncClient.signalReady(round: "phase2")
 
-        // Reload to see the seeded comment
         app.terminate()
         launchApp(urlId: urlId, ssoToken: ssoTokenA)
-        sleep(3)
+        let voteCount = app.descendants(matching: .any)["vote-count-\(voteCommentId)"]
+        XCTAssertTrue(voteCount.waitForExistence(timeout: 10), "Vote count element should exist")
 
         SyncClient.waitFor(role: "userB", round: "phase2")
 
-        // Check vote count changed
-        sleep(3)
-        let voteCount = app.descendants(matching: .any)["vote-count-\(voteCommentId)"]
-        if voteCount.exists {
-            XCTAssertNotEqual(voteCount.label, "0", "Vote count should change")
-        }
+        pollUntil(timeout: 10) { voteCount.label != "0" }
+        XCTAssertNotEqual(voteCount.label, "0", "Vote count should change after UserB votes")
 
         // --- Phase 3: Presence ---
-        // UserB joins the same page. UserA should see an online indicator
-        // for UserB's comment (the one posted in phase 1).
         SyncClient.signalReady(round: "phase3")
         SyncClient.waitFor(role: "userB", round: "phase3")
 
-        // Give presence system time to propagate
-        sleep(5)
-
-        // Check for any online indicator in the view
         let onlineIndicator = app.descendants(matching: .any).matching(
             NSPredicate(format: "identifier BEGINSWITH 'online-'")
         ).firstMatch
-        // Presence is best-effort — just check if ANY indicator exists
-        if onlineIndicator.exists {
-            // Pass — online indicator visible
+        XCTAssertTrue(onlineIndicator.waitForExistence(timeout: 15), "Online indicator should appear when UserB joins")
+
+        // --- Phase 4: Live delete ---
+        SyncClient.signalReady(round: "phase4_ready")
+        SyncClient.waitFor(role: "userB", round: "phase4_posted")
+
+        let phase4Data = SyncClient.getData(round: "phase4_posted")
+        let deleteText = phase4Data["text"] as? String ?? "?"
+
+        app.terminate()
+        launchApp(urlId: urlId, ssoToken: ssoTokenA)
+        XCTAssertTrue(app.staticTexts[deleteText].waitForExistence(timeout: 10), "Comment to delete should be visible")
+
+        SyncClient.signalReady(round: "phase4_seen")
+        SyncClient.waitFor(role: "userB", round: "phase4_deleted")
+
+        pollUntil(timeout: 10) { !self.app.staticTexts[deleteText].exists }
+        XCTAssertFalse(app.staticTexts[deleteText].exists, "Deleted comment should disappear from UserA")
+
+        // --- Phase 5: Live pin ---
+        seedComment(urlId: urlId, text: "Pin target from A", ssoToken: ssoTokenA)
+        guard let pinCommentId = fetchLatestCommentId(urlId: urlId) else {
+            XCTFail("Could not get pin target comment ID")
+            return
         }
+
+        app.terminate()
+        launchApp(urlId: urlId, ssoToken: ssoTokenA)
+        XCTAssertTrue(app.staticTexts["Pin target from A"].waitForExistence(timeout: 10))
+
+        SyncClient.postData(round: "phase5_setup", data: ["commentId": pinCommentId])
+        SyncClient.signalReady(round: "phase5")
+        SyncClient.waitFor(role: "userB", round: "phase5")
+
+        let pinIcon = app.descendants(matching: .any)["pin-icon-\(pinCommentId)"]
+        XCTAssertTrue(pinIcon.waitForExistence(timeout: 15), "Pin icon should appear after UserB pins")
+
+        // --- Phase 6: Live lock ---
+        seedComment(urlId: urlId, text: "Lock target from A", ssoToken: ssoTokenA)
+        guard let lockCommentId = fetchLatestCommentId(urlId: urlId) else {
+            XCTFail("Could not get lock target comment ID")
+            SyncClient.signalReady(round: "done")
+            return
+        }
+
+        app.terminate()
+        launchApp(urlId: urlId, ssoToken: ssoTokenA)
+        XCTAssertTrue(app.staticTexts["Lock target from A"].waitForExistence(timeout: 10))
+
+        SyncClient.postData(round: "phase6_setup", data: ["commentId": lockCommentId])
+        SyncClient.signalReady(round: "phase6")
+        SyncClient.waitFor(role: "userB", round: "phase6")
+
+        let lockIcon = app.descendants(matching: .any)["lock-icon-\(lockCommentId)"]
+        XCTAssertTrue(lockIcon.waitForExistence(timeout: 15), "Lock icon should appear after UserB locks")
 
         SyncClient.signalReady(round: "done")
     }

@@ -83,6 +83,7 @@ public struct FastCommentsView: View {
                             }
                         )
                     }
+                    .accessibilityIdentifier("comments-scroll")
                 }
             }
         }

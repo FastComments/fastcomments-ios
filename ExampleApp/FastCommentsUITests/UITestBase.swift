@@ -175,6 +175,15 @@ class UITestBase: XCTestCase {
         actionButton.tap()
     }
 
+    /// Poll a condition every 50ms until true or timeout.
+    func pollUntil(timeout: TimeInterval = 10, _ condition: () -> Bool) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !condition() && Date() < deadline {
+            usleep(50_000) // 50ms
+            RunLoop.current.run(until: Date().addingTimeInterval(0.01))
+        }
+    }
+
     @discardableResult
     func waitForId(_ identifier: String, timeout: TimeInterval = 10) -> XCUIElement {
         let element = app.descendants(matching: .any).matching(identifier: identifier).firstMatch
@@ -253,7 +262,7 @@ class UITestBase: XCTestCase {
             if attempt == 3 {
                 XCTFail("fetchLatestCommentId failed: \(debugInfo)", file: file, line: line)
             } else {
-                sleep(2)
+                usleep(500_000) // 500ms before retry
             }
         }
         return nil
