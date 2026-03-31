@@ -6,14 +6,16 @@ public struct AvatarImage: View {
     var size: CGFloat = 36
     var showOnlineIndicator: Bool = false
     var isOnline: Bool = false
+    var onlineIdentifier: String?
 
     @Environment(\.fastCommentsTheme) private var theme
 
-    public init(url: String?, size: CGFloat = 36, showOnlineIndicator: Bool = false, isOnline: Bool = false) {
+    public init(url: String?, size: CGFloat = 36, showOnlineIndicator: Bool = false, isOnline: Bool = false, onlineIdentifier: String? = nil) {
         self.url = url
         self.size = size
         self.showOnlineIndicator = showOnlineIndicator
         self.isOnline = isOnline
+        self.onlineIdentifier = onlineIdentifier
     }
 
     public var body: some View {
@@ -53,6 +55,7 @@ public struct AvatarImage: View {
                             .stroke(onlineIndicatorBorderColor, lineWidth: 2)
                     }
                     .offset(x: 1, y: 1)
+                    .accessibilityIdentifier(onlineIdentifier ?? "online-indicator")
             }
         }
     }

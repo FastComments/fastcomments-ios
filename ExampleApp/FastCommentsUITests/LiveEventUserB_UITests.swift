@@ -61,6 +61,17 @@ final class LiveEventUserB_UITests: UITestBase {
         }
 
         SyncClient.signalReady(round: "phase2")
+
+        // --- Phase 3: Presence ---
+        // Just stay on the page — our presence is enough for UserA to detect
+        SyncClient.waitFor(role: "userA", round: "phase3")
+
+        // Reload to trigger presence join
+        app.terminate()
+        launchApp(urlId: urlId, ssoToken: ssoTokenB)
+        sleep(3)
+
+        SyncClient.signalReady(round: "phase3")
         SyncClient.waitFor(role: "userA", round: "done")
     }
 }
