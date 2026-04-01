@@ -93,17 +93,38 @@ public struct HTMLContentView: View {
 
     // MARK: - Cache
 
-    private static let parsedCache = NSCache<NSString, CachedParsedContent>()
+    private static let parsedCache: NSCache<NSString, CachedParsedContent> = {
+        let cache = NSCache<NSString, CachedParsedContent>()
+        cache.countLimit = 500
+        return cache
+    }()
 
     private final class CachedParsedContent {
         let value: ParsedContent
         init(_ value: ParsedContent) { self.value = value }
     }
 
+    /// Produce a deterministic cache key from a Color by resolving its RGBA components.
+    /// Color.description is not stable across iOS versions or appearance changes.
+    private static func stableCacheKey(for color: Color) -> String {
+        #if canImport(UIKit)
+        let uiColor = UIColor(color)
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        uiColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+        return String(format: "%.4f,%.4f,%.4f,%.4f", r, g, b, a)
+        #elseif canImport(AppKit)
+        let nsColor = NSColor(color)
+        let converted = nsColor.usingColorSpace(.sRGB) ?? nsColor
+        return String(format: "%.4f,%.4f,%.4f,%.4f",
+                      converted.redComponent, converted.greenComponent,
+                      converted.blueComponent, converted.alphaComponent)
+        #endif
+    }
+
     // MARK: - Async Parsing
 
     private static func parse(html: String, linkColor: Color) async -> ParsedContent {
-        let cacheKey = "\(html)|\(linkColor.description)" as NSString
+        let cacheKey = "\(html)|\(Self.stableCacheKey(for: linkColor))" as NSString
         if let cached = parsedCache.object(forKey: cacheKey) {
             return cached.value
         }

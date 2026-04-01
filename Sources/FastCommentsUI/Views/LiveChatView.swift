@@ -14,9 +14,10 @@ public struct LiveChatView: View {
 
     @State private var isNearBottom = true
     @State private var isLoadingOlder = false
-    /// Maximum number of nodes rendered in the ForEach at once.
-    /// Grows when the user scrolls to the top (loads older messages).
+    /// Number of nodes rendered in the ForEach. Grows when the user scrolls
+    /// up to load older messages, and shrinks back when they return to the bottom.
     @State private var renderWindow: Int = 500
+    private static let defaultRenderWindow = 500
 
     public init(sdk: FastCommentsSDK) {
         self.sdk = sdk
@@ -63,6 +64,11 @@ public struct LiveChatView: View {
                         // Auto-scroll to newest only if user is near the bottom
                         // In rotated space, anchor: .top = visual bottom
                         if isNearBottom && !isLoadingOlder {
+                            // Shrink window back to default when at bottom,
+                            // so old nodes far off-screen are released.
+                            if renderWindow > Self.defaultRenderWindow {
+                                renderWindow = Self.defaultRenderWindow
+                            }
                             withAnimation(.easeOut(duration: 0.2)) {
                                 proxy.scrollTo("bottom", anchor: .top)
                             }
