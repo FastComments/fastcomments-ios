@@ -238,7 +238,11 @@ public final class FastCommentsSDK: ObservableObject {
             fcLog.info("loadMore: skip=\(self.currentSkip) limit=\(self.pageSize) returned=\(rootComments.count) roots, trimmed to \(comments.count), hasMore=\(moreAvailable, privacy: .public)")
 
             if !comments.isEmpty {
-                self.commentsTree.appendComments(comments)
+                if self.commentsTree.liveChatStyle {
+                    self.commentsTree.prependComments(comments)
+                } else {
+                    self.commentsTree.appendComments(comments)
+                }
             }
             if let serverCount = response.commentCount {
                 commentCountOnServer = serverCount

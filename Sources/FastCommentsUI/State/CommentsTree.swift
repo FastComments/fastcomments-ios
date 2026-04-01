@@ -96,6 +96,58 @@ public final class CommentsTree: ObservableObject {
         visibleNodes = newVisibleNodes
     }
 
+    /// Prepend older comments at the beginning (for live chat upward pagination).
+    public func prependComments(_ comments: [PublicComment]) {
+        guard !comments.isEmpty else { return }
+
+        let calendar = Calendar.current
+        var newNodes: [RenderableNode] = []
+        var currentDateComponents: DateComponents?
+
+        for comment in comments {
+            guard commentsById[comment.id] == nil else { continue }
+            let renderable = RenderableComment(comment: comment)
+            addToMapAndRelated(renderable)
+            allComments.insert(renderable, at: 0)
+
+            if liveChatStyle, let date = comment.date {
+                let components = calendar.dateComponents([.year, .month, .day], from: date)
+                if currentDateComponents == nil || currentDateComponents != components {
+                    currentDateComponents = components
+                    newNodes.append(DateSeparator(date: date))
+                }
+            }
+
+            newNodes.append(renderable)
+
+            if let children = comment.children, !children.isEmpty {
+                handleChildren(
+                    allComments: &allComments,
+                    visibleNodes: &newNodes,
+                    comments: children,
+                    visible: renderable.isRepliesShown
+                )
+            }
+        }
+
+        // Remove duplicate date separator at the boundary:
+        // if the last prepended comment and the first existing comment share the same day,
+        // drop the existing leading separator.
+        if liveChatStyle, !newNodes.isEmpty, !visibleNodes.isEmpty {
+            if let firstExisting = visibleNodes.first, firstExisting is DateSeparator {
+                if let lastPrependedComment = newNodes.last(where: { $0 is RenderableComment }) as? RenderableComment,
+                   let firstExistingComment = visibleNodes.first(where: { $0 is RenderableComment }) as? RenderableComment,
+                   let d1 = lastPrependedComment.comment.date,
+                   let d2 = firstExistingComment.comment.date,
+                   calendar.isDate(d1, inSameDayAs: d2) {
+                    visibleNodes.removeFirst()
+                }
+            }
+        }
+
+        visibleNodes.insert(contentsOf: newNodes, at: 0)
+    }
+
     /// Append comments from pagination (next page).
     public func appendComments(_ comments: [PublicComment]) {
         guard !comments.isEmpty else { return }
