@@ -101,6 +101,19 @@ struct ContentView: View {
                         )
                     }
                 }
+
+                Section("Performance") {
+                    NavigationLink {
+                        BenchmarkView()
+                    } label: {
+                        ExampleRow(
+                            icon: "gauge.with.dots.needle.67percent",
+                            iconColor: .mint,
+                            title: "100k Benchmark",
+                            description: "Load 100k comments and measure rendering performance"
+                        )
+                    }
+                }
             }
             .navigationTitle("FastComments")
         }

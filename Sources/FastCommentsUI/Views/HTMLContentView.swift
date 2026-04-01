@@ -91,9 +91,22 @@ public struct HTMLContentView: View {
             })
     }
 
+    // MARK: - Cache
+
+    private static let parsedCache = NSCache<NSString, CachedParsedContent>()
+
+    private final class CachedParsedContent {
+        let value: ParsedContent
+        init(_ value: ParsedContent) { self.value = value }
+    }
+
     // MARK: - Async Parsing
 
     private static func parse(html: String, linkColor: Color) async -> ParsedContent {
+        let cacheKey = "\(html)|\(linkColor.description)" as NSString
+        if let cached = parsedCache.object(forKey: cacheKey) {
+            return cached.value
+        }
         let imgParts = splitHTMLIntoParts(html)
 
         var parts: [ContentPart] = []
@@ -116,7 +129,9 @@ public struct HTMLContentView: View {
             parts.append(.text(AttributedString(plain)))
         }
 
-        return ParsedContent(parts: parts)
+        let result = ParsedContent(parts: parts)
+        parsedCache.setObject(CachedParsedContent(result), forKey: cacheKey)
+        return result
     }
 
     // MARK: - HTML Splitting

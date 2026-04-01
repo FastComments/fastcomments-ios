@@ -14,6 +14,9 @@ public struct LiveChatView: View {
 
     @State private var isNearBottom = true
     @State private var isLoadingOlder = false
+    /// Maximum number of nodes rendered in the ForEach at once.
+    /// Grows when the user scrolls to the top (loads older messages).
+    @State private var renderWindow: Int = 500
 
     public init(sdk: FastCommentsSDK) {
         self.sdk = sdk
@@ -38,19 +41,19 @@ public struct LiveChatView: View {
                                 .frame(height: 1)
                                 .id("bottom")
 
-                            ForEach(Array(sdk.commentsTree.visibleNodes.enumerated().reversed()), id: \.element.id) { _, node in
+                            ForEach(windowedNodes, id: \.id) { node in
                                 rowView(for: node)
                                     .id(node.id)
                             }
 
                             // Native bottom = visual top. Triggers loading older messages.
-                            if sdk.hasMore {
+                            if hasOlderToShow {
                                 ProgressView()
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 8)
                                     .flipped()
                                     .onAppear {
-                                        loadOlderMessages()
+                                        expandWindowOrLoadMore()
                                     }
                             }
                         }
@@ -79,6 +82,34 @@ public struct LiveChatView: View {
             }
         }
         .demoBanner(isDemo: sdk.isDemo, warningMessage: sdk.warningMessage)
+    }
+
+    // MARK: - Windowing
+
+    /// The slice of visible nodes to actually render, taken from the end of the full list
+    /// and reversed for the flipped ScrollView layout.
+    private var windowedNodes: [RenderableNode] {
+        let all = sdk.commentsTree.visibleNodes
+        let start = max(0, all.count - renderWindow)
+        // Reversed because the ScrollView is flipped: native top = visual bottom.
+        return Array(all[start...].reversed())
+    }
+
+    /// Whether there are older messages to show (either un-rendered local nodes, or more on server).
+    private var hasOlderToShow: Bool {
+        sdk.commentsTree.visibleNodes.count > renderWindow || sdk.hasMore
+    }
+
+    /// Either expand the render window (if there are un-rendered local nodes) or fetch from server.
+    private func expandWindowOrLoadMore() {
+        let totalNodes = sdk.commentsTree.visibleNodes.count
+        if renderWindow < totalNodes {
+            // Show more from already-loaded data
+            renderWindow = min(renderWindow + 500, totalNodes)
+        } else {
+            // All local nodes are shown; fetch from server
+            loadOlderMessages()
+        }
     }
 
     // MARK: - Private
