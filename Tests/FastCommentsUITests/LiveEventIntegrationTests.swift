@@ -5,6 +5,8 @@ import FastCommentsSwift
 @MainActor
 final class LiveEventIntegrationTests: IntegrationTestBase {
 
+    override var stableTenantEmail: String { "ios-live-events@fctest.com" }
+
     func testLiveNewCommentAppears() async throws {
         let urlId = makeUrlId()
 

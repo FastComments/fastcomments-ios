@@ -2,6 +2,8 @@ import XCTest
 
 final class VoteUITests: UITestBase {
 
+    override var stableTenantEmail: String { "ios-vote-ui@fctest.com" }
+
     func testTapUpvote() {
         let urlId = makeUrlId()
         let sso = makeSecureSSOToken()

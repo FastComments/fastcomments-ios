@@ -5,6 +5,8 @@ import FastCommentsSwift
 @MainActor
 final class ModerationIntegrationTests: IntegrationTestBase {
 
+    override var stableTenantEmail: String { "ios-moderation@fctest.com" }
+
     func testFlagAndUnflag() async throws {
         let sdk = makeSDK()
         try await sdk.load()

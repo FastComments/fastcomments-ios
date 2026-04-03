@@ -12,14 +12,22 @@ class UITestBase: XCTestCase {
     private let host = "https://fastcomments.com"
     private let e2eApiKey = "T0ph B3st"
 
+    /// Subclasses must override to provide a stable tenant email (e.g. "ios-comment-crud-ui@fctest.com").
+    var stableTenantEmail: String {
+        preconditionFailure("Subclasses must override stableTenantEmail")
+    }
+
     // MARK: - Setup / Teardown
 
     override func setUpWithError() throws {
         continueAfterFailure = false
 
-        let suffix = UUID().uuidString.prefix(8)
-        let email = "ios-uitest-\(suffix)@fctest.com"
+        let email = stableTenantEmail
+        let username = String(email.split(separator: "@").first ?? "")
         testTenantEmail = email
+
+        // Delete any leftover tenant from a previous failed run
+        deleteTenantByEmailSync(email)
 
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.httpCookieAcceptPolicy = .always
@@ -32,7 +40,7 @@ class UITestBase: XCTestCase {
             var req = URLRequest(url: signupURL)
             req.httpMethod = "POST"
             req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-            req.httpBody = "username=uitest-\(suffix)&email=\(email)&companyName=UITest+\(suffix)&domains=uitest-\(suffix).example.com&packageId=adv&noTracking=true".data(using: .utf8)
+            req.httpBody = "username=\(username)&email=\(email)&companyName=\(username)&domains=\(username).example.com&packageId=adv&noTracking=true".data(using: .utf8)
             session.dataTask(with: req) { _, _, _ in done() }.resume()
         }
 
@@ -96,6 +104,15 @@ class UITestBase: XCTestCase {
         let sem = DispatchSemaphore(value: 0)
         block { sem.signal() }
         sem.wait()
+    }
+
+    private func deleteTenantByEmailSync(_ email: String) {
+        let encodedEmail = email.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!
+        let encodedKey = e2eApiKey.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
+        let url = URL(string: "\(host)/test-e2e/api/tenant/by-email/\(encodedEmail)?API_KEY=\(encodedKey)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        _ = try? syncFetchRaw(url: request)
     }
 
     // MARK: - SSO

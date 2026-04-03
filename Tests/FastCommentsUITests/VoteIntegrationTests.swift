@@ -5,6 +5,8 @@ import FastCommentsSwift
 @MainActor
 final class VoteIntegrationTests: IntegrationTestBase {
 
+    override var stableTenantEmail: String { "ios-vote@fctest.com" }
+
     func testUpvoteComment() async throws {
         let sdk = makeSDK()
         try await sdk.load()

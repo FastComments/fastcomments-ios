@@ -14,6 +14,11 @@ class IntegrationTestBase: XCTestCase {
     private var testTenantEmail: String?
     private var testTenantApiKey: String?
 
+    /// Subclasses must override to provide a stable tenant email (e.g. "ios-comment-crud@fctest.com").
+    var stableTenantEmail: String {
+        preconditionFailure("Subclasses must override stableTenantEmail")
+    }
+
     /// Authenticated API config using the test tenant's own API key.
     var adminApiConfig: FastCommentsSwiftAPIConfiguration {
         FastCommentsSwiftAPIConfiguration(
@@ -26,16 +31,19 @@ class IntegrationTestBase: XCTestCase {
     override func setUp() async throws {
         try await super.setUp()
 
-        let suffix = UUID().uuidString.prefix(8)
-        let email = "ios-test-\(suffix)@fctest.com"
+        let email = stableTenantEmail
+        let username = String(email.split(separator: "@").first ?? "")
         testTenantEmail = email
+
+        // Delete any leftover tenant from a previous failed run
+        await deleteTenantByEmail(email)
 
         // 1. Sign up tenant via form POST (captures session cookie)
         let signupURL = URL(string: "\(TestConfig.host)/auth/tenant-signup")!
         var signupRequest = URLRequest(url: signupURL)
         signupRequest.httpMethod = "POST"
         signupRequest.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        let formBody = "username=ios-test-\(suffix)&email=\(email)&companyName=iOS+Test+\(suffix)&domains=test-\(suffix).example.com&packageId=adv&noTracking=true"
+        let formBody = "username=\(username)&email=\(email)&companyName=\(username)&domains=\(username).example.com&packageId=adv&noTracking=true"
         signupRequest.httpBody = formBody.data(using: .utf8)
 
         // Use a shared URLSession that stores cookies
@@ -166,6 +174,12 @@ class IntegrationTestBase: XCTestCase {
         return FastCommentsFeedSDK(config: config)
     }
 
+    /// Create a FastCommentsFeedSDK sharing a specific urlId (distinct SSO user per call).
+    func makeFeedSDK(urlId: String) -> FastCommentsFeedSDK {
+        let config = FastCommentsWidgetConfig(tenantId: tenantId, urlId: urlId, sso: makeSSOToken())
+        return FastCommentsFeedSDK(config: config)
+    }
+
     /// Generate a unique urlId and register it for cleanup.
     func makeUrlId(testName: String = #function) -> String {
         let sanitized = testName
@@ -178,6 +192,15 @@ class IntegrationTestBase: XCTestCase {
     }
 
     // MARK: - Cleanup
+
+    private func deleteTenantByEmail(_ email: String) async {
+        let encodedEmail = email.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!
+        let encodedKey = TestConfig.e2eApiKey.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
+        let url = URL(string: "\(TestConfig.host)/test-e2e/api/tenant/by-email/\(encodedEmail)?API_KEY=\(encodedKey)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        _ = try? await URLSession.shared.data(for: request)
+    }
 
     func cleanupComments(urlId: String) async {
         guard let tid = testTenantId else { return }

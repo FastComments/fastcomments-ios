@@ -5,6 +5,8 @@ import FastCommentsSwift
 @MainActor
 final class CommentCRUDIntegrationTests: IntegrationTestBase {
 
+    override var stableTenantEmail: String { "ios-comment-crud@fctest.com" }
+
     // MARK: - Load
 
     func testLoadEmptyPage() async throws {

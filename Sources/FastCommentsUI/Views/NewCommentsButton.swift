@@ -32,15 +32,9 @@ public struct NewCommentsButton: View {
     private var buttonText: String {
         switch button.buttonType {
         case .newRootComments:
-            return String(
-                format: NSLocalizedString("show_new_comments_%lld", bundle: .module, comment: ""),
-                button.commentCount
-            )
+            return String(localized: "show_new_comments_\(button.commentCount)", bundle: .module)
         case .newChildComments:
-            return String(
-                format: NSLocalizedString("show_new_replies_%lld", bundle: .module, comment: ""),
-                button.commentCount
-            )
+            return String(localized: "show_new_replies_\(button.commentCount)", bundle: .module)
         }
     }
 }

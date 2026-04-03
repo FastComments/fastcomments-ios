@@ -5,6 +5,8 @@ import FastCommentsSwift
 @MainActor
 final class PresenceIntegrationTests: IntegrationTestBase {
 
+    override var stableTenantEmail: String { "ios-presence@fctest.com" }
+
     func testClearAllPresence() async throws {
         let sdk = makeSDK()
         try await sdk.load()

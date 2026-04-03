@@ -2,6 +2,8 @@ import XCTest
 
 final class ThreadingUITests: UITestBase {
 
+    override var stableTenantEmail: String { "ios-threading-ui@fctest.com" }
+
     func testReplyToComment() {
         let urlId = makeUrlId()
         let sso = makeSecureSSOToken()

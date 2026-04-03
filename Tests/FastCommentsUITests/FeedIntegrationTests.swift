@@ -5,6 +5,8 @@ import FastCommentsSwift
 @MainActor
 final class FeedIntegrationTests: IntegrationTestBase {
 
+    override var stableTenantEmail: String { "ios-feed@fctest.com" }
+
     func testLoadFeed() async throws {
         let feedSDK = makeFeedSDK()
         try await feedSDK.load()

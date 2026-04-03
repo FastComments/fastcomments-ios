@@ -2,6 +2,8 @@ import XCTest
 
 final class CommentCRUDUITests: UITestBase {
 
+    override var stableTenantEmail: String { "ios-comment-crud-ui@fctest.com" }
+
     func testEmptyPageShowsEmptyState() {
         let urlId = makeUrlId()
         let sso = makeSecureSSOToken()

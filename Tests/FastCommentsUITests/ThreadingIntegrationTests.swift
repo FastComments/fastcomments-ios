@@ -5,6 +5,8 @@ import FastCommentsSwift
 @MainActor
 final class ThreadingIntegrationTests: IntegrationTestBase {
 
+    override var stableTenantEmail: String { "ios-threading@fctest.com" }
+
     func testNestedReplies() async throws {
         let sdk = makeSDK()
         try await sdk.load()

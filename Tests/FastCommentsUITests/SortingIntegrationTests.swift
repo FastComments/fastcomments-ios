@@ -5,6 +5,8 @@ import FastCommentsSwift
 @MainActor
 final class SortingIntegrationTests: IntegrationTestBase {
 
+    override var stableTenantEmail: String { "ios-sorting@fctest.com" }
+
     func testNewestFirst() async throws {
         let sdk = makeSDK()
         try await sdk.load()

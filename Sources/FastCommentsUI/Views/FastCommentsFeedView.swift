@@ -39,7 +39,7 @@ public struct FastCommentsFeedView: View {
                         .padding(.horizontal)
                     Spacer()
                 }
-            } else if sdk.feedPosts.isEmpty {
+            } else if sdk.feedPosts.isEmpty && sdk.newPostsCount == 0 {
                 VStack(spacing: 12) {
                     Spacer()
                     Image(systemName: "doc.text")
@@ -53,6 +53,19 @@ public struct FastCommentsFeedView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
+                        if sdk.newPostsCount > 0 {
+                            NewFeedPostsBanner(count: sdk.newPostsCount) {
+                                Task {
+                                    do {
+                                        try await sdk.loadNewPosts()
+                                    } catch {
+                                        // loadNewPosts preserves newPostsCount on failure,
+                                        // so the banner stays visible for retry
+                                    }
+                                }
+                            }
+                        }
+
                         ForEach(sdk.feedPosts, id: \.id) { post in
                             FeedPostRowView(
                                 post: post,

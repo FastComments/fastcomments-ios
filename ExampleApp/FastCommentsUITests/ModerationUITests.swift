@@ -2,6 +2,8 @@ import XCTest
 
 final class ModerationUITests: UITestBase {
 
+    override var stableTenantEmail: String { "ios-moderation-ui@fctest.com" }
+
     func testPinShowsIcon() {
         let urlId = makeUrlId()
         let sso = makeSecureSSOToken()

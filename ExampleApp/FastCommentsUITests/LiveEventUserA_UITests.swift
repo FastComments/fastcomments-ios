@@ -4,6 +4,8 @@ import CommonCrypto
 /// Observer role — runs on Simulator A.
 final class LiveEventUserA_UITests: UITestBase {
 
+    override var stableTenantEmail: String { "ios-live-events-ui@fctest.com" }
+
     override func setUpWithError() throws {
         SyncClient.currentRole = "userA"
         continueAfterFailure = true

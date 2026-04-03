@@ -2,6 +2,8 @@ import XCTest
 
 final class PaginationUITests: UITestBase {
 
+    override var stableTenantEmail: String { "ios-pagination-ui@fctest.com" }
+
     func testCommentsRenderedInOrder() {
         let urlId = makeUrlId()
         let sso = makeSecureSSOToken()

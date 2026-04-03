@@ -15,7 +15,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
     @Published public private(set) var currentUser: UserSessionInfo?
     @Published public private(set) var blockingErrorMessage: String?
     @Published public private(set) var isLoading: Bool = false
-    @Published public var newPostsCount: Int = 0
+    @Published public private(set) var newPostsCount: Int = 0
 
     // MARK: - Public Properties
 
@@ -131,6 +131,60 @@ public final class FastCommentsFeedSDK: ObservableObject {
         )
 
         processFeedResponse(response, isInitialLoad: false)
+        return response
+    }
+
+    /// Load new posts that arrived via live events.
+    /// Fetches the latest page and prepends any posts not already in the feed,
+    /// preserving the user's existing loaded content and pagination cursor.
+    @discardableResult
+    public func loadNewPosts() async throws -> GetFeedPostsPublic200Response {
+        guard newPostsCount > 0 else {
+            throw FastCommentsError(reason: "No new posts to load")
+        }
+
+        let tags = tagSupplier?.getTags(currentUser: currentUser)
+
+        let response: GetFeedPostsPublic200Response
+        do {
+            response = try await PublicAPI.getFeedPostsPublic(
+                tenantId: config.tenantId,
+                limit: pageSize,
+                tags: tags,
+                sso: config.sso,
+                includeUserInfo: true,
+                apiConfiguration: apiConfig
+            )
+        } catch {
+            // Count stays so the banner remains visible on failure
+            throw error
+        }
+
+        newPostsCount = 0
+
+        // Prepend only posts that aren't already in the feed
+        let newPosts = (response.feedPosts ?? []).filter { postsById[$0.id] == nil }
+        for post in newPosts {
+            postsById[post.id] = post
+            if let reacts = post.reacts {
+                likeCounts[post.id] = reacts.values.reduce(0, +)
+            }
+        }
+        if !newPosts.isEmpty {
+            feedPosts.insert(contentsOf: newPosts, at: 0)
+        }
+
+        // Merge myReacts from fresh response
+        if let newReacts = response.myReacts {
+            for (postId, reacts) in newReacts {
+                myReacts[postId] = reacts
+            }
+        }
+
+        if let user = response.user {
+            currentUser = user
+        }
+
         return response
     }
 
@@ -357,7 +411,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
     func subscribeToLiveEvents() {
         liveEventSubscription?.close()
 
-        guard let tenantIdWS = tenantIdWS,
+        guard let _ = tenantIdWS,
               let urlIdWS = urlIdWS else { return }
 
         let liveConfig = LiveEventConfig(
@@ -385,12 +439,8 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
         switch event.type {
         case .newFeedPost:
-            if let pubSubPost = event.feedPost, let post = Self.toFeedPost(pubSubPost) {
-                postsById[post.id] = post
-                feedPosts.insert(post, at: 0)
-                if let reacts = post.reacts {
-                    likeCounts[post.id] = reacts.values.reduce(0, +)
-                }
+            if event.feedPost != nil {
+                newPostsCount += 1
             }
         case .updatedFeedPost:
             if let pubSubPost = event.feedPost, let post = Self.toFeedPost(pubSubPost) {
