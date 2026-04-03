@@ -34,6 +34,7 @@ struct MentionSuggestionsList: View {
                         .padding(.vertical, 10)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("mention-\(user.id)")
 
                     if user.id != suggestions.last?.id {
                         Divider()

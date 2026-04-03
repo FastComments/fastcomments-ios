@@ -5,34 +5,63 @@ import FastCommentsSwift
 /// Custom toolbar buttons in the comment input bar.
 ///
 /// Shows how to:
+/// - Enable/disable the toolbar and default formatting buttons via SDK
+/// - Register global custom toolbar buttons at the SDK level
+/// - Pass per-instance custom buttons to a specific view
 /// - Implement the CustomToolbarButton protocol
-/// - Add multiple custom buttons with icons, badges, and actions
-/// - Apply a theme to the toolbar
 struct ToolbarShowcaseView: View {
     @StateObject private var sdk: FastCommentsSDK = {
         let sdk = FastCommentsSDK(
             config: FastCommentsWidgetConfig(
                 tenantId: "demo",
-                urlId: "example-toolbar"
+                urlId: "test"
             )
         )
 
         // Apply a theme so toolbar buttons pick up the color
         sdk.theme = FastCommentsTheme.allPrimary(.indigo)
 
+        // 1. Enable the toolbar and default formatting buttons
+        sdk.setCommentToolbarEnabled(true)
+        sdk.setDefaultFormattingButtonsEnabled(true)
+
+        // 2. Register global custom buttons — these appear on ALL comment inputs
+        sdk.addGlobalCustomToolbarButton(EmojiButton())
+
         return sdk
     }()
 
     var body: some View {
-        // Pass custom buttons to the comments view
-        // These appear in the formatting toolbar alongside bold/italic/code/link
-        FastCommentsView(
-            sdk: sdk,
-            customToolbarButtons: [
-                EmojiButton(),
-                CodeBlockButton(),
-            ]
-        )
+        VStack {
+            // 3. Per-instance buttons are passed here — merged with global buttons
+            FastCommentsView(
+                sdk: sdk,
+                customToolbarButtons: [
+                    CodeBlockButton(),
+                ]
+            )
+
+            // 4. Demonstrate removing a global button at runtime
+            HStack {
+                Button("Remove Emoji") {
+                    sdk.removeGlobalCustomToolbarButton(id: "emoji")
+                }
+                .buttonStyle(.bordered)
+
+                Button("Add Emoji") {
+                    sdk.addGlobalCustomToolbarButton(EmojiButton())
+                }
+                .buttonStyle(.bordered)
+
+                Button("Clear All") {
+                    sdk.clearGlobalCustomToolbarButtons()
+                }
+                .buttonStyle(.bordered)
+            }
+            .font(.caption)
+            .padding(.horizontal)
+            .padding(.bottom, 8)
+        }
         .task {
             try? await sdk.load()
         }

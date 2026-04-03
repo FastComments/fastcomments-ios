@@ -6,7 +6,11 @@ import FastCommentsSwift
 struct FastCommentsExampleApp: App {
     var body: some Scene {
         WindowGroup {
-            if let testConfig = testConfig {
+            if isBenchmarkMode {
+                NavigationStack {
+                    BenchmarkView(autoRun: true)
+                }
+            } else if let testConfig = testConfig {
                 NavigationStack {
                     TestCommentsView(config: testConfig)
                 }
@@ -27,6 +31,10 @@ struct FastCommentsExampleApp: App {
         let urlId = args[idx + 2]
         let sso = args[idx + 3]
         return FastCommentsWidgetConfig(tenantId: tenantId, urlId: urlId, sso: sso)
+    }
+
+    private var isBenchmarkMode: Bool {
+        ProcessInfo.processInfo.arguments.contains("-benchmark")
     }
 
     /// Check for "-screenshot <viewname>" in launch arguments

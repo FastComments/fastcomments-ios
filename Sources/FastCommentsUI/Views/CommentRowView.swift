@@ -68,7 +68,8 @@ public struct CommentRowView: View {
                     url: comment.comment.avatarSrc,
                     size: nestingLevel > 0 ? theme.replyAvatarSize : theme.avatarSize,
                     showOnlineIndicator: true,
-                    isOnline: comment.isOnline
+                    isOnline: comment.isOnline,
+                    onlineIdentifier: "online-\(comment.comment.id)"
                 )
             }
             .buttonStyle(.plain)
@@ -282,6 +283,7 @@ public struct CommentRowView: View {
                     .foregroundStyle(theme.resolveToggleRepliesButtonColor())
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("toggle-replies-\(comment.comment.id)")
             }
         }
 

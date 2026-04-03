@@ -6,14 +6,11 @@ final class VoteUITests: UITestBase {
         let urlId = makeUrlId()
         let sso = makeSecureSSOToken()
         launchApp(urlId: urlId, ssoToken: sso)
-        sleep(2)
 
         typeComment("Vote on me")
+        XCTAssertTrue(app.staticTexts["Vote on me"].waitForExistence(timeout: 10))
 
-        guard let commentId = fetchLatestCommentId(urlId: urlId) else {
-            XCTFail("Could not fetch comment ID")
-            return
-        }
+        guard let commentId = fetchLatestCommentId(urlId: urlId) else { return }
 
         let voteUp = app.buttons["vote-up-\(commentId)"]
         XCTAssertTrue(voteUp.waitForExistence(timeout: 5))
@@ -21,7 +18,7 @@ final class VoteUITests: UITestBase {
 
         let voteCount = app.staticTexts["vote-count-\(commentId)"]
         XCTAssertTrue(voteCount.waitForExistence(timeout: 5))
-        // After upvote, count should show "+1"
+        pollUntil { voteCount.label == "+1" }
         XCTAssertEqual(voteCount.label, "+1")
     }
 
@@ -29,14 +26,11 @@ final class VoteUITests: UITestBase {
         let urlId = makeUrlId()
         let sso = makeSecureSSOToken()
         launchApp(urlId: urlId, ssoToken: sso)
-        sleep(2)
 
         typeComment("Downvote me")
+        XCTAssertTrue(app.staticTexts["Downvote me"].waitForExistence(timeout: 10))
 
-        guard let commentId = fetchLatestCommentId(urlId: urlId) else {
-            XCTFail("Could not fetch comment ID")
-            return
-        }
+        guard let commentId = fetchLatestCommentId(urlId: urlId) else { return }
 
         let voteDown = app.buttons["vote-down-\(commentId)"]
         XCTAssertTrue(voteDown.waitForExistence(timeout: 5))
@@ -44,6 +38,7 @@ final class VoteUITests: UITestBase {
 
         let voteCount = app.staticTexts["vote-count-\(commentId)"]
         XCTAssertTrue(voteCount.waitForExistence(timeout: 5))
+        pollUntil { voteCount.label == "-1" }
         XCTAssertEqual(voteCount.label, "-1")
     }
 
@@ -51,14 +46,11 @@ final class VoteUITests: UITestBase {
         let urlId = makeUrlId()
         let sso = makeSecureSSOToken()
         launchApp(urlId: urlId, ssoToken: sso)
-        sleep(2)
 
         typeComment("Toggle my vote")
+        XCTAssertTrue(app.staticTexts["Toggle my vote"].waitForExistence(timeout: 10))
 
-        guard let commentId = fetchLatestCommentId(urlId: urlId) else {
-            XCTFail("Could not fetch comment ID")
-            return
-        }
+        guard let commentId = fetchLatestCommentId(urlId: urlId) else { return }
 
         let voteUp = app.buttons["vote-up-\(commentId)"]
         let voteDown = app.buttons["vote-down-\(commentId)"]
@@ -66,14 +58,12 @@ final class VoteUITests: UITestBase {
 
         XCTAssertTrue(voteUp.waitForExistence(timeout: 5))
 
-        // Upvote
         voteUp.tap()
-        sleep(1)
+        pollUntil { voteCount.label == "+1" }
         XCTAssertEqual(voteCount.label, "+1")
 
-        // Switch to downvote
         voteDown.tap()
-        sleep(1)
+        pollUntil { voteCount.label == "-1" }
         XCTAssertEqual(voteCount.label, "-1")
     }
 }

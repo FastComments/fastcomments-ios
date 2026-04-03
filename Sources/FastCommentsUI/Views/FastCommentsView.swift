@@ -83,6 +83,7 @@ public struct FastCommentsView: View {
                             }
                         )
                     }
+                    .accessibilityIdentifier("comments-scroll")
                 }
             }
         }
@@ -110,7 +111,11 @@ public struct FastCommentsView: View {
             CommentEditSheet(
                 currentText: comment.comment.commentHTML,
                 onSave: { newText in
-                    Task { try? await sdk.editComment(commentId: comment.comment.id, newText: newText) }
+                    Task {
+                        do {
+                            try await sdk.editComment(commentId: comment.comment.id, newText: newText)
+                        } catch { sdk.showWarning(error.localizedDescription) }
+                    }
                 }
             )
         }
@@ -124,7 +129,11 @@ public struct FastCommentsView: View {
             Button(NSLocalizedString("cancel", bundle: .module, comment: ""), role: .cancel) {}
             Button(NSLocalizedString("delete", bundle: .module, comment: ""), role: .destructive) {
                 if let comment = showDeleteAlert {
-                    Task { try? await sdk.deleteComment(commentId: comment.comment.id) }
+                    Task {
+                        do {
+                            try await sdk.deleteComment(commentId: comment.comment.id)
+                        } catch { sdk.showWarning(error.localizedDescription) }
+                    }
                 }
             }
         }
@@ -166,38 +175,46 @@ public struct FastCommentsView: View {
                 onDelete: { showDeleteAlert = $0 },
                 onFlag: { comment in
                     Task {
-                        if comment.comment.isFlagged == true {
-                            try? await sdk.unflagComment(commentId: comment.comment.id)
-                        } else {
-                            try? await sdk.flagComment(commentId: comment.comment.id)
-                        }
+                        do {
+                            if comment.comment.isFlagged == true {
+                                try await sdk.unflagComment(commentId: comment.comment.id)
+                            } else {
+                                try await sdk.flagComment(commentId: comment.comment.id)
+                            }
+                        } catch { sdk.showWarning(error.localizedDescription) }
                     }
                 },
                 onPin: { comment in
                     Task {
-                        if comment.comment.isPinned == true {
-                            try? await sdk.unpinComment(commentId: comment.comment.id)
-                        } else {
-                            try? await sdk.pinComment(commentId: comment.comment.id)
-                        }
+                        do {
+                            if comment.comment.isPinned == true {
+                                try await sdk.unpinComment(commentId: comment.comment.id)
+                            } else {
+                                try await sdk.pinComment(commentId: comment.comment.id)
+                            }
+                        } catch { sdk.showWarning(error.localizedDescription) }
                     }
                 },
                 onLock: { comment in
                     Task {
-                        if comment.comment.isLocked == true {
-                            try? await sdk.unlockComment(commentId: comment.comment.id)
-                        } else {
-                            try? await sdk.lockComment(commentId: comment.comment.id)
-                        }
+                        do {
+                            if comment.comment.isLocked == true {
+                                try await sdk.unlockComment(commentId: comment.comment.id)
+                            } else {
+                                try await sdk.lockComment(commentId: comment.comment.id)
+                            }
+                        } catch { sdk.showWarning(error.localizedDescription) }
                     }
                 },
                 onBlock: { comment in
                     Task {
-                        if comment.comment.isBlocked == true {
-                            try? await sdk.unblockUser(commentId: comment.comment.id)
-                        } else {
-                            try? await sdk.blockUser(commentId: comment.comment.id)
-                        }
+                        do {
+                            if comment.comment.isBlocked == true {
+                                try await sdk.unblockUser(commentId: comment.comment.id)
+                            } else {
+                                try await sdk.blockUser(commentId: comment.comment.id)
+                            }
+                        } catch { sdk.showWarning(error.localizedDescription) }
                     }
                 }
             )

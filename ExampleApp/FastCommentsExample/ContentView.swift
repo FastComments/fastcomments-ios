@@ -49,7 +49,7 @@ struct ContentView: View {
                             icon: "paintbrush",
                             iconColor: .indigo,
                             title: "Custom Toolbar",
-                            description: "Add custom buttons to the comment input toolbar"
+                            description: "Global and per-instance custom toolbar buttons"
                         )
                     }
                 }
@@ -98,6 +98,19 @@ struct ContentView: View {
                             iconColor: .red,
                             title: "Secure SSO",
                             description: "Production SSO with server-side token generation"
+                        )
+                    }
+                }
+
+                Section("Performance") {
+                    NavigationLink {
+                        BenchmarkView()
+                    } label: {
+                        ExampleRow(
+                            icon: "gauge.with.dots.needle.67percent",
+                            iconColor: .mint,
+                            title: "100k Benchmark",
+                            description: "Load 100k comments and measure rendering performance"
                         )
                     }
                 }
