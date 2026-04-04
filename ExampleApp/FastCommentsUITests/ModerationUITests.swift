@@ -91,10 +91,12 @@ final class ModerationUITests: UITestBase {
         XCTAssertTrue(confirmButton.waitForExistence(timeout: 5), "Block confirmation alert should appear")
         confirmButton.tap()
 
-        XCTAssertTrue(
-            app.staticTexts["Blocked User"].waitForExistence(timeout: 5),
-            "Should show 'Blocked User' after blocking"
-        )
+        // Commenter name is inside a Button, so query via accessibility identifier
+        let nameElement = app.descendants(matching: .any)["commenter-name-\(commentId)"]
+        pollUntil(timeout: 5) {
+            nameElement.label == "Blocked User"
+        }
+        XCTAssertEqual(nameElement.label, "Blocked User", "Should show 'Blocked User' after blocking")
     }
 
     func testUnblockRestoresComment() throws {
@@ -108,6 +110,8 @@ final class ModerationUITests: UITestBase {
         launchApp(urlId: urlId, ssoToken: userBSSO)
         XCTAssertTrue(app.staticTexts["Block then unblock"].waitForExistence(timeout: 10))
 
+        let nameElement = app.descendants(matching: .any)["commenter-name-\(commentId)"]
+
         tapMenu(commentId: commentId, action: "Block User")
 
         // Confirm block
@@ -115,7 +119,10 @@ final class ModerationUITests: UITestBase {
         XCTAssertTrue(blockConfirm.waitForExistence(timeout: 5), "Block confirmation alert should appear")
         blockConfirm.tap()
 
-        XCTAssertTrue(app.staticTexts["Blocked User"].waitForExistence(timeout: 5), "Block should work")
+        pollUntil(timeout: 5) {
+            nameElement.label == "Blocked User"
+        }
+        XCTAssertEqual(nameElement.label, "Blocked User", "Block should work")
 
         tapMenu(commentId: commentId, action: "Unblock User")
 
@@ -124,8 +131,13 @@ final class ModerationUITests: UITestBase {
         XCTAssertTrue(unblockConfirm.waitForExistence(timeout: 5), "Unblock confirmation alert should appear")
         unblockConfirm.tap()
 
+        // After unblocking, the original comment text should be restored
+        let commentText = app.descendants(matching: .any)["comment-text-\(commentId)"]
+        pollUntil(timeout: 5) {
+            commentText.label.contains("Block then unblock")
+        }
         XCTAssertTrue(
-            app.staticTexts["Block then unblock"].waitForExistence(timeout: 5),
+            commentText.label.contains("Block then unblock"),
             "Original text should be restored after unblocking"
         )
     }

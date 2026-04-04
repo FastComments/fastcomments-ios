@@ -38,18 +38,19 @@ final class ThreadingUITests: UITestBase {
             seedComment(urlId: urlId, text: "Reply \(i)", ssoToken: sso, parentId: parentId)
         }
 
+        // Wait for the API to index all 3 replies before launching
+        waitForChildCount(parentId: parentId, urlId: urlId, expected: 3)
+
         launchApp(urlId: urlId, ssoToken: sso)
         XCTAssertTrue(app.staticTexts["Parent with replies"].waitForExistence(timeout: 10))
 
-        let showReplies = app.buttons.matching(NSPredicate(format: "label CONTAINS 'replies'")).firstMatch
+        let showReplies = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'replies'")).firstMatch
         XCTAssertTrue(
             showReplies.waitForExistence(timeout: 5),
-            "Show replies toggle should exist (known issue: may not appear with maxTreeDepth:1)"
+            "Show replies toggle should exist"
         )
 
-        if showReplies.exists {
-            showReplies.tap()
-            XCTAssertTrue(app.staticTexts["Reply 1"].waitForExistence(timeout: 5))
-        }
+        showReplies.tap()
+        XCTAssertTrue(app.staticTexts["Reply 1"].waitForExistence(timeout: 5))
     }
 }

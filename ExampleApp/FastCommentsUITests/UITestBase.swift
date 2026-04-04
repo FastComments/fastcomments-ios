@@ -280,6 +280,33 @@ class UITestBase: XCTestCase {
         return success
     }
 
+    /// Poll the admin API until a comment has at least `expected` children.
+    func waitForChildCount(parentId: String, urlId: String, expected: Int, timeout: TimeInterval = 10, file: StaticString = #file, line: UInt = #line) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while true {
+            let sem = DispatchSemaphore(value: 0)
+            var childCount = 0
+            Task {
+                defer { sem.signal() }
+                let response = try? await DefaultAPI.getComments(
+                    tenantId: self.testTenantId,
+                    limit: expected,
+                    urlId: urlId,
+                    parentId: parentId,
+                    apiConfiguration: self.adminApiConfig
+                )
+                childCount = response?.comments?.count ?? 0
+            }
+            sem.wait()
+            if childCount >= expected { return }
+            if Date() > deadline {
+                XCTFail("waitForChildCount: only \(childCount)/\(expected) children found for \(parentId)", file: file, line: line)
+                return
+            }
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+    }
+
     /// Fetch the latest comment ID for a urlId via admin API.
     func fetchLatestCommentId(urlId: String, file: StaticString = #file, line: UInt = #line) -> String? {
         let sem = DispatchSemaphore(value: 0)

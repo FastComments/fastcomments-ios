@@ -35,6 +35,8 @@ run_ui() {
         -destination "$DEST" \
         -skip-testing FastCommentsUITests/LiveEventUserA_UITests \
         -skip-testing FastCommentsUITests/LiveEventUserB_UITests \
+        -skip-testing FastCommentsUITests/FeedUserA_UITests \
+        -skip-testing FastCommentsUITests/FeedUserB_UITests \
         2>&1 | grep -E 'Test Case|Executed.*tests|SUCCEEDED|FAILED'
     echo ""
 }

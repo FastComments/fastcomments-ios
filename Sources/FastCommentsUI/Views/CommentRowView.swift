@@ -266,28 +266,31 @@ public struct CommentRowView: View {
             Spacer()
 
             // Toggle replies
-            if let onToggleReplies = onToggleReplies, let childCount = comment.comment.childCount, childCount > 0 {
-                Button {
-                    onToggleReplies(comment)
-                } label: {
-                    HStack(spacing: 4) {
-                        if comment.isLoadingChildren {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                        } else {
-                            Image(systemName: comment.isRepliesShown ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 10, weight: .semibold))
+            if let onToggleReplies = onToggleReplies {
+                let childCount = comment.comment.childCount ?? comment.comment.children?.count ?? 0
+                if childCount > 0 {
+                    Button {
+                        onToggleReplies(comment)
+                    } label: {
+                        HStack(spacing: 4) {
+                            if comment.isLoadingChildren {
+                                ProgressView()
+                                    .scaleEffect(0.6)
+                            } else {
+                                Image(systemName: comment.isRepliesShown ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 10, weight: .semibold))
+                            }
+                            Text(comment.isRepliesShown
+                                 ? NSLocalizedString("hide_replies", bundle: .module, comment: "")
+                                 : String(format: NSLocalizedString("show_replies_%lld", bundle: .module, comment: ""), childCount)
+                            )
                         }
-                        Text(comment.isRepliesShown
-                             ? NSLocalizedString("hide_replies", bundle: .module, comment: "")
-                             : String(format: NSLocalizedString("show_replies_%lld", bundle: .module, comment: ""), childCount)
-                        )
+                        .font(theme.resolveActionFont())
+                        .foregroundStyle(theme.resolveToggleRepliesButtonColor())
                     }
-                    .font(theme.resolveActionFont())
-                    .foregroundStyle(theme.resolveToggleRepliesButtonColor())
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("toggle-replies-\(comment.comment.id)")
                 }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("toggle-replies-\(comment.comment.id)")
             }
         }
 

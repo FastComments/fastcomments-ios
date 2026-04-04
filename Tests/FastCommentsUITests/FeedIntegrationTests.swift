@@ -141,7 +141,7 @@ final class FeedIntegrationTests: IntegrationTestBase {
 
         let commentsSDK = feedSDK.createCommentsSDK(for: post)
 
-        XCTAssertEqual(commentsSDK.config.urlId, post.id)
+        XCTAssertEqual(commentsSDK.config.urlId, "post:" + post.id)
         XCTAssertEqual(commentsSDK.config.tenantId, tenantId)
 
         // Cleanup

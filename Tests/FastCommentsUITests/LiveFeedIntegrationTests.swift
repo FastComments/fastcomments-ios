@@ -133,19 +133,20 @@ final class LiveFeedIntegrationTests: IntegrationTestBase {
         try await sdk1.loadNewPosts()
         XCTAssertTrue(sdk1.feedPosts.contains { $0.id == post.id })
 
-        // sdk2 reacts to the post — this triggers an updatedFeedPost live event
+        // sdk2 reacts to the post
         try await sdk2.reactPost(postId: post.id, reactionType: "l")
 
-        // Wait for sdk1 to see the update via live event
-        try await waitFor(timeout: 10.0) {
-            let p = sdk1.feedPosts.first { $0.id == post.id }
-            return (p?.reacts?["l"] ?? 0) >= 1
+        // Server does not broadcast updatedFeedPost for reactions; poll stats
+        let deadline = Date().addingTimeInterval(10.0)
+        while sdk1.getLikeCount(postId: post.id) < 1 {
+            XCTAssertTrue(Date() < deadline, "Stats should reflect new reaction count after fetch")
+            try await sdk1.fetchPostStats(postIds: [post.id])
+            if sdk1.getLikeCount(postId: post.id) >= 1 { break }
+            try await Task.sleep(nanoseconds: 500_000_000)
         }
 
-        let updated = sdk1.feedPosts.first { $0.id == post.id }
-        XCTAssertNotNil(updated)
-        XCTAssertGreaterThanOrEqual(updated?.reacts?["l"] ?? 0, 1,
-                                    "Updated post should reflect new reaction count")
+        XCTAssertGreaterThanOrEqual(sdk1.getLikeCount(postId: post.id), 1,
+                                    "Stats should reflect new reaction count after fetch")
 
         // Cleanup
         try? await sdk2.deletePost(postId: post.id)

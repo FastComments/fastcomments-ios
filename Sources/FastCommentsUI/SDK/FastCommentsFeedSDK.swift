@@ -457,7 +457,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
                 if let cc = post.commentCount {
                     commentCounts[post.id] = cc
                 }
-                // Only replace in feedPosts array if non-stats content changed
+                // Check if non-stats content changed
                 let existing = postsById[post.id]
                 let contentChanged = existing == nil
                     || existing?.title != post.title
@@ -479,13 +479,16 @@ public final class FastCommentsFeedSDK: ObservableObject {
                 }
             }
         case .deletedFeedPost:
-            if let pubSubPost = event.feedPost, let post = Self.toFeedPost(pubSubPost) {
-                postsById.removeValue(forKey: post.id)
-                feedPosts.removeAll { $0.id == post.id }
-                likeCounts.removeValue(forKey: post.id)
-                commentCounts.removeValue(forKey: post.id)
-                myReacts.removeValue(forKey: post.id)
-                onPostDeleted?(post.id)
+            if let postId = event.feedPost?.id {
+                postsById.removeValue(forKey: postId)
+                feedPosts.removeAll { $0.id == postId }
+                likeCounts.removeValue(forKey: postId)
+                commentCounts.removeValue(forKey: postId)
+                myReacts.removeValue(forKey: postId)
+                onPostDeleted?(postId)
+            } else {
+                // Server didn't include post ID; refresh to discover removal
+                Task { [weak self] in try? await self?.refresh() }
             }
         default:
             break
