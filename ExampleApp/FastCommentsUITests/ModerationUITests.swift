@@ -71,9 +71,7 @@ final class ModerationUITests: UITestBase {
         app.tap()
     }
 
-    // MARK: - Known Issues
-    // These tests document bugs that need fixing. They are expected to fail.
-    // Tracked at: https://github.com/FastComments/fastcomments-ios/issues
+    // MARK: - Block / Unblock
 
     func testBlockShowsBlockedText() throws {
         let urlId = makeUrlId()
@@ -88,9 +86,14 @@ final class ModerationUITests: UITestBase {
 
         tapMenu(commentId: commentId, action: "Block User")
 
+        // Confirm the block alert
+        let confirmButton = app.buttons["Block User"]
+        XCTAssertTrue(confirmButton.waitForExistence(timeout: 5), "Block confirmation alert should appear")
+        confirmButton.tap()
+
         XCTAssertTrue(
             app.staticTexts["Blocked User"].waitForExistence(timeout: 5),
-            "Should show 'Blocked User' after blocking (known issue: UI may not re-render)"
+            "Should show 'Blocked User' after blocking"
         )
     }
 
@@ -106,9 +109,20 @@ final class ModerationUITests: UITestBase {
         XCTAssertTrue(app.staticTexts["Block then unblock"].waitForExistence(timeout: 10))
 
         tapMenu(commentId: commentId, action: "Block User")
+
+        // Confirm block
+        let blockConfirm = app.buttons["Block User"]
+        XCTAssertTrue(blockConfirm.waitForExistence(timeout: 5), "Block confirmation alert should appear")
+        blockConfirm.tap()
+
         XCTAssertTrue(app.staticTexts["Blocked User"].waitForExistence(timeout: 5), "Block should work")
 
         tapMenu(commentId: commentId, action: "Unblock User")
+
+        // Confirm unblock
+        let unblockConfirm = app.buttons["Unblock User"]
+        XCTAssertTrue(unblockConfirm.waitForExistence(timeout: 5), "Unblock confirmation alert should appear")
+        unblockConfirm.tap()
 
         XCTAssertTrue(
             app.staticTexts["Block then unblock"].waitForExistence(timeout: 5),

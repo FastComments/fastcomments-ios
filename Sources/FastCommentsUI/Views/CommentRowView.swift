@@ -65,18 +65,19 @@ public struct CommentRowView: View {
                 onUserClick?(.comment(comment.comment), UserInfo.from(comment.comment), .avatar)
             } label: {
                 AvatarImage(
-                    url: comment.comment.avatarSrc,
+                    url: isBlocked ? nil : comment.comment.avatarSrc,
                     size: nestingLevel > 0 ? theme.replyAvatarSize : theme.avatarSize,
-                    showOnlineIndicator: true,
+                    showOnlineIndicator: !isBlocked,
                     isOnline: comment.isOnline,
                     onlineIdentifier: "online-\(comment.comment.id)"
                 )
             }
             .buttonStyle(.plain)
+            .allowsHitTesting(!isBlocked)
 
             VStack(alignment: .leading, spacing: 2) {
                 // Display label above username
-                if let displayLabel = comment.comment.displayLabel, !displayLabel.isEmpty {
+                if let displayLabel = comment.comment.displayLabel, !displayLabel.isEmpty, !isBlocked {
                     Text(displayLabel)
                         .font(theme.resolveCaptionFont())
                         .foregroundStyle(.tertiary)
@@ -92,6 +93,7 @@ public struct CommentRowView: View {
                             .font(theme.resolveCommenterNameFont())
                     }
                     .buttonStyle(.plain)
+                    .allowsHitTesting(!isBlocked)
                     .accessibilityIdentifier("commenter-name-\(comment.comment.id)")
 
                     if comment.comment.isPinned == true {
@@ -108,14 +110,14 @@ public struct CommentRowView: View {
                             .accessibilityIdentifier("lock-icon-\(comment.comment.id)")
                     }
 
-                    if let badges = comment.comment.badges {
+                    if let badges = comment.comment.badges, !isBlocked {
                         ForEach(badges) { badge in
                             BadgeView(badge: badge)
                         }
                     }
 
                     // Unverified badge
-                    if !sdk.disableUnverifiedLabel && !(comment.comment.verified ?? true) {
+                    if !sdk.disableUnverifiedLabel && !(comment.comment.verified ?? true) && !isBlocked {
                         Text(NSLocalizedString("unverified", bundle: .module, comment: ""))
                             .font(.system(size: 10, weight: .medium))
                             .padding(.horizontal, 6)
@@ -179,7 +181,7 @@ public struct CommentRowView: View {
                         )
                     }
                 }
-                if !isOwnComment {
+                if !isOwnComment && !isBlocked {
                     Button { onFlag?(comment) } label: {
                         Label(
                             comment.comment.isFlagged == true
@@ -228,23 +230,25 @@ public struct CommentRowView: View {
     @ViewBuilder
     private var actionRow: some View {
         HStack(spacing: 16) {
-            VoteControls(
-                comment: comment,
-                voteStyle: voteStyle,
-                onUpVote: {
-                    Task { try? await sdk.voteComment(commentId: comment.comment.id, isUpvote: true) }
-                },
-                onDownVote: {
-                    Task { try? await sdk.voteComment(commentId: comment.comment.id, isUpvote: false) }
-                },
-                onRemoveVote: {
-                    if let voteId = comment.comment.myVoteId {
-                        Task { try? await sdk.deleteCommentVote(commentId: comment.comment.id, voteId: voteId) }
+            if !isBlocked {
+                VoteControls(
+                    comment: comment,
+                    voteStyle: voteStyle,
+                    onUpVote: {
+                        Task { try? await sdk.voteComment(commentId: comment.comment.id, isUpvote: true) }
+                    },
+                    onDownVote: {
+                        Task { try? await sdk.voteComment(commentId: comment.comment.id, isUpvote: false) }
+                    },
+                    onRemoveVote: {
+                        if let voteId = comment.comment.myVoteId {
+                            Task { try? await sdk.deleteCommentVote(commentId: comment.comment.id, voteId: voteId) }
+                        }
                     }
-                }
-            )
+                )
+            }
 
-            if let onReply = onReply, comment.comment.isLocked != true, !sdk.isClosed {
+            if let onReply = onReply, comment.comment.isLocked != true, !sdk.isClosed, !isBlocked {
                 Button {
                     onReply(comment)
                 } label: {
@@ -333,6 +337,10 @@ public struct CommentRowView: View {
     private var isOwnComment: Bool {
         guard let userId = sdk.currentUser?.id else { return false }
         return comment.comment.userId == userId
+    }
+
+    private var isBlocked: Bool {
+        comment.comment.isBlocked == true
     }
 }
 

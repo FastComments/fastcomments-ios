@@ -15,6 +15,7 @@ public struct FastCommentsView: View {
     @State private var replyingTo: RenderableComment?
     @State private var editingComment: RenderableComment?
     @State private var showDeleteAlert: RenderableComment?
+    @State private var showBlockAlert: RenderableComment?
 
     public init(sdk: FastCommentsSDK, voteStyle: VoteStyle = ._0, customToolbarButtons: [any CustomToolbarButton] = []) {
         self.sdk = sdk
@@ -137,6 +138,44 @@ public struct FastCommentsView: View {
                 }
             }
         }
+        .alert(
+            showBlockAlert?.comment.isBlocked == true
+                ? NSLocalizedString("unblock_user_title", bundle: .module, comment: "")
+                : NSLocalizedString("block_user_title", bundle: .module, comment: ""),
+            isPresented: Binding(
+                get: { showBlockAlert != nil },
+                set: { if !$0 { showBlockAlert = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("cancel", bundle: .module, comment: ""), role: .cancel) {}
+            Button(
+                showBlockAlert?.comment.isBlocked == true
+                    ? NSLocalizedString("unblock_user", bundle: .module, comment: "")
+                    : NSLocalizedString("block_user", bundle: .module, comment: ""),
+                role: showBlockAlert?.comment.isBlocked == true ? nil : .destructive
+            ) {
+                if let comment = showBlockAlert {
+                    Task {
+                        do {
+                            if comment.comment.isBlocked == true {
+                                try await sdk.unblockUser(commentId: comment.comment.id)
+                            } else {
+                                try await sdk.blockUser(commentId: comment.comment.id)
+                            }
+                        } catch { sdk.showWarning(error.localizedDescription) }
+                    }
+                }
+            }
+        } message: {
+            if let comment = showBlockAlert {
+                Text(String(
+                    format: comment.comment.isBlocked == true
+                        ? NSLocalizedString("unblock_user_confirm", bundle: .module, comment: "")
+                        : NSLocalizedString("block_user_confirm", bundle: .module, comment: ""),
+                    comment.comment.commenterName
+                ))
+            }
+        }
         .sheet(isPresented: Binding(
             get: { sdk.badgeAwardToShow != nil },
             set: { if !$0 { sdk.badgeAwardToShow = nil } }
@@ -207,15 +246,7 @@ public struct FastCommentsView: View {
                     }
                 },
                 onBlock: { comment in
-                    Task {
-                        do {
-                            if comment.comment.isBlocked == true {
-                                try await sdk.unblockUser(commentId: comment.comment.id)
-                            } else {
-                                try await sdk.blockUser(commentId: comment.comment.id)
-                            }
-                        } catch { sdk.showWarning(error.localizedDescription) }
-                    }
+                    showBlockAlert = comment
                 }
             )
 

@@ -14,6 +14,7 @@ public struct LiveChatView: View {
 
     @State private var isNearBottom = true
     @State private var isLoadingOlder = false
+    @State private var showBlockAlert: RenderableComment?
     /// Number of nodes rendered in the ForEach. Grows when the user scrolls
     /// up to load older messages, and shrinks back when they return to the bottom.
     @State private var renderWindow: Int = 500
@@ -88,6 +89,44 @@ public struct LiveChatView: View {
             }
         }
         .demoBanner(isDemo: sdk.isDemo, warningMessage: sdk.warningMessage)
+        .alert(
+            showBlockAlert?.comment.isBlocked == true
+                ? NSLocalizedString("unblock_user_title", bundle: .module, comment: "")
+                : NSLocalizedString("block_user_title", bundle: .module, comment: ""),
+            isPresented: Binding(
+                get: { showBlockAlert != nil },
+                set: { if !$0 { showBlockAlert = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("cancel", bundle: .module, comment: ""), role: .cancel) {}
+            Button(
+                showBlockAlert?.comment.isBlocked == true
+                    ? NSLocalizedString("unblock_user", bundle: .module, comment: "")
+                    : NSLocalizedString("block_user", bundle: .module, comment: ""),
+                role: showBlockAlert?.comment.isBlocked == true ? nil : .destructive
+            ) {
+                if let comment = showBlockAlert {
+                    Task {
+                        do {
+                            if comment.comment.isBlocked == true {
+                                try await sdk.unblockUser(commentId: comment.comment.id)
+                            } else {
+                                try await sdk.blockUser(commentId: comment.comment.id)
+                            }
+                        } catch { sdk.showWarning(error.localizedDescription) }
+                    }
+                }
+            }
+        } message: {
+            if let comment = showBlockAlert {
+                Text(String(
+                    format: comment.comment.isBlocked == true
+                        ? NSLocalizedString("unblock_user_confirm", bundle: .module, comment: "")
+                        : NSLocalizedString("block_user_confirm", bundle: .module, comment: ""),
+                    comment.comment.commenterName
+                ))
+            }
+        }
     }
 
     // MARK: - Windowing
@@ -131,7 +170,10 @@ public struct LiveChatView: View {
                     voteStyle: voteStyle,
                     onReply: nil,
                     onToggleReplies: nil,
-                    onUserClick: onUserClick
+                    onUserClick: onUserClick,
+                    onBlock: { comment in
+                        showBlockAlert = comment
+                    }
                 )
             } else if let separator = node as? DateSeparator {
                 DateSeparatorRow(separator: separator)
