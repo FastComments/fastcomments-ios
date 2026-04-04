@@ -2,9 +2,32 @@
 import SwiftUI
 import UIKit
 
+/// Shared image cache for all feed images (GIF and static).
+/// Uses cost-based eviction so large decoded GIFs don't crowd out static images.
+final class FeedImageCache {
+    static let shared: NSCache<NSString, UIImage> = {
+        let cache = NSCache<NSString, UIImage>()
+        cache.countLimit = 200
+        cache.totalCostLimit = 50 * 1024 * 1024 // ~50 MB
+        return cache
+    }()
+
+    /// Approximate byte cost of a UIImage for cache accounting.
+    static func cost(of image: UIImage) -> Int {
+        guard let cgImage = image.cgImage else {
+            // Animated images: estimate from frame count
+            if let images = image.images {
+                return images.reduce(0) { $0 + (cost(of: $1)) }
+            }
+            return 0
+        }
+        return cgImage.bytesPerRow * cgImage.height
+    }
+}
+
 /// Displays an image from a URL, with animated GIF support.
 /// Uses UIImageView for GIFs (which natively animates all frames)
-/// and AsyncImage for static images.
+/// and CachedStaticImageView for static images (backed by FeedImageCache).
 struct SmartImage: View {
     let url: URL
     var contentMode: ContentMode = .fill
@@ -13,32 +36,8 @@ struct SmartImage: View {
         if url.pathExtension.lowercased() == "gif" {
             AnimatedImageView(url: url, contentMode: contentMode)
         } else {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: contentMode)
-                case .failure:
-                    imagePlaceholder
-                case .empty:
-                    imagePlaceholder
-                        .overlay { ProgressView() }
-                @unknown default:
-                    imagePlaceholder
-                }
-            }
+            CachedStaticImageView(url: url, contentMode: contentMode)
         }
-    }
-
-    private var imagePlaceholder: some View {
-        Rectangle()
-            .fill(Color(uiColor: .systemGray6))
-            .overlay {
-                Image(systemName: "photo")
-                    .font(.title3)
-                    .foregroundStyle(.quaternary)
-            }
     }
 }
 
@@ -46,12 +45,6 @@ struct SmartImage: View {
 private struct AnimatedImageView: UIViewRepresentable {
     let url: URL
     var contentMode: ContentMode = .fill
-
-    private static let imageCache: NSCache<NSString, UIImage> = {
-        let cache = NSCache<NSString, UIImage>()
-        cache.countLimit = 50
-        return cache
-    }()
 
     func makeUIView(context: Context) -> UIImageView {
         let imageView = UIImageView()
@@ -68,20 +61,65 @@ private struct AnimatedImageView: UIViewRepresentable {
 
         let key = url.absoluteString as NSString
 
-        // Check cache first
-        if let cached = Self.imageCache.object(forKey: key) {
+        if let cached = FeedImageCache.shared.object(forKey: key) {
             imageView.image = cached
             return
         }
 
         imageView.image = nil
 
-        URLSession.shared.dataTask(with: url) { data, _, _ in
+        URLSession.shared.dataTask(with: url) { [weak imageView] data, _, _ in
             guard let data else { return }
             guard let image = UIImage.animatedImage(with: data) else { return }
-            Self.imageCache.setObject(image, forKey: key)
-            DispatchQueue.main.async {
-                imageView.image = image
+            FeedImageCache.shared.setObject(image, forKey: key as NSString, cost: FeedImageCache.cost(of: image))
+            DispatchQueue.main.async { [weak imageView] in
+                imageView?.image = image
+            }
+        }.resume()
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    class Coordinator {
+        var loadedURL: URL?
+    }
+}
+
+/// UIViewRepresentable wrapper for cached static image display.
+/// Shares FeedImageCache with AnimatedImageView so images survive view re-renders.
+private struct CachedStaticImageView: UIViewRepresentable {
+    let url: URL
+    var contentMode: ContentMode = .fill
+
+    func makeUIView(context: Context) -> UIImageView {
+        let imageView = UIImageView()
+        imageView.contentMode = contentMode == .fill ? .scaleAspectFill : .scaleAspectFit
+        imageView.clipsToBounds = true
+        imageView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        imageView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        return imageView
+    }
+
+    func updateUIView(_ imageView: UIImageView, context: Context) {
+        guard context.coordinator.loadedURL != url else { return }
+        context.coordinator.loadedURL = url
+
+        let key = url.absoluteString as NSString
+
+        if let cached = FeedImageCache.shared.object(forKey: key) {
+            imageView.image = cached
+            return
+        }
+
+        imageView.image = nil
+
+        URLSession.shared.dataTask(with: url) { [weak imageView] data, _, _ in
+            guard let data, let image = UIImage(data: data) else { return }
+            FeedImageCache.shared.setObject(image, forKey: key as NSString, cost: FeedImageCache.cost(of: image))
+            DispatchQueue.main.async { [weak imageView] in
+                imageView?.image = image
             }
         }.resume()
     }

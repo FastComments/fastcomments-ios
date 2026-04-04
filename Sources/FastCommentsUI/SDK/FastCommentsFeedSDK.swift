@@ -32,6 +32,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
     private let apiConfig: FastCommentsSwiftAPIConfiguration
     private var postsById: [String: FeedPost] = [:]
     private var likeCounts: [String: Int] = [:]
+    private var commentCounts: [String: Int] = [:]
     private var myReacts: [String: [String: Bool]] = [:]
     private var lastPostId: String?
     private let liveEventSubscriber = LiveEventSubscriber()
@@ -99,6 +100,9 @@ public final class FastCommentsFeedSDK: ObservableObject {
                 postsById[post.id] = post
                 if let reacts = post.reacts {
                     likeCounts[post.id] = reacts.values.reduce(0, +)
+                }
+                if let cc = post.commentCount {
+                    commentCounts[post.id] = cc
                 }
             }
             feedPosts.append(contentsOf: (response.feedPosts ?? []))
@@ -169,6 +173,9 @@ public final class FastCommentsFeedSDK: ObservableObject {
             if let reacts = post.reacts {
                 likeCounts[post.id] = reacts.values.reduce(0, +)
             }
+            if let cc = post.commentCount {
+                commentCounts[post.id] = cc
+            }
         }
         if !newPosts.isEmpty {
             feedPosts.insert(contentsOf: newPosts, at: 0)
@@ -230,6 +237,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
         postsById.removeValue(forKey: postId)
         feedPosts.removeAll { $0.id == postId }
         likeCounts.removeValue(forKey: postId)
+        commentCounts.removeValue(forKey: postId)
         myReacts.removeValue(forKey: postId)
         onPostDeleted?(postId)
     }
@@ -289,6 +297,11 @@ public final class FastCommentsFeedSDK: ObservableObject {
         likeCounts[postId] ?? 0
     }
 
+    /// Get the comment count for a post.
+    public func getCommentCount(postId: String) -> Int {
+        commentCounts[postId] ?? 0
+    }
+
     // MARK: - Image Upload
 
     /// Upload a single image for a feed post using the generated API.
@@ -327,6 +340,8 @@ public final class FastCommentsFeedSDK: ObservableObject {
     // MARK: - Stats Polling
 
     /// Fetch updated stats for currently visible posts.
+    /// Updates side dictionaries only — does not replace posts in the feedPosts array,
+    /// so ForEach identity is preserved and scroll is not interrupted.
     public func fetchPostStats(postIds: [String]) async throws {
         guard !postIds.isEmpty else { return }
 
@@ -341,22 +356,11 @@ public final class FastCommentsFeedSDK: ObservableObject {
             if let reacts = stats.reacts {
                 likeCounts[postId] = reacts.values.reduce(0, +)
             }
-            if let commentCount = stats.commentCount, var post = postsById[postId] {
-                post = FeedPost(
-                    id: post.id, tenantId: post.tenantId, title: post.title,
-                    fromUserId: post.fromUserId, fromUserDisplayName: post.fromUserDisplayName,
-                    fromUserAvatar: post.fromUserAvatar, fromIpHash: post.fromIpHash,
-                    tags: post.tags, weight: post.weight, meta: post.meta,
-                    contentHTML: post.contentHTML, media: post.media, links: post.links,
-                    createdAt: post.createdAt, reacts: stats.reacts ?? post.reacts,
-                    commentCount: commentCount
-                )
-                postsById[postId] = post
-                if let idx = feedPosts.firstIndex(where: { $0.id == postId }) {
-                    feedPosts[idx] = post
-                }
+            if let commentCount = stats.commentCount {
+                commentCounts[postId] = commentCount
             }
         }
+        objectWillChange.send()
     }
 
     // MARK: - State Serialization
@@ -369,7 +373,8 @@ public final class FastCommentsFeedSDK: ObservableObject {
             newPostsCount: newPostsCount,
             feedPosts: feedPosts,
             myReacts: myReacts,
-            likeCounts: likeCounts
+            likeCounts: likeCounts,
+            commentCounts: commentCounts
         )
     }
 
@@ -381,6 +386,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
         feedPosts = state.feedPosts
         myReacts = state.myReacts
         likeCounts = state.likeCounts
+        commentCounts = state.commentCounts
 
         postsById.removeAll()
         for post in feedPosts {
@@ -444,12 +450,32 @@ public final class FastCommentsFeedSDK: ObservableObject {
             }
         case .updatedFeedPost:
             if let pubSubPost = event.feedPost, let post = Self.toFeedPost(pubSubPost) {
-                postsById[post.id] = post
-                if let idx = feedPosts.firstIndex(where: { $0.id == post.id }) {
-                    feedPosts[idx] = post
-                }
+                // Always update stats in side dictionaries
                 if let reacts = post.reacts {
                     likeCounts[post.id] = reacts.values.reduce(0, +)
+                }
+                if let cc = post.commentCount {
+                    commentCounts[post.id] = cc
+                }
+                // Only replace in feedPosts array if non-stats content changed
+                let existing = postsById[post.id]
+                let contentChanged = existing == nil
+                    || existing?.title != post.title
+                    || existing?.contentHTML != post.contentHTML
+                    || existing?.media != post.media
+                    || existing?.links != post.links
+                    || existing?.fromUserDisplayName != post.fromUserDisplayName
+                    || existing?.fromUserAvatar != post.fromUserAvatar
+                    || existing?.fromUserId != post.fromUserId
+                    || existing?.tags != post.tags
+                    || existing?.weight != post.weight
+                    || existing?.meta != post.meta
+                    || existing?.fromIpHash != post.fromIpHash
+                if contentChanged {
+                    postsById[post.id] = post
+                    if let idx = feedPosts.firstIndex(where: { $0.id == post.id }) {
+                        feedPosts[idx] = post
+                    }
                 }
             }
         case .deletedFeedPost:
@@ -457,6 +483,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
                 postsById.removeValue(forKey: post.id)
                 feedPosts.removeAll { $0.id == post.id }
                 likeCounts.removeValue(forKey: post.id)
+                commentCounts.removeValue(forKey: post.id)
                 myReacts.removeValue(forKey: post.id)
                 onPostDeleted?(post.id)
             }
@@ -468,19 +495,18 @@ public final class FastCommentsFeedSDK: ObservableObject {
     // MARK: - Private
 
     private func processFeedResponse(_ response: GetFeedPostsPublic200Response, isInitialLoad: Bool) {
-        if isInitialLoad {
-            feedPosts = (response.feedPosts ?? [])
-            postsById.removeAll()
-            likeCounts.removeAll()
-        } else {
-            feedPosts = (response.feedPosts ?? [])
-            postsById.removeAll()
-        }
+        feedPosts = (response.feedPosts ?? [])
+        postsById.removeAll()
+        likeCounts.removeAll()
+        commentCounts.removeAll()
 
         for post in (response.feedPosts ?? []) {
             postsById[post.id] = post
             if let reacts = post.reacts {
                 likeCounts[post.id] = reacts.values.reduce(0, +)
+            }
+            if let cc = post.commentCount {
+                commentCounts[post.id] = cc
             }
         }
 

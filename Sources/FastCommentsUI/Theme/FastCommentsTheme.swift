@@ -88,6 +88,18 @@ public struct FastCommentsTheme: Sendable {
     /// Avatar size for nested replies.
     public var replyAvatarSize: CGFloat = 28
 
+    /// Horizontal content padding for feed posts (header, text, media, actions, dividers).
+    public var feedContentPadding: CGFloat = 14
+
+    /// Avatar size for feed post headers.
+    public var feedAvatarSize: CGFloat = 42
+
+    /// Height for feed post media (single image and carousel).
+    public var feedMediaHeight: CGFloat = 280
+
+    /// Size of action bar icons (comment, like, share) in feed posts.
+    public var feedActionIconSize: CGFloat = 15
+
     // MARK: - Visual Effects
 
     /// Whether to show subtle shadows on cards.

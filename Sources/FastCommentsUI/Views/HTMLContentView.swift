@@ -64,7 +64,7 @@ public struct HTMLContentView: View {
                                     .resizable()
                                     .scaledToFit()
                                     .frame(maxWidth: .infinity)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius.inner))
                             case .failure:
                                 EmptyView()
                             case .empty:

@@ -21,8 +21,8 @@ struct NewFeedPostsBanner: View {
             .padding(.vertical, 10)
             .frame(maxWidth: .infinity)
             .background(theme.resolveLoadMoreButtonTextColor().opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .padding(.horizontal, 14)
+            .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius.inner))
+            .padding(.horizontal, theme.feedContentPadding)
             .padding(.vertical, 4)
         }
         .buttonStyle(.plain)

@@ -10,6 +10,7 @@ public struct FeedState: Codable, Sendable {
     public var feedPosts: [FeedPost]
     public var myReacts: [String: [String: Bool]]
     public var likeCounts: [String: Int]
+    public var commentCounts: [String: Int]
 
     public init(
         lastPostId: String? = nil,
@@ -18,7 +19,8 @@ public struct FeedState: Codable, Sendable {
         newPostsCount: Int = 0,
         feedPosts: [FeedPost] = [],
         myReacts: [String: [String: Bool]] = [:],
-        likeCounts: [String: Int] = [:]
+        likeCounts: [String: Int] = [:],
+        commentCounts: [String: Int] = [:]
     ) {
         self.lastPostId = lastPostId
         self.hasMore = hasMore
@@ -27,5 +29,6 @@ public struct FeedState: Codable, Sendable {
         self.feedPosts = feedPosts
         self.myReacts = myReacts
         self.likeCounts = likeCounts
+        self.commentCounts = commentCounts
     }
 }

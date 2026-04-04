@@ -23,7 +23,7 @@ public struct FeedPostRowView: View {
                 Button {
                     onUserClick?(.feedPost(post), UserInfo.from(post), .avatar)
                 } label: {
-                    AvatarImage(url: post.fromUserAvatar, size: 42)
+                    AvatarImage(url: post.fromUserAvatar, size: theme.feedAvatarSize)
                 }
                 .buttonStyle(.plain)
 
@@ -57,13 +57,13 @@ public struct FeedPostRowView: View {
                     }
                 }
             }
-            .padding(.horizontal, 14)
+            .padding(.horizontal, theme.feedContentPadding)
 
             // Content
             if let contentHTML = post.contentHTML, !contentHTML.isEmpty {
                 HTMLContentView(html: contentHTML)
                     .font(theme.resolveBodyFont())
-                    .padding(.horizontal, 14)
+                    .padding(.horizontal, theme.feedContentPadding)
             }
 
             // Media
@@ -74,10 +74,10 @@ public struct FeedPostRowView: View {
                    let asset = item.sizes.first, let url = URL(string: asset.src) {
                     SmartImage(url: url, contentMode: .fill)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 260)
+                        .frame(height: theme.feedMediaHeight)
                         .clipped()
                         .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius.inner))
-                        .padding(.horizontal, 14)
+                        .padding(.horizontal, theme.feedContentPadding)
                         .contentShape(Rectangle())
                         .onTapGesture { onMediaClick?(item, 0) }
                 }
@@ -85,6 +85,8 @@ public struct FeedPostRowView: View {
             case .multiImage:
                 if let media = post.media {
                     PostImagesCarousel(mediaItems: media, onImageTap: onMediaClick)
+                        .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius.inner))
+                        .padding(.horizontal, theme.feedContentPadding)
                 }
 
             case .task:
@@ -104,12 +106,12 @@ public struct FeedPostRowView: View {
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 6)
                                     .background(theme.resolveLinkColor().opacity(0.08))
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius.inner))
                                 }
                             }
                         }
                     }
-                    .padding(.horizontal, 14)
+                    .padding(.horizontal, theme.feedContentPadding)
                 }
 
             case .textOnly:
@@ -118,7 +120,7 @@ public struct FeedPostRowView: View {
 
             // Action bar
             HStack(spacing: 0) {
-                actionButton(icon: "bubble.right", count: post.commentCount) {
+                actionButton(icon: "bubble.right", count: sdk.getCommentCount(postId: post.id)) {
                     onComment?(post)
                 }
 
@@ -136,10 +138,10 @@ public struct FeedPostRowView: View {
 
                 Spacer()
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, theme.feedContentPadding)
             .padding(.bottom, 10)
         }
-        .padding(.top, 14)
+        .padding(.top, theme.feedContentPadding)
         .contentShape(Rectangle())
         .onTapGesture { onPostClick?(post) }
     }
@@ -150,7 +152,7 @@ public struct FeedPostRowView: View {
         Button(action: action) {
             HStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(.system(size: 15))
+                    .font(.system(size: theme.feedActionIconSize))
                     .foregroundStyle(tint ?? .secondary)
                 if let count = count, count > 0 {
                     Text("\(count)")

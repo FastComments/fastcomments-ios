@@ -11,6 +11,7 @@ public struct FastCommentsFeedView: View {
     var onSharePost: ((FeedPost) -> Void)?
     var onMediaClick: ((FeedPostMediaItem, Int) -> Void)?
 
+    @Environment(\.fastCommentsTheme) private var theme
     @State private var showDeleteAlert: FeedPost?
 
     public init(sdk: FastCommentsFeedSDK) {
@@ -79,7 +80,7 @@ public struct FastCommentsFeedView: View {
                                 onDelete: { showDeleteAlert = $0 }
                             )
                             Divider()
-                                .padding(.horizontal, 14)
+                                .padding(.horizontal, theme.feedContentPadding)
 
                             // Infinite scroll trigger
                             if post.id == sdk.feedPosts.last?.id && sdk.hasMore {
@@ -110,6 +111,9 @@ public struct FastCommentsFeedView: View {
                     Task { try? await sdk.deletePost(postId: post.id) }
                 }
             }
+        }
+        .onDisappear {
+            sdk.cleanup()
         }
     }
 

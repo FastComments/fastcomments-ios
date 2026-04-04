@@ -6,6 +6,7 @@ public struct PostImagesCarousel: View {
     let mediaItems: [FeedPostMediaItem]
     var onImageTap: ((FeedPostMediaItem, Int) -> Void)?
 
+    @Environment(\.fastCommentsTheme) private var theme
     @State private var currentPage: Int = 0
 
     public var body: some View {
@@ -26,12 +27,12 @@ public struct PostImagesCarousel: View {
             #if os(iOS)
             .tabViewStyle(.page(indexDisplayMode: .automatic))
             #endif
-            .frame(height: 300)
+            .frame(height: theme.feedMediaHeight)
 
             // Image counter
             if mediaItems.count > 1 {
                 Text("\(currentPage + 1)/\(mediaItems.count)")
-                    .font(.caption)
+                    .font(theme.resolveCaptionFont())
                     .fontWeight(.medium)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
