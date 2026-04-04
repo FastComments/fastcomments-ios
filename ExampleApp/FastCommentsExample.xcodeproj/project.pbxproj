@@ -16,6 +16,7 @@
 		465B1EEC6064DD6ABF475285 /* FPSMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6915E016718743267DCA2939 /* FPSMonitor.swift */; };
 		4FEF7DC49693C587091FD538 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9A77220F4365E6FD85DF80D /* ContentView.swift */; };
 		549304BBDDE912BCBFB08F6E /* CommentCRUDUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C6047179DF41F51F8670BB1 /* CommentCRUDUITests.swift */; };
+		6030066A514E638AA824FC52 /* FastCommentsSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 3D6F9D8AA20FE2B24EDB6C90 /* FastCommentsSwift */; };
 		74518BE814DC2CD76568AD8E /* VoteUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10E93CBF0BA951A24E978EEB /* VoteUITests.swift */; };
 		923C1649CD795633AF9E2608 /* SimpleSSOExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2692943945F57CC263B43785 /* SimpleSSOExampleView.swift */; };
 		928FA1F62814064ABA8522F0 /* CommentsExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29E377BB9CBDD3F98FAF56E9 /* CommentsExampleView.swift */; };
@@ -74,6 +75,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				CCEDE2DB86EA56A98A6E7D93 /* FastCommentsUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6CEBC49C1C58A584F009F7BA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6030066A514E638AA824FC52 /* FastCommentsSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -150,6 +159,7 @@
 			buildConfigurationList = 02A3025E8459145B3B0C3397 /* Build configuration list for PBXNativeTarget "FastCommentsUITests" */;
 			buildPhases = (
 				820AF4BE1DC3C546A61A0F55 /* Sources */,
+				6CEBC49C1C58A584F009F7BA /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -158,6 +168,7 @@
 			);
 			name = FastCommentsUITests;
 			packageProductDependencies = (
+				3D6F9D8AA20FE2B24EDB6C90 /* FastCommentsSwift */,
 			);
 			productName = FastCommentsUITests;
 			productReference = C801B9ADA415FEB9DCD126C8 /* FastCommentsUITests.xctest */;
@@ -505,6 +516,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		3D6F9D8AA20FE2B24EDB6C90 /* FastCommentsSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FastCommentsSwift;
+		};
 		42419200B1CAAB35610CEFAD /* FastCommentsUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = FastCommentsUI;

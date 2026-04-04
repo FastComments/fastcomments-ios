@@ -1,5 +1,6 @@
 import XCTest
 import CommonCrypto
+import FastCommentsSwift
 
 /// Base class for UI tests. Handles tenant creation, SSO, app launching, and UI interaction helpers.
 class UITestBase: XCTestCase {
@@ -11,6 +12,11 @@ class UITestBase: XCTestCase {
 
     private let host = "https://fastcomments.com"
     private let e2eApiKey = "T0ph B3st"
+
+    /// API config authenticated with the test tenant's API key.
+    var adminApiConfig: FastCommentsSwiftAPIConfiguration {
+        FastCommentsSwiftAPIConfiguration(customHeaders: ["x-api-key": testTenantApiKey ?? ""])
+    }
 
     /// Subclasses must override to provide a stable tenant email (e.g. "ios-comment-crud-ui@fctest.com").
     var stableTenantEmail: String {
@@ -187,8 +193,12 @@ class UITestBase: XCTestCase {
         XCTAssertTrue(menu.waitForExistence(timeout: 5), "Menu button should exist for \(commentId)")
         menu.tap()
 
+        // SwiftUI Menu items appear as buttons on iOS — wait for the popover
         let actionButton = app.buttons[action]
-        XCTAssertTrue(actionButton.waitForExistence(timeout: 5), "Menu action '\(action)' should exist")
+        if !actionButton.waitForExistence(timeout: 5) {
+            XCTFail("Menu action '\(action)' not found for comment \(commentId)")
+            return
+        }
         actionButton.tap()
     }
 
@@ -208,83 +218,81 @@ class UITestBase: XCTestCase {
         return element
     }
 
-    func seedComment(urlId: String, text: String, ssoToken: String, parentId: String? = nil) {
-        let encodedSSO = ssoToken.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
-        let url = URL(string: "\(host)/comments/\(testTenantId!)/?broadcastId=\(UUID().uuidString)&urlId=\(urlId)&sso=\(encodedSSO)")!
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        var body: [String: Any] = [
-            "comment": text,
-            "commenterName": "Tester",
-            "commenterEmail": "tester@fctest.com",
-            "url": urlId,
-            "urlId": urlId
-        ]
-        if let parentId = parentId {
-            body["parentId"] = parentId
+    @discardableResult
+    func seedComment(urlId: String, text: String, ssoToken: String, parentId: String? = nil) -> String? {
+        let commentData = CommentData(
+            commenterName: "Tester",
+            commenterEmail: "tester@fctest.com",
+            comment: text,
+            parentId: parentId,
+            url: urlId,
+            urlId: urlId
+        )
+        let sem = DispatchSemaphore(value: 0)
+        var resultId: String?
+        Task {
+            defer { sem.signal() }
+            do {
+                let response = try await PublicAPI.createCommentPublic(
+                    tenantId: testTenantId,
+                    urlId: urlId,
+                    broadcastId: UUID().uuidString,
+                    commentData: commentData,
+                    sso: ssoToken
+                )
+                resultId = response.comment?.id
+            } catch {
+                XCTFail("seedComment failed: \(error)")
+            }
         }
-        request.httpBody = try! JSONSerialization.data(withJSONObject: body)
-        _ = try? syncFetchRaw(url: request)
+        sem.wait()
+        return resultId
     }
 
     @discardableResult
-    func adminUpdateComment(commentId: String, params: [String: Any]) -> Bool {
-        let url = URL(string: "\(host)/api/v1/comments/\(commentId)?tenantId=\(testTenantId!)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "PATCH"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(testTenantApiKey, forHTTPHeaderField: "x-api-key")
-        request.httpBody = try! JSONSerialization.data(withJSONObject: params)
-        let (data, response) = (try? syncFetchRaw(url: request)) ?? (Data(), nil)
-        let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-        if status != 200 {
-            let body = String(data: data, encoding: .utf8) ?? ""
-            XCTFail("adminUpdateComment failed: status=\(status) body=\(body.prefix(200))")
-            return false
+    func adminUpdateComment(commentId: String, params: UpdatableCommentParams) -> Bool {
+        let sem = DispatchSemaphore(value: 0)
+        var success = false
+        Task {
+            defer { sem.signal() }
+            do {
+                let response = try await DefaultAPI.updateComment(
+                    tenantId: testTenantId,
+                    id: commentId,
+                    updatableCommentParams: params,
+                    apiConfiguration: adminApiConfig
+                )
+                success = response.status == .success
+            } catch {
+                XCTFail("adminUpdateComment failed: \(error)")
+            }
         }
-        return true
+        sem.wait()
+        return success
     }
 
-    /// Fetch the latest comment ID for a urlId via admin API. Retries up to 3 times.
+    /// Fetch the latest comment ID for a urlId via admin API.
     func fetchLatestCommentId(urlId: String, file: StaticString = #file, line: UInt = #line) -> String? {
-        for attempt in 1...3 {
-            let urlString = "\(host)/api/v1/comments?tenantId=\(testTenantId!)&urlId=\(urlId)&limit=1"
-            guard let url = URL(string: urlString) else {
-                XCTFail("Bad URL: \(urlString)", file: file, line: line)
-                return nil
-            }
-            var request = URLRequest(url: url)
-            request.setValue(testTenantApiKey, forHTTPHeaderField: "x-api-key")
-
-            let sem = DispatchSemaphore(value: 0)
-            var resultId: String?
-            var debugInfo = "no response"
-
-            URLSession.shared.dataTask(with: request) { data, response, error in
-                defer { sem.signal() }
-                let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-                let body = data.flatMap { String(data: $0, encoding: .utf8) } ?? "nil"
-                debugInfo = "status=\(status) body=\(String(body.prefix(300)))"
-
-                guard let data = data,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let comments = json["comments"] as? [[String: Any]],
-                      let first = comments.first,
-                      let id = (first["_id"] ?? first["id"]) as? String else { return }
-                resultId = id
-            }.resume()
-
-            sem.wait()
-
-            if let id = resultId { return id }
-            if attempt == 3 {
-                XCTFail("fetchLatestCommentId failed: \(debugInfo)", file: file, line: line)
-            } else {
-                usleep(500_000) // 500ms before retry
+        let sem = DispatchSemaphore(value: 0)
+        var resultId: String?
+        Task {
+            defer { sem.signal() }
+            do {
+                let response = try await DefaultAPI.getComments(
+                    tenantId: testTenantId,
+                    limit: 1,
+                    urlId: urlId,
+                    apiConfiguration: adminApiConfig
+                )
+                resultId = response.comments?.first?.id
+            } catch {
+                XCTFail("fetchLatestCommentId failed: \(error)", file: file, line: line)
             }
         }
-        return nil
+        sem.wait()
+        if resultId == nil {
+            XCTFail("fetchLatestCommentId: no comments found for urlId=\(urlId)", file: file, line: line)
+        }
+        return resultId
     }
 }

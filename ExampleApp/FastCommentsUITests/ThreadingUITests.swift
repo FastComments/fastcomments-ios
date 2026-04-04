@@ -35,20 +35,7 @@ final class ThreadingUITests: UITestBase {
         guard let parentId = fetchLatestCommentId(urlId: urlId) else { return }
 
         for i in 1...3 {
-            let encodedSSO = sso.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
-            let sem = DispatchSemaphore(value: 0)
-            let url = URL(string: "https://fastcomments.com/comments/\(testTenantId!)?broadcastId=\(UUID().uuidString)&urlId=\(urlId)&sso=\(encodedSSO)")!
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            let body: [String: Any] = [
-                "comment": "Reply \(i)", "commenterName": "Tester",
-                "commenterEmail": "tester@fctest.com", "url": urlId,
-                "urlId": urlId, "parentId": parentId
-            ]
-            request.httpBody = try! JSONSerialization.data(withJSONObject: body)
-            URLSession.shared.dataTask(with: request) { _, _, _ in sem.signal() }.resume()
-            sem.wait()
+            seedComment(urlId: urlId, text: "Reply \(i)", ssoToken: sso, parentId: parentId)
         }
 
         launchApp(urlId: urlId, ssoToken: sso)

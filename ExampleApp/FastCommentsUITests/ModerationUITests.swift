@@ -1,4 +1,5 @@
 import XCTest
+import FastCommentsSwift
 
 final class ModerationUITests: UITestBase {
 
@@ -11,7 +12,7 @@ final class ModerationUITests: UITestBase {
         // Pin via admin API, then verify icon renders
         seedComment(urlId: urlId, text: "Pinned comment", ssoToken: sso)
         guard let commentId = fetchLatestCommentId(urlId: urlId) else { return }
-        adminUpdateComment(commentId: commentId, params: ["isPinned": true])
+        adminUpdateComment(commentId: commentId, params: UpdatableCommentParams(isPinned: true))
 
         launchApp(urlId: urlId, ssoToken: sso)
         XCTAssertTrue(app.staticTexts["Pinned comment"].waitForExistence(timeout: 10))
@@ -27,7 +28,7 @@ final class ModerationUITests: UITestBase {
         // Lock via admin API, then verify icon renders
         seedComment(urlId: urlId, text: "Locked comment", ssoToken: sso)
         guard let commentId = fetchLatestCommentId(urlId: urlId) else { return }
-        adminUpdateComment(commentId: commentId, params: ["isLocked": true])
+        adminUpdateComment(commentId: commentId, params: UpdatableCommentParams(isLocked: true))
 
         launchApp(urlId: urlId, ssoToken: sso)
         XCTAssertTrue(app.staticTexts["Locked comment"].waitForExistence(timeout: 10))

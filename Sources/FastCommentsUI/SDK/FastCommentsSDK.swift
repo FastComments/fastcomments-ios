@@ -106,6 +106,12 @@ public final class FastCommentsSDK: ObservableObject {
     var broadcastIdsSent: Set<String> = []
     private var commentsTreeSubscription: AnyCancellable?
     private let apiConfig: FastCommentsSwiftAPIConfiguration
+    private static let presenceSession: URLSession = {
+        let config = URLSessionConfiguration.ephemeral
+        config.httpCookieAcceptPolicy = .never
+        config.httpShouldSetCookies = false
+        return URLSession(configuration: config)
+    }()
     private let liveEventSubscriber = LiveEventSubscriber()
     private var liveEventSubscription: SubscribeToChangesResult?
     private var tenantIdWS: String?
@@ -807,10 +813,8 @@ public final class FastCommentsSDK: ObservableObject {
     func handleLiveEvent(_ event: LiveEvent) {
         // Skip events we broadcasted
         if let broadcastId = event.broadcastId, broadcastIdsSent.contains(broadcastId) {
-    
             return
         }
-
 
         switch event.type {
         case .newComment:
@@ -924,13 +928,18 @@ public final class FastCommentsSDK: ObservableObject {
         guard let urlIdWS = urlIdWS, let tenantIdWS = tenantIdWS else { return }
         let csv = userIds.joined(separator: ",")
 
+        // urlIdWS arrives pre-percent-encoded from the server (e.g. "tenant%3AurlId").
+        // The generated API client uses URLComponents.queryItems which would double-encode
+        // %3A to %253A. Use percentEncodedQuery to preserve the encoding.
+        var components = URLComponents(string: "\(apiConfig.basePath)/user-presence-status")!
+        let encodedTenant = tenantIdWS.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? tenantIdWS
+        let encodedCSV = csv.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? csv
+        components.percentEncodedQuery = "tenantId=\(encodedTenant)&urlIdWS=\(urlIdWS)&userIds=\(encodedCSV)"
+        guard let url = components.url else { return }
+
         do {
-            let response = try await PublicAPI.getUserPresenceStatuses(
-                tenantId: tenantIdWS,
-                urlIdWS: urlIdWS,
-                userIds: csv,
-                apiConfiguration: apiConfig
-            )
+            let (data, _) = try await Self.presenceSession.data(from: url)
+            let response = try JSONDecoder().decode(GetUserPresenceStatuses200Response.self, from: data)
 
             for (userId, isOnline) in (response.userIdsOnline ?? [:]) {
                 commentsTree.updateUserPresence(userId: userId, isOnline: isOnline)

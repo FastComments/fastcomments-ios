@@ -167,6 +167,12 @@ class IntegrationTestBase: XCTestCase {
         return FastCommentsSDK(config: config)
     }
 
+    /// Create a FastCommentsSDK with a specific SSO user identity (for reconnect / multi-user tests).
+    func makeSDK(urlId: String, userId: String) -> FastCommentsSDK {
+        let config = FastCommentsWidgetConfig(tenantId: tenantId, urlId: urlId, sso: makeSSOToken(userId: userId))
+        return FastCommentsSDK(config: config)
+    }
+
     /// Create a FastCommentsFeedSDK with a unique urlId and SSO user.
     func makeFeedSDK(testName: String = #function) -> FastCommentsFeedSDK {
         let urlId = makeUrlId(testName: testName)

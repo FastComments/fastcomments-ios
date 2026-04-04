@@ -6,7 +6,7 @@ final class LiveEventUserB_UITests: UITestBase {
 
     override func setUpWithError() throws {
         SyncClient.currentRole = "userB"
-        continueAfterFailure = true
+        continueAfterFailure = false
 
         SyncClient.waitFor(role: "userA", round: "setup")
         let config = SyncClient.getData(round: "setup")
@@ -42,44 +42,35 @@ final class LiveEventUserB_UITests: UITestBase {
         let phase2Data = SyncClient.getData(round: "phase2_setup")
         let voteCommentId = phase2Data["commentId"] as! String
 
-        app.terminate()
-        launchApp(urlId: urlId, ssoToken: ssoTokenB)
-
+        // UserA's comment should arrive via live event — no relaunch needed
         let voteUp = app.descendants(matching: .any)["vote-up-\(voteCommentId)"]
-        XCTAssertTrue(voteUp.waitForExistence(timeout: 15), "Vote button should exist")
+        XCTAssertTrue(voteUp.waitForExistence(timeout: 15), "Vote button should appear via live event")
         voteUp.tap()
 
         SyncClient.signalReady(round: "phase2")
 
         // --- Phase 3: Presence ---
+        // UserB is already connected — just signal ready so UserA can check the indicator
         SyncClient.waitFor(role: "userA", round: "phase3")
-
-        app.terminate()
-        launchApp(urlId: urlId, ssoToken: ssoTokenB)
-        _ = app.textViews["comment-input"].waitForExistence(timeout: 10)
-
         SyncClient.signalReady(round: "phase3")
 
         // --- Phase 4: Seed a comment then delete it ---
         SyncClient.waitFor(role: "userA", round: "phase4_ready")
 
         let deleteText = "Delete me live \(Int(Date().timeIntervalSince1970))"
-        seedComment(urlId: urlId, text: deleteText, ssoToken: ssoTokenB)
+        guard let deleteCommentId = seedComment(urlId: urlId, text: deleteText, ssoToken: ssoTokenB) else {
+            SyncClient.signalReady(round: "phase4_deleted")
+            XCTFail("Could not seed delete comment")
+            return
+        }
 
         SyncClient.postData(round: "phase4_posted", data: ["text": deleteText])
         SyncClient.signalReady(round: "phase4_posted")
 
         SyncClient.waitFor(role: "userA", round: "phase4_seen")
 
-        app.terminate()
-        launchApp(urlId: urlId, ssoToken: ssoTokenB)
+        // Comment should appear via live event — no relaunch needed
         XCTAssertTrue(app.staticTexts[deleteText].waitForExistence(timeout: 10))
-
-        guard let deleteCommentId = fetchLatestCommentId(urlId: urlId) else {
-            XCTFail("Could not get delete comment ID")
-            SyncClient.signalReady(round: "phase4_deleted")
-            return
-        }
 
         tapMenu(commentId: deleteCommentId, action: "Delete")
         let deleteBtn = app.alerts.buttons["Delete"]
@@ -91,6 +82,7 @@ final class LiveEventUserB_UITests: UITestBase {
         SyncClient.signalReady(round: "phase4_deleted")
 
         // --- Phase 5: Pin via menu (admin SSO) ---
+        // Single relaunch to switch to admin identity — needed for pin/lock permissions
         SyncClient.waitFor(role: "userA", round: "phase5")
         let phase5Data = SyncClient.getData(round: "phase5_setup")
         let pinCommentId = phase5Data["commentId"] as! String
@@ -103,12 +95,14 @@ final class LiveEventUserB_UITests: UITestBase {
         SyncClient.signalReady(round: "phase5")
 
         // --- Phase 6: Lock via menu (admin SSO) ---
+        // Already running as admin — no relaunch needed
         SyncClient.waitFor(role: "userA", round: "phase6")
         let phase6Data = SyncClient.getData(round: "phase6_setup")
         let lockCommentId = phase6Data["commentId"] as! String
 
-        app.terminate()
-        launchApp(urlId: urlId, ssoToken: ssoTokenBAdmin)
+        // Lock target should appear via live event (seeded by UserA while we're connected)
+        let lockMenuItem = app.staticTexts["Lock target from A"]
+        XCTAssertTrue(lockMenuItem.waitForExistence(timeout: 10), "Lock target should appear via live event")
 
         tapMenu(commentId: lockCommentId, action: "Lock")
 

@@ -31,6 +31,8 @@ targets:
       - FastCommentsUITests
     dependencies:
       - target: FastCommentsExample
+      - package: FastCommentsUI
+        product: FastCommentsSwift
     settings:
       base:
         SWIFT_VERSION: "5.9"

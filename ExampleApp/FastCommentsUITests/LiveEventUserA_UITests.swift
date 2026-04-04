@@ -8,7 +8,7 @@ final class LiveEventUserA_UITests: UITestBase {
 
     override func setUpWithError() throws {
         SyncClient.currentRole = "userA"
-        continueAfterFailure = true
+        continueAfterFailure = false
         try super.setUpWithError()
     }
 
@@ -27,7 +27,7 @@ final class LiveEventUserA_UITests: UITestBase {
         ])
         SyncClient.signalReady(round: "setup")
 
-        // Launch and wait for WebSocket (input bar means app is loaded)
+        // Single launch — all phases use the same app session and WebSocket connection
         launchApp(urlId: urlId, ssoToken: ssoTokenA)
         _ = app.textViews["comment-input"].waitForExistence(timeout: 10)
 
@@ -40,30 +40,32 @@ final class LiveEventUserA_UITests: UITestBase {
 
         XCTAssertTrue(
             app.staticTexts[commentText].waitForExistence(timeout: 15),
-            "Live comment '\(commentText)' should appear on UserA"
+            "Live comment '\(commentText)' should appear via WebSocket"
         )
 
         // --- Phase 2: Live vote ---
-        seedComment(urlId: urlId, text: "Vote target from A", ssoToken: ssoTokenA)
-        guard let voteCommentId = fetchLatestCommentId(urlId: urlId) else {
-            XCTFail("Could not get vote target comment ID")
+        guard let voteCommentId = seedComment(urlId: urlId, text: "Vote target from A", ssoToken: ssoTokenA) else {
+            XCTFail("Could not seed vote target comment")
             return
         }
 
+        // Wait for seeded comment to appear via live event
+        XCTAssertTrue(
+            app.staticTexts["Vote target from A"].waitForExistence(timeout: 10),
+            "Seeded comment should appear via live event"
+        )
+
         SyncClient.postData(round: "phase2_setup", data: ["commentId": voteCommentId])
         SyncClient.signalReady(round: "phase2")
-
-        app.terminate()
-        launchApp(urlId: urlId, ssoToken: ssoTokenA)
-        let voteCount = app.descendants(matching: .any)["vote-count-\(voteCommentId)"]
-        XCTAssertTrue(voteCount.waitForExistence(timeout: 10), "Vote count element should exist")
-
         SyncClient.waitFor(role: "userB", round: "phase2")
 
-        pollUntil(timeout: 10) { voteCount.label != "0" }
-        XCTAssertNotEqual(voteCount.label, "0", "Vote count should change after UserB votes")
+        let voteCount = app.descendants(matching: .any)["vote-count-\(voteCommentId)"]
+        pollUntil(timeout: 10) { voteCount.exists && voteCount.label != "0" }
+        XCTAssertNotEqual(voteCount.label, "0", "Vote count should change via live WebSocket event")
 
         // --- Phase 3: Presence ---
+        // UserB has been connected since Phase 1, so UserA should have already
+        // received the p-u event. Just verify the indicator is visible.
         SyncClient.signalReady(round: "phase3")
         SyncClient.waitFor(role: "userB", round: "phase3")
 
@@ -79,52 +81,54 @@ final class LiveEventUserA_UITests: UITestBase {
         let phase4Data = SyncClient.getData(round: "phase4_posted")
         let deleteText = phase4Data["text"] as? String ?? "?"
 
-        app.terminate()
-        launchApp(urlId: urlId, ssoToken: ssoTokenA)
-        XCTAssertTrue(app.staticTexts[deleteText].waitForExistence(timeout: 10), "Comment to delete should be visible")
+        // Comment should arrive via live event — no relaunch needed
+        XCTAssertTrue(
+            app.staticTexts[deleteText].waitForExistence(timeout: 10),
+            "Delete target should appear via live event"
+        )
 
         SyncClient.signalReady(round: "phase4_seen")
         SyncClient.waitFor(role: "userB", round: "phase4_deleted")
 
         pollUntil(timeout: 10) { !self.app.staticTexts[deleteText].exists }
-        XCTAssertFalse(app.staticTexts[deleteText].exists, "Deleted comment should disappear from UserA")
+        XCTAssertFalse(app.staticTexts[deleteText].exists, "Deleted comment should disappear via live WebSocket event")
 
         // --- Phase 5: Live pin ---
-        seedComment(urlId: urlId, text: "Pin target from A", ssoToken: ssoTokenA)
-        guard let pinCommentId = fetchLatestCommentId(urlId: urlId) else {
-            XCTFail("Could not get pin target comment ID")
+        guard let pinCommentId = seedComment(urlId: urlId, text: "Pin target from A", ssoToken: ssoTokenA) else {
+            XCTFail("Could not seed pin target comment")
             return
         }
 
-        app.terminate()
-        launchApp(urlId: urlId, ssoToken: ssoTokenA)
-        XCTAssertTrue(app.staticTexts["Pin target from A"].waitForExistence(timeout: 10))
+        XCTAssertTrue(
+            app.staticTexts["Pin target from A"].waitForExistence(timeout: 10),
+            "Pin target should appear via live event"
+        )
 
         SyncClient.postData(round: "phase5_setup", data: ["commentId": pinCommentId])
         SyncClient.signalReady(round: "phase5")
         SyncClient.waitFor(role: "userB", round: "phase5")
 
         let pinIcon = app.descendants(matching: .any)["pin-icon-\(pinCommentId)"]
-        XCTAssertTrue(pinIcon.waitForExistence(timeout: 15), "Pin icon should appear after UserB pins")
+        XCTAssertTrue(pinIcon.waitForExistence(timeout: 15), "Pin icon should appear via live WebSocket event")
 
         // --- Phase 6: Live lock ---
-        seedComment(urlId: urlId, text: "Lock target from A", ssoToken: ssoTokenA)
-        guard let lockCommentId = fetchLatestCommentId(urlId: urlId) else {
-            XCTFail("Could not get lock target comment ID")
+        guard let lockCommentId = seedComment(urlId: urlId, text: "Lock target from A", ssoToken: ssoTokenA) else {
             SyncClient.signalReady(round: "done")
+            XCTFail("Could not seed lock target comment")
             return
         }
 
-        app.terminate()
-        launchApp(urlId: urlId, ssoToken: ssoTokenA)
-        XCTAssertTrue(app.staticTexts["Lock target from A"].waitForExistence(timeout: 10))
+        XCTAssertTrue(
+            app.staticTexts["Lock target from A"].waitForExistence(timeout: 10),
+            "Lock target should appear via live event"
+        )
 
         SyncClient.postData(round: "phase6_setup", data: ["commentId": lockCommentId])
         SyncClient.signalReady(round: "phase6")
         SyncClient.waitFor(role: "userB", round: "phase6")
 
         let lockIcon = app.descendants(matching: .any)["lock-icon-\(lockCommentId)"]
-        XCTAssertTrue(lockIcon.waitForExistence(timeout: 15), "Lock icon should appear after UserB locks")
+        XCTAssertTrue(lockIcon.waitForExistence(timeout: 15), "Lock icon should appear via live WebSocket event")
 
         SyncClient.signalReady(round: "done")
     }
