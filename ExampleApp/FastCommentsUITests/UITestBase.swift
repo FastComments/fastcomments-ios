@@ -170,6 +170,15 @@ class UITestBase: XCTestCase {
         return application
     }
 
+    @discardableResult
+    func launchFeedApp(urlId: String, ssoToken: String) -> XCUIApplication {
+        let application = XCUIApplication()
+        application.launchArguments = ["-feed-test", testTenantId, urlId, ssoToken]
+        application.launch()
+        app = application
+        return application
+    }
+
     func makeUrlId(_ testName: String = #function) -> String {
         let sanitized = testName.replacingOccurrences(of: "()", with: "")
         return "uitest-\(sanitized)-\(Int(Date().timeIntervalSince1970))"

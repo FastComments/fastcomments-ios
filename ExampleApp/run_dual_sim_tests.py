@@ -7,7 +7,7 @@ test files in parallel on separate simulators. Tests coordinate via
 the sync server at localhost:9999.
 
 Usage:
-    python3 run_dual_sim_tests.py [--sim-a ID] [--sim-b ID]
+    python3 run_dual_sim_tests.py [--sim-a ID] [--sim-b ID] [--suite SUITE]
 """
 
 import argparse
@@ -26,6 +26,11 @@ DEFAULT_SIM_B = "DB94C97C-1CDF-4016-84E7-BF84A1ACF84F"
 SYNC_PORT = 9999
 PROJECT = "FastCommentsExample.xcodeproj"
 SCHEME = "FastCommentsExample"
+
+DUAL_SUITES = {
+    "live-events": ("LiveEventUserA_UITests", "LiveEventUserB_UITests"),
+    "feed":        ("FeedUserA_UITests",       "FeedUserB_UITests"),
+}
 
 
 class SyncServer:
@@ -49,6 +54,13 @@ class SyncServer:
     def stop(self):
         if self.server:
             self.server.shutdown()
+
+    def reset(self):
+        """Clear all state between test suites."""
+        with self.lock:
+            self.ready = defaultdict(dict)
+            self.data = {}
+            self.waiters = defaultdict(list)
 
     def _make_handler(self):
         sync = self
@@ -169,10 +181,50 @@ def stream_output(proc, prefix):
             print(f"[{prefix}] {text}")
 
 
+def run_dual_suite(sim_a, sim_b, suite_name, class_a, class_b, sync):
+    """Run a single dual-simulator test suite. Returns True if both pass."""
+    print(f"\n{'='*60}")
+    print(f"Running suite: {suite_name}")
+    print(f"{'='*60}")
+
+    sync.reset()
+
+    proc_a = run_xcodebuild(
+        sim_a, "userA",
+        f"FastCommentsUITests/{class_a}",
+    )
+    proc_b = run_xcodebuild(
+        sim_b, "userB",
+        f"FastCommentsUITests/{class_b}",
+    )
+
+    thread_a = threading.Thread(target=stream_output, args=(proc_a, f"{suite_name}/UserA"), daemon=True)
+    thread_b = threading.Thread(target=stream_output, args=(proc_b, f"{suite_name}/UserB"), daemon=True)
+    thread_a.start()
+    thread_b.start()
+
+    rc_a = proc_a.wait()
+    rc_b = proc_b.wait()
+
+    thread_a.join(timeout=5)
+    thread_b.join(timeout=5)
+
+    passed = rc_a == 0 and rc_b == 0
+    status = "PASSED" if passed else "FAILED"
+    print(f"[{suite_name}] UserA exit: {rc_a}, UserB exit: {rc_b} — {status}")
+    return passed
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run dual-simulator XCUITests")
     parser.add_argument("--sim-a", default=DEFAULT_SIM_A, help="Simulator A UUID")
     parser.add_argument("--sim-b", default=DEFAULT_SIM_B, help="Simulator B UUID")
+    parser.add_argument(
+        "--suite",
+        default="all",
+        choices=list(DUAL_SUITES.keys()) + ["all"],
+        help="Which test suite to run (default: all)",
+    )
     args = parser.parse_args()
 
     # Start sync server
@@ -180,39 +232,29 @@ def main():
     sync.start()
 
     try:
-        # Run UserA and UserB tests in parallel
-        proc_a = run_xcodebuild(
-            args.sim_a, "userA",
-            "FastCommentsUITests/LiveEventUserA_UITests",
-        )
-        proc_b = run_xcodebuild(
-            args.sim_b, "userB",
-            "FastCommentsUITests/LiveEventUserB_UITests",
-        )
+        suites_to_run = DUAL_SUITES if args.suite == "all" else {args.suite: DUAL_SUITES[args.suite]}
+        results = {}
 
-        # Stream output from both
-        thread_a = threading.Thread(target=stream_output, args=(proc_a, "UserA"), daemon=True)
-        thread_b = threading.Thread(target=stream_output, args=(proc_b, "UserB"), daemon=True)
-        thread_a.start()
-        thread_b.start()
-
-        # Wait for both to finish
-        rc_a = proc_a.wait()
-        rc_b = proc_b.wait()
-
-        thread_a.join(timeout=5)
-        thread_b.join(timeout=5)
+        for suite_name, (class_a, class_b) in suites_to_run.items():
+            passed = run_dual_suite(args.sim_a, args.sim_b, suite_name, class_a, class_b, sync)
+            results[suite_name] = passed
 
         print(f"\n{'='*60}")
-        print(f"User A exit code: {rc_a}")
-        print(f"User B exit code: {rc_b}")
-        if rc_a == 0 and rc_b == 0:
+        print("RESULTS:")
+        all_passed = True
+        for suite_name, passed in results.items():
+            status = "PASSED" if passed else "FAILED"
+            print(f"  {suite_name}: {status}")
+            if not passed:
+                all_passed = False
+
+        if all_passed:
             print("ALL DUAL-SIM TESTS PASSED")
         else:
             print("SOME TESTS FAILED")
         print(f"{'='*60}")
 
-        sys.exit(0 if rc_a == 0 and rc_b == 0 else 1)
+        sys.exit(0 if all_passed else 1)
 
     finally:
         sync.stop()

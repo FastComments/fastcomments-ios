@@ -71,7 +71,7 @@ private struct AnimatedImageView: UIViewRepresentable {
         URLSession.shared.dataTask(with: url) { [weak imageView] data, _, _ in
             guard let data else { return }
             guard let image = UIImage.animatedImage(with: data) else { return }
-            FeedImageCache.shared.setObject(image, forKey: key as NSString, cost: FeedImageCache.cost(of: image))
+            FeedImageCache.shared.setObject(image, forKey: key, cost: FeedImageCache.cost(of: image))
             DispatchQueue.main.async { [weak imageView] in
                 imageView?.image = image
             }
@@ -117,7 +117,7 @@ private struct CachedStaticImageView: UIViewRepresentable {
 
         URLSession.shared.dataTask(with: url) { [weak imageView] data, _, _ in
             guard let data, let image = UIImage(data: data) else { return }
-            FeedImageCache.shared.setObject(image, forKey: key as NSString, cost: FeedImageCache.cost(of: image))
+            FeedImageCache.shared.setObject(image, forKey: key, cost: FeedImageCache.cost(of: image))
             DispatchQueue.main.async { [weak imageView] in
                 imageView?.image = image
             }

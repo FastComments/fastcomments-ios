@@ -59,6 +59,7 @@ public struct FeedPostCreateView: View {
                         .font(.body)
                         .lineLimit(3...20)
                         .padding(.horizontal, 12)
+                        .accessibilityIdentifier("feed-post-content-input")
 
                         // Selected images
                         SelectedMediaGrid(selectedItems: $selectedItems, loadedImages: $loadedImages)
@@ -156,6 +157,7 @@ public struct FeedPostCreateView: View {
                         }
                     }
                     .disabled(isPosting || postContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .accessibilityIdentifier("feed-post-submit")
                 }
             }
         }
