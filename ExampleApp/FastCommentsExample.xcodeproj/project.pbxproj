@@ -14,6 +14,7 @@
 		20E85780CC8A5B12BA1A230E /* ScreenshotTourView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB079430F62DC9B6CB9C598 /* ScreenshotTourView.swift */; };
 		24BB6333387D6FE2E05D7080 /* ThreadingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 024EBFC10581F751358D41BE /* ThreadingUITests.swift */; };
 		2CD8EEB83A3AB2A85F1FA4C6 /* LiveEventUserB_UITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8126939B362F6314D65EAE06 /* LiveEventUserB_UITests.swift */; };
+		351629C4277AA4D1605E7507 /* UITestHarnessViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9680CD77CD8E7A3376FD0312 /* UITestHarnessViews.swift */; };
 		465B1EEC6064DD6ABF475285 /* FPSMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6915E016718743267DCA2939 /* FPSMonitor.swift */; };
 		4FEF7DC49693C587091FD538 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9A77220F4365E6FD85DF80D /* ContentView.swift */; };
 		549304BBDDE912BCBFB08F6E /* CommentCRUDUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C6047179DF41F51F8670BB1 /* CommentCRUDUITests.swift */; };
@@ -64,6 +65,7 @@
 		791DB661CF451256DF9C0799 /* FeedCustomButtonsExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedCustomButtonsExampleView.swift; sourceTree = "<group>"; };
 		7C7ABE5B2667408633F1431A /* FastCommentsExample.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FastCommentsExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8126939B362F6314D65EAE06 /* LiveEventUserB_UITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveEventUserB_UITests.swift; sourceTree = "<group>"; };
+		9680CD77CD8E7A3376FD0312 /* UITestHarnessViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestHarnessViews.swift; sourceTree = "<group>"; };
 		A860CA0B281DA2ED08F35C9A /* SecureSSOExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureSSOExampleView.swift; sourceTree = "<group>"; };
 		C801B9ADA415FEB9DCD126C8 /* FastCommentsUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FastCommentsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C92A52059B50BA720778264C /* UITestBase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestBase.swift; sourceTree = "<group>"; };
@@ -150,6 +152,7 @@
 				A860CA0B281DA2ED08F35C9A /* SecureSSOExampleView.swift */,
 				2692943945F57CC263B43785 /* SimpleSSOExampleView.swift */,
 				59B0CB01CF6CC047F9CB4087 /* ToolbarShowcaseView.swift */,
+				9680CD77CD8E7A3376FD0312 /* UITestHarnessViews.swift */,
 			);
 			path = FastCommentsExample;
 			sourceTree = "<group>";
@@ -259,6 +262,7 @@
 				06D7021922189E1CE29470EF /* SecureSSOExampleView.swift in Sources */,
 				923C1649CD795633AF9E2608 /* SimpleSSOExampleView.swift in Sources */,
 				E06DE1F41877B35BB3A0CCF2 /* ToolbarShowcaseView.swift in Sources */,
+				351629C4277AA4D1605E7507 /* UITestHarnessViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
