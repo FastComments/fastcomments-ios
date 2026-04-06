@@ -7,6 +7,11 @@ import UIKit
 
 /// Bottom comment input bar with WYSIWYG formatting, reply indicator, and @mention support.
 public struct CommentInputBar: View {
+    private enum Layout {
+        static let inputHorizontalPadding: CGFloat = 16
+        static let inputVerticalPadding: CGFloat = 10
+    }
+
     @ObservedObject var sdk: FastCommentsSDK
     @Binding var replyingTo: RenderableComment?
     var customToolbarButtons: [any CustomToolbarButton] = []
@@ -240,8 +245,8 @@ public struct CommentInputBar: View {
                              : NSLocalizedString("comment_hint", bundle: .module, comment: ""))
                         .font(.subheadline)
                         .foregroundStyle(.tertiary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, Layout.inputHorizontalPadding)
+                        .padding(.vertical, Layout.inputVerticalPadding)
                     }
 
                     RichTextEditor(
@@ -268,8 +273,8 @@ public struct CommentInputBar: View {
                 .textFieldStyle(.plain)
                 .font(.subheadline)
                 .lineLimit(1...5)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
+                .padding(.vertical, Layout.inputVerticalPadding)
+                .padding(.horizontal, Layout.inputHorizontalPadding)
                 .background(
                     RoundedRectangle(cornerRadius: 20)
                         .fill(inputFieldBackground)
