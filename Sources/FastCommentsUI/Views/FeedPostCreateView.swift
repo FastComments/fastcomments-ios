@@ -188,7 +188,11 @@ public struct FeedPostCreateView: View {
             kCGImageSourceCreateThumbnailWithTransform: true,
         ]
         guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        #if canImport(UIKit)
         return UIImage(cgImage: cgImage)
+        #else
+        return UIImage(cgImage: cgImage, size: .zero)
+        #endif
     }
 
     private func submitPost() async {
