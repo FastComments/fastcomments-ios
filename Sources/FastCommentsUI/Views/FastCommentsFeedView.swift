@@ -54,19 +54,6 @@ public struct FastCommentsFeedView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        if sdk.newPostsCount > 0 {
-                            NewFeedPostsBanner(count: sdk.newPostsCount) {
-                                Task {
-                                    do {
-                                        try await sdk.loadNewPosts()
-                                    } catch {
-                                        // loadNewPosts preserves newPostsCount on failure,
-                                        // so the banner stays visible for retry
-                                    }
-                                }
-                            }
-                        }
-
                         ForEach(sdk.feedPosts, id: \.id) { post in
                             FeedPostRowView(
                                 post: post,
@@ -93,8 +80,22 @@ public struct FastCommentsFeedView: View {
                         }
                     }
                 }
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    if sdk.newPostsCount > 0 {
+                        NewFeedPostsBanner(count: sdk.newPostsCount) {
+                            Task {
+                                do {
+                                    try await sdk.loadNewPosts()
+                                } catch {
+                                    // loadNewPosts preserves newPostsCount on failure,
+                                    // so the banner stays visible for retry
+                                }
+                            }
+                        }
+                    }
+                }
                 .refreshable {
-                    try? await sdk.refresh()
+                    _ = try? await sdk.refresh()
                 }
             }
         }
@@ -112,8 +113,11 @@ public struct FastCommentsFeedView: View {
                 }
             }
         }
+        .onAppear {
+            sdk.resumeLiveUpdates()
+        }
         .onDisappear {
-            sdk.cleanup()
+            sdk.pauseLiveUpdates()
         }
     }
 
