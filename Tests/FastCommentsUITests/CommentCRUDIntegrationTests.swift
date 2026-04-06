@@ -119,12 +119,17 @@ final class CommentCRUDIntegrationTests: IntegrationTestBase {
         try await sdk.load()
 
         let parent = try await sdk.postComment(text: "Parent")
-        _ = try await sdk.postComment(text: "Child", parentId: parent.id)
+        let child = try await sdk.postComment(text: "Child", parentId: parent.id)
         XCTAssertEqual(sdk.commentCountOnServer, 2)
 
         try await sdk.deleteComment(commentId: parent.id)
 
+        try await waitFor {
+            sdk.commentsTree.commentsById[parent.id] == nil
+                && sdk.commentsTree.commentsById[child.id] == nil
+        }
         XCTAssertNil(sdk.commentsTree.commentsById[parent.id])
+        XCTAssertNil(sdk.commentsTree.commentsById[child.id])
     }
 
     // MARK: - Pagination
