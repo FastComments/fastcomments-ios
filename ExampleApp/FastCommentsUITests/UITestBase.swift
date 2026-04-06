@@ -179,6 +179,24 @@ class UITestBase: XCTestCase {
         return application
     }
 
+    @discardableResult
+    func launchFeedComposerApp(urlId: String, ssoToken: String) -> XCUIApplication {
+        let application = XCUIApplication()
+        application.launchArguments = ["-feed-composer-test", testTenantId, urlId, ssoToken]
+        application.launch()
+        app = application
+        return application
+    }
+
+    @discardableResult
+    func launchFullFeedApp(urlId: String, ssoToken: String) -> XCUIApplication {
+        let application = XCUIApplication()
+        application.launchArguments = ["-full-feed-test", testTenantId, urlId, ssoToken]
+        application.launch()
+        app = application
+        return application
+    }
+
     func makeUrlId(_ testName: String = #function) -> String {
         let sanitized = testName.replacingOccurrences(of: "()", with: "")
         return "uitest-\(sanitized)-\(Int(Date().timeIntervalSince1970))"
