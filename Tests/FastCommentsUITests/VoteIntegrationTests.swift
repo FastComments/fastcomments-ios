@@ -115,6 +115,10 @@ final class VoteIntegrationTests: IntegrationTestBase {
         _ = try await sdk.voteComment(commentId: c1.id, isUpvote: true)
         _ = try await sdk.voteComment(commentId: c2.id, isUpvote: true)
 
+        try await waitFor {
+            sdk.commentsTree.commentsById[c1.id]!.comment.votesUp == 1
+                && sdk.commentsTree.commentsById[c2.id]!.comment.votesUp == 1
+        }
         XCTAssertEqual(sdk.commentsTree.commentsById[c1.id]!.comment.votesUp, 1)
         XCTAssertEqual(sdk.commentsTree.commentsById[c2.id]!.comment.votesUp, 1)
     }
