@@ -197,6 +197,15 @@ class UITestBase: XCTestCase {
         return application
     }
 
+    @discardableResult
+    func launchFeedLifecycleApp(urlId: String, ssoToken: String) -> XCUIApplication {
+        let application = XCUIApplication()
+        application.launchArguments = ["-feed-lifecycle-test", testTenantId, urlId, ssoToken]
+        application.launch()
+        app = application
+        return application
+    }
+
     func makeUrlId(_ testName: String = #function) -> String {
         let sanitized = testName.replacingOccurrences(of: "()", with: "")
         return "uitest-\(sanitized)-\(Int(Date().timeIntervalSince1970))"
@@ -270,6 +279,28 @@ class UITestBase: XCTestCase {
                 resultId = response.comment?.id
             } catch {
                 XCTFail("seedComment failed: \(error)")
+            }
+        }
+        sem.wait()
+        return resultId
+    }
+
+    @discardableResult
+    func seedFeedPost(urlId: String, text: String, ssoToken: String) -> String? {
+        let sem = DispatchSemaphore(value: 0)
+        var resultId: String?
+        Task {
+            defer { sem.signal() }
+            do {
+                let response = try await PublicAPI.createFeedPostPublic(
+                    tenantId: testTenantId,
+                    createFeedPostParams: CreateFeedPostParams(contentHTML: text),
+                    broadcastId: UUID().uuidString,
+                    sso: ssoToken
+                )
+                resultId = response.feedPost?.id
+            } catch {
+                XCTFail("seedFeedPost failed: \(error)")
             }
         }
         sem.wait()
