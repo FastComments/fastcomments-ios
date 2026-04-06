@@ -7,6 +7,43 @@ final class FeedIntegrationTests: IntegrationTestBase {
 
     override var stableTenantEmail: String { "ios-feed@fctest.com" }
 
+    private func seedPosts(count: Int, urlId: String) async throws -> [FeedPost] {
+        let seedSDK = makeFeedSDK(urlId: urlId)
+        defer { seedSDK.cleanup() }
+
+        _ = try? await seedSDK.load()
+
+        var posts: [FeedPost] = []
+        for index in 0..<count {
+            var lastError: Error?
+            var createdPost: FeedPost?
+
+            for attempt in 0..<3 {
+                do {
+                    createdPost = try await seedSDK.createPost(
+                        params: CreateFeedPostParams(
+                            title: "Seed \(index)",
+                            contentHTML: "<p>Seed \(index)</p>"
+                        )
+                    )
+                    break
+                } catch {
+                    lastError = error
+                    if attempt < 2 {
+                        try await Task.sleep(nanoseconds: 300_000_000)
+                    }
+                }
+            }
+
+            if let createdPost {
+                posts.append(createdPost)
+            } else if let lastError {
+                throw lastError
+            }
+        }
+        return posts
+    }
+
     func testLoadFeed() async throws {
         let feedSDK = makeFeedSDK()
         try await feedSDK.load()
@@ -146,6 +183,91 @@ final class FeedIntegrationTests: IntegrationTestBase {
 
         // Cleanup
         try? await feedSDK.deletePost(postId: post.id)
+        feedSDK.cleanup()
+    }
+
+    func testLoadIfNeededAfterRestoreDoesNotResetPaginationState() async throws {
+        let urlId = makeUrlId()
+        _ = try await seedPosts(count: 7, urlId: urlId)
+
+        let feedSDK = makeFeedSDK(urlId: urlId)
+        feedSDK.pageSize = 3
+        try await feedSDK.load()
+        try await feedSDK.loadMore()
+
+        let loadedIds = feedSDK.feedPosts.map(\.id)
+        let savedState = feedSDK.savePaginationState()
+
+        let restoredSDK = makeFeedSDK(urlId: urlId)
+        restoredSDK.restorePaginationState(savedState)
+        try await restoredSDK.loadIfNeeded()
+
+        XCTAssertEqual(restoredSDK.feedPosts.map(\.id), loadedIds)
+        XCTAssertEqual(restoredSDK.feedPosts.count, 6)
+        XCTAssertEqual(restoredSDK.savePaginationState().lastPostId, savedState.lastPostId)
+
+        feedSDK.cleanup()
+        restoredSDK.cleanup()
+    }
+
+    func testConcurrentLoadMoreDoesNotDuplicatePosts() async throws {
+        let urlId = makeUrlId()
+        _ = try await seedPosts(count: 7, urlId: urlId)
+
+        let feedSDK = makeFeedSDK(urlId: urlId)
+        feedSDK.pageSize = 3
+        try await feedSDK.load()
+
+        async let firstLoad: Void = {
+            _ = try? await feedSDK.loadMore()
+        }()
+        async let secondLoad: Void = {
+            _ = try? await feedSDK.loadMore()
+        }()
+        _ = await (firstLoad, secondLoad)
+
+        let ids = feedSDK.feedPosts.map(\.id)
+        XCTAssertEqual(ids.count, Set(ids).count, "loadMore should not append duplicate posts")
+        XCTAssertEqual(feedSDK.feedPosts.count, 6)
+
+        feedSDK.cleanup()
+    }
+
+    func testHasMoreBecomesFalseAfterShortFinalPage() async throws {
+        let urlId = makeUrlId()
+        _ = try await seedPosts(count: 5, urlId: urlId)
+
+        let feedSDK = makeFeedSDK(urlId: urlId)
+        feedSDK.pageSize = 3
+        try await feedSDK.load()
+
+        XCTAssertTrue(feedSDK.hasMore)
+
+        try await feedSDK.loadMore()
+
+        XCTAssertFalse(feedSDK.hasMore)
+        XCTAssertEqual(feedSDK.feedPosts.count, 5)
+
+        feedSDK.cleanup()
+    }
+
+    func testPauseAndResumeLiveUpdatesPreservesPaginationState() async throws {
+        let urlId = makeUrlId()
+        _ = try await seedPosts(count: 7, urlId: urlId)
+
+        let feedSDK = makeFeedSDK(urlId: urlId)
+        feedSDK.pageSize = 3
+        try await feedSDK.load()
+        try await feedSDK.loadMore()
+        let loadedIds = feedSDK.feedPosts.map(\.id)
+
+        feedSDK.pauseLiveUpdates()
+        feedSDK.resumeLiveUpdates()
+
+        XCTAssertEqual(feedSDK.feedPosts.map(\.id), loadedIds)
+        XCTAssertEqual(feedSDK.feedPosts.count, 6)
+        XCTAssertEqual(feedSDK.savePaginationState().lastPostId, loadedIds.last)
+
         feedSDK.cleanup()
     }
 }
