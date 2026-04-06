@@ -170,3 +170,32 @@ private extension UIImage {
     }
 }
 #endif
+
+#if canImport(AppKit)
+import SwiftUI
+import AppKit
+
+/// Minimal macOS fallback for remote feed images used during SwiftPM builds and tests.
+struct SmartImage: View {
+    let url: URL
+    var contentMode: ContentMode = .fill
+
+    var body: some View {
+        AsyncImage(url: url) { phase in
+            switch phase {
+            case .success(let image):
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: contentMode)
+            case .empty:
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            case .failure:
+                Color(nsColor: .quaternaryLabelColor)
+            @unknown default:
+                Color(nsColor: .quaternaryLabelColor)
+            }
+        }
+    }
+}
+#endif
