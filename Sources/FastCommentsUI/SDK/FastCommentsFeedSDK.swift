@@ -41,6 +41,9 @@ public final class FastCommentsFeedSDK: ObservableObject {
     private var urlIdWS: String?
     private var userIdWS: String?
     private var statsPollTask: Task<Void, Never>?
+    private var hasLoadedOnce: Bool = false
+    private var isLoadingMore: Bool = false
+    private var activeLoadMoreCursor: String?
 
     // MARK: - Init
 
@@ -74,15 +77,41 @@ public final class FastCommentsFeedSDK: ObservableObject {
         return response
     }
 
+    /// Load the feed only if it has not already been loaded or restored.
+    /// If content is already present, this resumes live updates instead of resetting pagination state.
+    @discardableResult
+    public func loadIfNeeded() async throws -> GetFeedPostsPublic200Response? {
+        if hasLoadedOnce || !feedPosts.isEmpty {
+            resumeLiveUpdates()
+            return nil
+        }
+        return try await load()
+    }
+
     /// Load next page of feed posts (cursor-based via afterId).
     @discardableResult
     public func loadMore() async throws -> GetFeedPostsPublic200Response {
+        guard hasMore else {
+            throw FastCommentsError(reason: "No more posts available")
+        }
+        guard !isLoadingMore else {
+            throw FastCommentsError(reason: "Already loading more posts")
+        }
         guard let lastId = lastPostId else {
             throw FastCommentsError(reason: "No cursor available for loading more posts")
         }
+        guard activeLoadMoreCursor != lastId else {
+            throw FastCommentsError(reason: "Already loading posts for this cursor")
+        }
 
+        isLoadingMore = true
+        activeLoadMoreCursor = lastId
         isLoading = true
-        defer { isLoading = false }
+        defer {
+            isLoading = false
+            isLoadingMore = false
+            activeLoadMoreCursor = nil
+        }
 
         let tags = tagSupplier?.getTags(currentUser: currentUser)
 
@@ -95,8 +124,9 @@ public final class FastCommentsFeedSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        if !(response.feedPosts ?? []).isEmpty {
-            for post in (response.feedPosts ?? []) {
+        let newPosts = (response.feedPosts ?? []).filter { postsById[$0.id] == nil }
+        if !newPosts.isEmpty {
+            for post in newPosts {
                 postsById[post.id] = post
                 if let reacts = post.reacts {
                     likeCounts[post.id] = reacts.values.reduce(0, +)
@@ -105,8 +135,10 @@ public final class FastCommentsFeedSDK: ObservableObject {
                     commentCounts[post.id] = cc
                 }
             }
-            feedPosts.append(contentsOf: (response.feedPosts ?? []))
-            lastPostId = (response.feedPosts ?? []).last?.id
+            feedPosts.append(contentsOf: newPosts)
+        }
+        if let fetchedLastId = (response.feedPosts ?? []).last?.id {
+            lastPostId = fetchedLastId
         }
 
         // Merge myReacts
@@ -116,7 +148,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
             }
         }
 
-        hasMore = !(response.feedPosts ?? []).isEmpty
+        hasMore = (response.feedPosts ?? []).count == pageSize
         return response
     }
 
@@ -146,6 +178,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
         guard newPostsCount > 0 else {
             throw FastCommentsError(reason: "No new posts to load")
         }
+        let bufferedCountAtStart = newPostsCount
 
         let tags = tagSupplier?.getTags(currentUser: currentUser)
 
@@ -164,7 +197,8 @@ public final class FastCommentsFeedSDK: ObservableObject {
             throw error
         }
 
-        newPostsCount = 0
+        // Preserve posts that arrived while this refresh was in flight.
+        newPostsCount = max(0, newPostsCount - bufferedCountAtStart)
 
         // Prepend only posts that aren't already in the feed
         let newPosts = (response.feedPosts ?? []).filter { postsById[$0.id] == nil }
@@ -392,6 +426,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
         for post in feedPosts {
             postsById[post.id] = post
         }
+        hasLoadedOnce = !feedPosts.isEmpty
     }
 
     // MARK: - Bridge to Comments
@@ -405,11 +440,25 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
     // MARK: - Cleanup
 
-    public func cleanup() {
+    public func pauseLiveUpdates() {
         liveEventSubscription?.close()
         liveEventSubscription = nil
         statsPollTask?.cancel()
         statsPollTask = nil
+    }
+
+    public func resumeLiveUpdates() {
+        guard hasLoadedOnce || !feedPosts.isEmpty else { return }
+        if liveEventSubscription == nil {
+            subscribeToLiveEvents()
+        }
+        if statsPollTask == nil, !feedPosts.isEmpty {
+            startStatsPolling()
+        }
+    }
+
+    public func cleanup() {
+        pauseLiveUpdates()
     }
 
     // MARK: - Live Events (Internal)
@@ -519,7 +568,8 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
         currentUser = response.user
         lastPostId = (response.feedPosts ?? []).last?.id
-        hasMore = !(response.feedPosts ?? []).isEmpty
+        hasMore = (response.feedPosts ?? []).count == pageSize
+        hasLoadedOnce = true
 
         // Extract WebSocket params
         let newTenantIdWS = response.tenantIdWS
