@@ -2,6 +2,11 @@
 import SwiftUI
 import UIKit
 
+private enum RichTextEditorLayout {
+    static let horizontalInset: CGFloat = 16
+    static let verticalInset: CGFloat = 10
+}
+
 // MARK: - RichTextEditorContext
 
 /// Shared context between SwiftUI toolbar buttons and the UITextView.
@@ -265,7 +270,12 @@ struct RichTextEditor: UIViewRepresentable {
         textView.textColor = textColor
         textView.backgroundColor = .clear
         textView.isScrollEnabled = false
-        textView.textContainerInset = UIEdgeInsets(top: 8, left: 4, bottom: 8, right: 4)
+        textView.textContainerInset = UIEdgeInsets(
+            top: RichTextEditorLayout.verticalInset,
+            left: RichTextEditorLayout.horizontalInset,
+            bottom: RichTextEditorLayout.verticalInset,
+            right: RichTextEditorLayout.horizontalInset
+        )
         textView.textContainer.lineFragmentPadding = 0
         textView.typingAttributes = [
             .font: baseFont,
