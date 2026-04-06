@@ -7,14 +7,19 @@ final class SortingIntegrationTests: IntegrationTestBase {
 
     override var stableTenantEmail: String { "ios-sorting@fctest.com" }
 
+    private func waitForDistinctOrderingTick() async throws {
+        // The backend ordering can collapse comments created within the same second.
+        try await Task.sleep(nanoseconds: 1_100_000_000)
+    }
+
     func testNewestFirst() async throws {
         let sdk = makeSDK()
         try await sdk.load()
 
         let a = try await sdk.postComment(text: "Comment A")
-        try await Task.sleep(nanoseconds: 100_000_000) // small gap for distinct timestamps
+        try await waitForDistinctOrderingTick()
         _ = try await sdk.postComment(text: "Comment B")
-        try await Task.sleep(nanoseconds: 100_000_000)
+        try await waitForDistinctOrderingTick()
         let c = try await sdk.postComment(text: "Comment C")
 
         // Reload with newest first
@@ -40,9 +45,9 @@ final class SortingIntegrationTests: IntegrationTestBase {
         try await sdk.load()
 
         let a = try await sdk.postComment(text: "Comment A")
-        try await Task.sleep(nanoseconds: 100_000_000)
+        try await waitForDistinctOrderingTick()
         _ = try await sdk.postComment(text: "Comment B")
-        try await Task.sleep(nanoseconds: 100_000_000)
+        try await waitForDistinctOrderingTick()
         let c = try await sdk.postComment(text: "Comment C")
 
         // Reload with oldest first
@@ -94,7 +99,7 @@ final class SortingIntegrationTests: IntegrationTestBase {
         try await sdk.load()
 
         _ = try await sdk.postComment(text: "Early")
-        try await Task.sleep(nanoseconds: 100_000_000)
+        try await waitForDistinctOrderingTick()
         _ = try await sdk.postComment(text: "Late")
 
         // Load newest first
@@ -124,7 +129,7 @@ final class SortingIntegrationTests: IntegrationTestBase {
         try await sdk.load()
 
         let a = try await sdk.postComment(text: "Will be pinned")
-        try await Task.sleep(nanoseconds: 100_000_000)
+        try await waitForDistinctOrderingTick()
         _ = try await sdk.postComment(text: "Not pinned")
 
         try await sdk.pinComment(commentId: a.id)
