@@ -37,7 +37,7 @@ struct FeedCustomButtonsExampleView: View {
             )
         }
         .task {
-            try? await sdk.load()
+            try? await sdk.loadIfNeeded()
         }
         .navigationTitle("Feed + Custom Buttons")
         .navigationBarTitleDisplayMode(.inline)
