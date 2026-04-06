@@ -29,9 +29,8 @@ final class FeedUserA_UITests: UITestBase {
         // Must load and establish WebSocket BEFORE signaling phase1 ready.
         launchFeedApp(urlId: urlId, ssoToken: ssoTokenA)
 
-        // Wait for feed to be ready (input field means the view loaded and sdk.load() started)
-        let input = app.textFields["feed-post-input"]
-        XCTAssertTrue(input.waitForExistence(timeout: 15), "Feed view should load")
+        let openComposer = app.buttons["open-feed-post-composer"]
+        XCTAssertTrue(openComposer.waitForExistence(timeout: 15), "Feed view should load")
 
         // --- Phase 1: UserB posts via API, UserA sees banner and taps it ---
         SyncClient.signalReady(round: "phase1")
@@ -58,6 +57,10 @@ final class FeedUserA_UITests: UITestBase {
 
         // --- Phase 2: UserA creates post via UI, UserB sees it ---
         let myPostText = "Feed post from A \(Int(Date().timeIntervalSince1970))"
+        openComposer.tap()
+
+        let input = app.textFields["feed-post-content-input"]
+        XCTAssertTrue(input.waitForExistence(timeout: 15), "Feed composer should load")
         input.tap()
         input.typeText(myPostText)
 

@@ -29,11 +29,14 @@ final class FeedUserB_UITests: UITestBase {
 
         launchFeedApp(urlId: urlId, ssoToken: ssoTokenB)
 
-        // Wait for feed to be ready
-        let input = app.textFields["feed-post-input"]
-        XCTAssertTrue(input.waitForExistence(timeout: 15), "Feed view should load")
+        let openComposer = app.buttons["open-feed-post-composer"]
+        XCTAssertTrue(openComposer.waitForExistence(timeout: 15), "Feed view should load")
 
         let postText = "Feed post from B \(Int(Date().timeIntervalSince1970))"
+        openComposer.tap()
+
+        let input = app.textFields["feed-post-content-input"]
+        XCTAssertTrue(input.waitForExistence(timeout: 15), "Feed composer should load")
         input.tap()
         input.typeText(postText)
 
