@@ -65,7 +65,7 @@ struct FeedExampleView: View {
                 .task {
                     // 4. Load with error handling
                     do {
-                        try await sdk.load()
+                        try await sdk.loadIfNeeded()
                     } catch {
                         errorMessage = error.localizedDescription
                     }
