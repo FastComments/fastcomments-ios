@@ -28,13 +28,21 @@ public struct FeedPostRowView: View {
                 .buttonStyle(.plain)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Button {
-                        onUserClick?(.feedPost(post), UserInfo.from(post), .name)
-                    } label: {
-                        Text(post.fromUserDisplayName ?? "Anonymous")
-                            .font(theme.resolveCommenterNameFont())
+                    HStack(spacing: 6) {
+                        Button {
+                            onUserClick?(.feedPost(post), UserInfo.from(post), .name)
+                        } label: {
+                            Text(post.fromUserDisplayName ?? "Anonymous")
+                                .font(theme.resolveCommenterNameFont())
+                        }
+                        .buttonStyle(.plain)
+
+                        // Follow link — inline next to the author name. Only
+                        // rendered on posts authored by other users and only
+                        // when a FollowStateProvider is registered on the SDK;
+                        // otherwise resolves to EmptyView.
+                        FollowButton(post: post, sdk: sdk)
                     }
-                    .buttonStyle(.plain)
 
                     Text(RelativeDateFormatter.format(post.createdAt))
                         .font(theme.resolveCaptionFont())

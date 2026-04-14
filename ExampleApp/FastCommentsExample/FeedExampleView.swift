@@ -11,6 +11,7 @@ import FastCommentsSwift
 /// - Open a comments dialog for a post
 /// - Refresh the feed after post creation
 /// - Filter feed posts using TagSupplier
+/// - Register a FollowStateProvider to drive the follow/unfollow pill
 /// - Handle errors from feed loading and post creation
 struct FeedExampleView: View {
     // 1. Create the feed SDK with SSO so the user can post and react
@@ -40,6 +41,10 @@ struct FeedExampleView: View {
         return sdk
     }()
 
+    // 2a. Follow-state provider. Owned here so its lifecycle tracks the view;
+    //     the SDK holds a strong ref once assigned. Registered in .task.
+    @StateObject private var followProvider = LoggingFollowStateProvider()
+
     @State private var showCreatePost = false
     @State private var commentsPost: FeedPost?
     @State private var selectedUser: UserInfo?
@@ -63,7 +68,10 @@ struct FeedExampleView: View {
                     selectedUser = userInfo
                 }
                 .task {
-                    // 4. Load with error handling
+                    // 4. Wire up the follow-state provider.
+                    sdk.followStateProvider = followProvider
+
+                    // 5. Load with error handling
                     do {
                         try await sdk.loadIfNeeded()
                     } catch {
@@ -150,3 +158,54 @@ struct ExampleTagSupplier: TagSupplier {
 
 // FeedPost needs Identifiable for .sheet(item:)
 extension FeedPost: @retroactive Identifiable {}
+
+// MARK: - Follow State Provider Example
+
+/// Demo `FollowStateProvider` that keeps state purely in-memory and simulates
+/// a 3-second backend round-trip before invoking the callback. Every call is
+/// logged via `print(...)` so the behavior is observable from Xcode's console.
+///
+/// In a real app, replace the `Task.sleep` with an actual network request
+/// (e.g. `POST /users/{id}/follow`) and invoke `result(...)` with the server's
+/// response — or with the unchanged state on failure, to revert the optimistic
+/// UI update.
+@MainActor
+final class LoggingFollowStateProvider: ObservableObject, FollowStateProvider {
+
+    /// In-memory follow cache. Keyed by user id.
+    private var followingUserIds: Set<String> = []
+
+    nonisolated init() {}
+
+    func isFollowing(_ user: UserInfo) -> Bool {
+        guard let id = user.userId else { return false }
+        let following = followingUserIds.contains(id)
+        print("[FollowProvider] isFollowing user=\(user.displayName) id=\(id) -> \(following)")
+        return following
+    }
+
+    func requestFollowStateChange(
+        for user: UserInfo,
+        desiredFollowing: Bool,
+        result: @escaping @Sendable (Bool) -> Void
+    ) {
+        let userId = user.userId ?? ""
+        print("[FollowProvider] request user=\(user.displayName) id=\(userId) desired=\(desiredFollowing) — simulating 3s backend call")
+
+        // Weak capture so the provider isn't kept alive purely by an
+        // in-flight request after the viewer navigates away.
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard let self else { return }
+
+            if desiredFollowing {
+                self.followingUserIds.insert(userId)
+            } else {
+                self.followingUserIds.remove(userId)
+            }
+
+            print("[FollowProvider] complete user=\(user.displayName) nowFollowing=\(desiredFollowing)")
+            result(desiredFollowing)
+        }
+    }
+}

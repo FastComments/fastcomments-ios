@@ -206,6 +206,24 @@ class UITestBase: XCTestCase {
         return application
     }
 
+    @discardableResult
+    func launchFollowTestApp(urlId: String, ssoToken: String) -> XCUIApplication {
+        let application = XCUIApplication()
+        application.launchArguments = ["-follow-test", testTenantId, urlId, ssoToken]
+        application.launch()
+        app = application
+        return application
+    }
+
+    @discardableResult
+    func launchFollowDemoTestApp(urlId: String, ssoToken: String) -> XCUIApplication {
+        let application = XCUIApplication()
+        application.launchArguments = ["-follow-demo-test", testTenantId, urlId, ssoToken]
+        application.launch()
+        app = application
+        return application
+    }
+
     func makeUrlId(_ testName: String = #function) -> String {
         let sanitized = testName.replacingOccurrences(of: "()", with: "")
         return "uitest-\(sanitized)-\(Int(Date().timeIntervalSince1970))"

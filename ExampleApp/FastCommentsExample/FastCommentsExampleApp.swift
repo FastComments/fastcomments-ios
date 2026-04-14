@@ -10,6 +10,14 @@ struct FastCommentsExampleApp: App {
                 NavigationStack {
                     BenchmarkView(autoRun: true)
                 }
+            } else if let followTestConfig = followTestConfig {
+                NavigationStack {
+                    TestFollowView(config: followTestConfig)
+                }
+            } else if let followDemoTestConfig = followDemoTestConfig {
+                NavigationStack {
+                    TestFollowDemoParityView(config: followDemoTestConfig)
+                }
             } else if let feedLifecycleTestConfig = feedLifecycleTestConfig {
                 NavigationStack {
                     FeedLifecycleTestView(config: feedLifecycleTestConfig)
@@ -86,6 +94,30 @@ struct FastCommentsExampleApp: App {
     private var feedLifecycleTestConfig: FastCommentsWidgetConfig? {
         let args = ProcessInfo.processInfo.arguments
         guard let idx = args.firstIndex(of: "-feed-lifecycle-test"),
+              idx + 3 < args.count else { return nil }
+        let tenantId = args[idx + 1]
+        let urlId = args[idx + 2]
+        let sso = args[idx + 3]
+        return FastCommentsWidgetConfig(tenantId: tenantId, urlId: urlId, sso: sso)
+    }
+
+    /// Check for "-follow-test" mode with tenantId/urlId/sso launch arguments
+    private var followTestConfig: FastCommentsWidgetConfig? {
+        let args = ProcessInfo.processInfo.arguments
+        guard let idx = args.firstIndex(of: "-follow-test"),
+              idx + 3 < args.count else { return nil }
+        let tenantId = args[idx + 1]
+        let urlId = args[idx + 2]
+        let sso = args[idx + 3]
+        return FastCommentsWidgetConfig(tenantId: tenantId, urlId: urlId, sso: sso)
+    }
+
+    /// Check for "-follow-demo-test" mode — exercises the demo-parity harness
+    /// (3-second provider delay + same modifier chain as FeedExampleView) so
+    /// UI tests can verify behavior under conditions identical to the demo.
+    private var followDemoTestConfig: FastCommentsWidgetConfig? {
+        let args = ProcessInfo.processInfo.arguments
+        guard let idx = args.firstIndex(of: "-follow-demo-test"),
               idx + 3 < args.count else { return nil }
         let tenantId = args[idx + 1]
         let urlId = args[idx + 2]

@@ -26,6 +26,47 @@ public final class FastCommentsFeedSDK: ObservableObject {
     public var onPostDeleted: ((String) -> Void)?
     public var globalFeedToolbarButtons: [any FeedCustomToolbarButton] = []
 
+    /// Client-supplied follow-state hook. When non-nil, feed posts render a
+    /// follow/unfollow pill in the header for posts authored by other users.
+    ///
+    /// Held **strongly** — a weak reference is a footgun here because the
+    /// failure mode (provider nilled by ARC, pill silently disappears with
+    /// no warning) is indistinguishable from the "no provider registered"
+    /// case. Clients that need to break a retain cycle should call
+    /// ``clearFollowStateProvider()`` explicitly.
+    ///
+    /// Mirrors `FastCommentsFeedSDK#setFollowStateProvider` on Android,
+    /// which also holds strongly.
+    public var followStateProvider: (any FollowStateProvider)?
+
+    /// Clear the registered follow-state provider. Use when the client owns
+    /// both the SDK and the provider and needs to break a reference cycle
+    /// (e.g. on teardown). Equivalent to `sdk.followStateProvider = nil`.
+    public func clearFollowStateProvider() {
+        followStateProvider = nil
+    }
+
+    /// Monotonic counter bumped by `invalidateFollowState()`. Every
+    /// `FollowButton` observes the SDK, so incrementing this triggers a body
+    /// re-evaluation on every visible follow pill — which then re-queries
+    /// the provider for fresh state. That way, following Sarah from post A
+    /// immediately updates the button on post B without rebinding.
+    ///
+    /// TODO: this is a coarse signal — any `@Published` on the SDK already
+    /// invalidates every `FeedPostRowView`, so bumping it re-renders whole
+    /// rows, not just follow buttons. For a tighter scope, expose a
+    /// dedicated `PassthroughSubject<Void, Never>` that only `FollowButton`
+    /// subscribes to. Not a correctness issue at v1; a micro-optimization
+    /// for feeds with dense action bars.
+    @Published public private(set) var followStateRevision: Int = 0
+
+    /// Signal that follow state has changed (e.g. after a client-side cache
+    /// update). All visible follow buttons will re-query the provider on the
+    /// next render tick.
+    public func invalidateFollowState() {
+        followStateRevision &+= 1
+    }
+
     // MARK: - Internal State
 
     var broadcastIdsSent: Set<String> = []

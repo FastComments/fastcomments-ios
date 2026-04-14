@@ -127,6 +127,97 @@ struct FullFeedComposerTestView: View {
     }
 }
 
+/// Harness for follow-button UI tests. Registers an in-memory
+/// `FollowStateProvider` that flips after a short delay so UI tests can assert
+/// both the optimistic transition and the confirmed state. Used with the
+/// `-follow-test` launch argument.
+struct TestFollowView: View {
+    let config: FastCommentsWidgetConfig
+    @StateObject private var sdk: FastCommentsFeedSDK
+    @StateObject private var followProvider = TestFollowStateProvider(delayNanos: 500_000_000)
+
+    init(config: FastCommentsWidgetConfig) {
+        self.config = config
+        _sdk = StateObject(wrappedValue: FastCommentsFeedSDK(config: config))
+    }
+
+    var body: some View {
+        FastCommentsFeedView(sdk: sdk)
+            .task {
+                sdk.followStateProvider = followProvider
+                try? await sdk.loadIfNeeded()
+            }
+            .navigationTitle("Follow Test")
+            .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Parity harness: mirrors the real `FeedExampleView` demo — same modifier
+/// chain on `FastCommentsFeedView`, same 3-second provider delay — so a UI
+/// test can assert multi-post sync under conditions identical to what a
+/// human sees in the demo.
+struct TestFollowDemoParityView: View {
+    let config: FastCommentsWidgetConfig
+    @StateObject private var sdk: FastCommentsFeedSDK
+    @StateObject private var followProvider = TestFollowStateProvider(delayNanos: 3_000_000_000)
+
+    init(config: FastCommentsWidgetConfig) {
+        self.config = config
+        _sdk = StateObject(wrappedValue: FastCommentsFeedSDK(config: config))
+    }
+
+    var body: some View {
+        FastCommentsFeedView(sdk: sdk)
+            .onPostSelected { _ in }
+            .onSharePost { _ in }
+            .onCommentsRequested { _ in }
+            .onUserClick { _, _, _ in }
+            .task {
+                sdk.followStateProvider = followProvider
+                try? await sdk.loadIfNeeded()
+            }
+            .navigationTitle("Follow Demo Parity")
+            .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// In-memory `FollowStateProvider` for UI tests. Confirms changes after a
+/// configurable delay — the fast harness uses 500ms to observe optimistic +
+/// confirmed states quickly, while the demo-parity harness uses 3s to match
+/// the shipping `LoggingFollowStateProvider` exactly.
+@MainActor
+final class TestFollowStateProvider: ObservableObject, FollowStateProvider {
+    private let delayNanos: UInt64
+    private var followingUserIds: Set<String> = []
+
+    nonisolated init(delayNanos: UInt64) {
+        self.delayNanos = delayNanos
+    }
+
+    func isFollowing(_ user: UserInfo) -> Bool {
+        guard let id = user.userId else { return false }
+        return followingUserIds.contains(id)
+    }
+
+    func requestFollowStateChange(
+        for user: UserInfo,
+        desiredFollowing: Bool,
+        result: @escaping @Sendable (Bool) -> Void
+    ) {
+        let userId = user.userId ?? ""
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: self?.delayNanos ?? 0)
+            guard let self else { return }
+            if desiredFollowing {
+                self.followingUserIds.insert(userId)
+            } else {
+                self.followingUserIds.remove(userId)
+            }
+            result(desiredFollowing)
+        }
+    }
+}
+
 struct FeedLifecycleTestView: View {
     let config: FastCommentsWidgetConfig
     @StateObject private var sdk: FastCommentsFeedSDK

@@ -5,3 +5,14 @@ Package.resolved
 .swiftpm/
 .DS_Store
 **/TestConfig.swift
+
+# Xcode build artifacts
+ExampleApp/build/
+ExampleApp/FastCommentsExample.xcodeproj/xcuserdata/
+ExampleApp/FastCommentsExample.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Local demo recordings / screen captures (not source)
+ExampleApp/segments/
+ExampleApp/trimmed/
+ExampleApp/demo_final.mp4
+ExampleApp/*.mp4
