@@ -10,11 +10,16 @@ public struct FeedPostRowView: View {
     var onLike: ((FeedPost) -> Void)?
     var onShare: ((FeedPost) -> Void)?
     var onPostClick: ((FeedPost) -> Void)?
+    /// Notification fired when the user taps a media item.
+    /// When this handler is registered, the consumer is expected to drive
+    /// presentation themselves — the built-in full-screen viewer is suppressed
+    /// so we don't double-present.
     var onMediaClick: ((FeedPostMediaItem, Int) -> Void)?
     var onUserClick: ((UserClickContext, UserInfo, UserClickSource) -> Void)?
     var onDelete: ((FeedPost) -> Void)?
 
     @Environment(\.fastCommentsTheme) private var theme
+    @State private var fullImagePresentation: FullImageSheet.Presentation?
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -87,34 +92,57 @@ public struct FeedPostRowView: View {
                         .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius.inner))
                         .padding(.horizontal, theme.feedContentPadding)
                         .contentShape(Rectangle())
-                        .onTapGesture { onMediaClick?(item, 0) }
+                        .onTapGesture { handleMediaTap(item: item, in: media, index: 0) }
                 }
 
             case .multiImage:
                 if let media = post.media {
-                    PostImagesCarousel(mediaItems: media, onImageTap: onMediaClick)
-                        .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius.inner))
-                        .padding(.horizontal, theme.feedContentPadding)
+                    PostImagesCarousel(mediaItems: media) { item, index in
+                        handleMediaTap(item: item, in: media, index: index)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius.inner))
+                    .padding(.horizontal, theme.feedContentPadding)
                 }
 
             case .task:
-                if let links = post.links {
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(Array(links.enumerated()), id: \.offset) { _, link in
-                            if let urlString = link.url, let url = URL(string: urlString) {
-                                Link(destination: url) {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "link")
-                                            .font(.caption)
-                                        Text(link.text ?? link.title ?? urlString)
-                                            .lineLimit(1)
+                let taskMedia: (item: FeedPostMediaItem, list: [FeedPostMediaItem], url: URL)? = {
+                    guard let list = post.media, let item = list.first,
+                          let asset = item.sizes.first, let url = URL(string: asset.src)
+                    else { return nil }
+                    return (item, list, url)
+                }()
+                let hasLinks = !(post.links?.isEmpty ?? true)
+                if taskMedia != nil || hasLinks {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if let taskMedia {
+                            SmartImage(url: taskMedia.url, contentMode: .fill)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: theme.feedMediaHeight)
+                                .clipped()
+                                .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius.inner))
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    handleMediaTap(item: taskMedia.item, in: taskMedia.list, index: 0)
+                                }
+                        }
+
+                        if let links = post.links {
+                            ForEach(Array(links.enumerated()), id: \.offset) { _, link in
+                                if let urlString = link.url, let url = URL(string: urlString) {
+                                    Link(destination: url) {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "link")
+                                                .font(.caption)
+                                            Text(link.text ?? link.title ?? urlString)
+                                                .lineLimit(1)
+                                        }
+                                        .font(.subheadline)
+                                        .foregroundStyle(theme.resolveLinkColor())
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(theme.resolveLinkColor().opacity(0.08))
+                                        .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius.inner))
                                     }
-                                    .font(.subheadline)
-                                    .foregroundStyle(theme.resolveLinkColor())
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(theme.resolveLinkColor().opacity(0.08))
-                                    .clipShape(RoundedRectangle(cornerRadius: theme.cornerRadius.inner))
                                 }
                             }
                         }
@@ -152,6 +180,25 @@ public struct FeedPostRowView: View {
         .padding(.top, theme.feedContentPadding)
         .contentShape(Rectangle())
         .onTapGesture { onPostClick?(post) }
+        #if os(iOS)
+        .fullScreenCover(item: $fullImagePresentation) { presentation in
+            FullImageSheet(presentation: presentation)
+        }
+        #else
+        .sheet(item: $fullImagePresentation) { presentation in
+            FullImageSheet(presentation: presentation)
+        }
+        #endif
+    }
+
+    // MARK: - Media tap
+
+    private func handleMediaTap(item: FeedPostMediaItem, in media: [FeedPostMediaItem], index: Int) {
+        if let onMediaClick {
+            onMediaClick(item, index)
+        } else {
+            fullImagePresentation = FullImageSheet.Presentation(items: media, startIndex: index)
+        }
     }
 
     // MARK: - Action Button
