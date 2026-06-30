@@ -109,7 +109,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
         do {
             response = try await PublicAPI.getFeedPostsPublic(
                 tenantId: config.tenantId,
-                options: GetFeedPostsPublicOptions(
+                options: PublicAPI.GetFeedPostsPublicOptions(
                     limit: pageSize,
                     tags: tags,
                     sso: config.sso,
@@ -171,7 +171,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
         let response = try await PublicAPI.getFeedPostsPublic(
             tenantId: config.tenantId,
-            options: GetFeedPostsPublicOptions(
+            options: PublicAPI.GetFeedPostsPublicOptions(
                 afterId: lastId,
                 limit: pageSize,
                 tags: tags,
@@ -215,7 +215,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
         let response = try await PublicAPI.getFeedPostsPublic(
             tenantId: config.tenantId,
-            options: GetFeedPostsPublicOptions(
+            options: PublicAPI.GetFeedPostsPublicOptions(
                 limit: pageSize,
                 tags: tags,
                 sso: config.sso,
@@ -244,7 +244,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
         do {
             response = try await PublicAPI.getFeedPostsPublic(
             tenantId: config.tenantId,
-            options: GetFeedPostsPublicOptions(
+            options: PublicAPI.GetFeedPostsPublicOptions(
                 limit: pageSize,
                 tags: tags,
                 sso: config.sso,
@@ -300,16 +300,14 @@ public final class FastCommentsFeedSDK: ObservableObject {
         let response = try await PublicAPI.createFeedPostPublic(
             tenantId: config.tenantId,
             createFeedPostParams: params,
-            options: CreateFeedPostPublicOptions(
+            options: PublicAPI.CreateFeedPostPublicOptions(
                 broadcastId: broadcastId,
                 sso: config.sso
             ),
             apiConfiguration: apiConfig
         )
 
-        guard let post = response.feedPost else {
-            throw FastCommentsError(reason: "No post returned from API")
-        }
+        let post = response.feedPost
 
         // Insert at top of feed
         postsById[post.id] = post
@@ -325,7 +323,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
         _ = try await PublicAPI.deleteFeedPostPublic(
             tenantId: config.tenantId,
             postId: postId,
-            options: DeleteFeedPostPublicOptions(
+            options: PublicAPI.DeleteFeedPostPublicOptions(
                 broadcastId: broadcastId,
                 sso: config.sso
             ),
@@ -366,7 +364,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
             tenantId: config.tenantId,
             postId: postId,
             reactBodyParams: params,
-            options: ReactFeedPostPublicOptions(
+            options: PublicAPI.ReactFeedPostPublicOptions(
                 isUndo: isUndo,
                 broadcastId: broadcastId,
                 sso: config.sso
@@ -409,7 +407,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
         let response = try await PublicAPI.uploadImage(
             tenantId: config.tenantId,
             file: fileURL,
-            options: UploadImageOptions(
+            options: PublicAPI.UploadImageOptions(
                 sizePreset: .crossPlatform,
                 urlId: "FEEDS"
             ),
@@ -429,11 +427,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
     public func uploadImages(fileURLs: [URL]) async throws -> [FeedPostMediaItem] {
         try await withThrowingTaskGroup(of: FeedPostMediaItem.self) { group in
             for url in fileURLs {
-                group.addTask { try await self.uploadImage(
-            options: UploadImageOptions(
-                fileURL: url
-            )
-        ) }
+                group.addTask { try await self.uploadImage(fileURL: url) }
             }
             var results: [FeedPostMediaItem] = []
             for try await item in group {

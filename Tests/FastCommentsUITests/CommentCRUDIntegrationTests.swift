@@ -107,11 +107,7 @@ final class CommentCRUDIntegrationTests: IntegrationTestBase {
         let comment = try await sdk.postComment(text: "To be deleted")
         XCTAssertEqual(sdk.commentCountOnServer, 1)
 
-        try await sdk.deleteComment(
-            options: DeleteCommentOptions(
-                commentId: comment.id
-            )
-        )
+        try await sdk.deleteComment(commentId: comment.id)
 
         XCTAssertEqual(sdk.commentCountOnServer, 0)
         XCTAssertNil(sdk.commentsTree.commentsById[comment.id])
@@ -126,11 +122,7 @@ final class CommentCRUDIntegrationTests: IntegrationTestBase {
         let child = try await sdk.postComment(text: "Child", parentId: parent.id)
         XCTAssertEqual(sdk.commentCountOnServer, 2)
 
-        try await sdk.deleteComment(
-            options: DeleteCommentOptions(
-                commentId: parent.id
-            )
-        )
+        try await sdk.deleteComment(commentId: parent.id)
 
         try await waitFor {
             sdk.commentsTree.commentsById[parent.id] == nil

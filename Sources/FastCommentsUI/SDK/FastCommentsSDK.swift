@@ -168,7 +168,7 @@ public final class FastCommentsSDK: ObservableObject {
             response = try await PublicAPI.getCommentsPublic(
                 tenantId: config.tenantId,
                 urlId: config.urlId,
-                options: GetCommentsPublicOptions(
+                options: PublicAPI.GetCommentsPublicOptions(
                     direction: defaultSortDirection,
                     sso: config.sso,
                     skip: 0,
@@ -195,7 +195,7 @@ public final class FastCommentsSDK: ObservableObject {
         }
 
         // Determine hasMore by checking if we got more root comments than pageSize
-        var comments = response.comments ?? []
+        var comments = response.comments
         let rootComments = comments.filter { $0.parentId == nil }
         let clientHasMore = rootComments.count > pageSize
 
@@ -215,7 +215,7 @@ public final class FastCommentsSDK: ObservableObject {
         var trimmedResponse = response
         trimmedResponse.comments = comments
 
-        fcLog.info("load: returned \(response.comments?.count ?? 0) roots=\(rootComments.count) hasMore=\(clientHasMore, privacy: .public) commentCount=\(response.commentCount ?? -1)")
+        fcLog.info("load: returned \(response.comments.count) roots=\(rootComments.count) hasMore=\(clientHasMore, privacy: .public) commentCount=\(response.commentCount ?? -1)")
 
         processCommentsResponse(trimmedResponse, isInitialLoad: true, clientHasMore: clientHasMore)
         return response
@@ -235,7 +235,7 @@ public final class FastCommentsSDK: ObservableObject {
             let response = try await PublicAPI.getCommentsPublic(
             tenantId: config.tenantId,
             urlId: config.urlId,
-            options: GetCommentsPublicOptions(
+            options: PublicAPI.GetCommentsPublicOptions(
                 direction: defaultSortDirection,
                 sso: config.sso,
                 skip: currentSkip,
@@ -247,7 +247,7 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-            var comments = response.comments ?? []
+            var comments = response.comments
             let rootComments = comments.filter { $0.parentId == nil }
             let moreAvailable = rootComments.count > pageSize
 
@@ -283,7 +283,7 @@ public final class FastCommentsSDK: ObservableObject {
         let response = try await PublicAPI.getCommentsPublic(
             tenantId: config.tenantId,
             urlId: config.urlId,
-            options: GetCommentsPublicOptions(
+            options: PublicAPI.GetCommentsPublicOptions(
                 direction: defaultSortDirection,
                 sso: config.sso,
                 skip: 0,
@@ -296,7 +296,7 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        commentsTree.build(comments: (response.comments ?? []))
+        commentsTree.build(comments: response.comments)
         commentCountOnServer = response.commentCount ?? 0
         hasMore = false
         return response
@@ -307,7 +307,7 @@ public final class FastCommentsSDK: ObservableObject {
         let response = try await PublicAPI.getCommentsPublic(
             tenantId: config.tenantId,
             urlId: config.urlId,
-            options: GetCommentsPublicOptions(
+            options: PublicAPI.GetCommentsPublicOptions(
                 sso: config.sso,
                 skip: skip,
                 skipChildren: skip,
@@ -321,7 +321,7 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        return (response.comments ?? [])
+        return response.comments
     }
 
     // MARK: - Comment CRUD
@@ -356,7 +356,7 @@ public final class FastCommentsSDK: ObservableObject {
             urlId: config.urlId,
             broadcastId: broadcastId,
             commentData: commentData,
-            options: CreateCommentPublicOptions(
+            options: PublicAPI.CreateCommentPublicOptions(
                 sessionId: sessionId,
                 sso: config.sso
             ),
@@ -374,12 +374,10 @@ public final class FastCommentsSDK: ObservableObject {
         }
 
         // Add to tree
-        if let comment = response.comment {
-            commentsTree.addComment(comment, displayNow: true, sortDirection: defaultSortDirection)
-            commentCountOnServer += 1
-            return comment
-        }
-        throw FastCommentsError(reason: "No comment returned from API")
+        let comment = response.comment
+        commentsTree.addComment(comment, displayNow: true, sortDirection: defaultSortDirection)
+        commentCountOnServer += 1
+        return comment
     }
 
     /// Edit an existing comment's text.
@@ -393,7 +391,7 @@ public final class FastCommentsSDK: ObservableObject {
             commentId: commentId,
             broadcastId: broadcastId,
             commentTextUpdateRequest: request,
-            options: SetCommentTextOptions(
+            options: PublicAPI.SetCommentTextOptions(
                 editKey: editKey,
                 sso: config.sso
             ),
@@ -402,8 +400,8 @@ public final class FastCommentsSDK: ObservableObject {
 
 
         // Update local tree with server-rendered HTML
-        if let result = response.comment,
-           let existing = commentsTree.commentsById[commentId] {
+        let result = response.comment
+        if let existing = commentsTree.commentsById[commentId] {
             var updated = existing.comment
             updated.commentHTML = result.commentHTML
             updated.approved = result.approved
@@ -420,7 +418,7 @@ public final class FastCommentsSDK: ObservableObject {
             tenantId: config.tenantId,
             commentId: commentId,
             broadcastId: broadcastId,
-            options: DeleteCommentPublicOptions(
+            options: PublicAPI.DeleteCommentPublicOptions(
                 editKey: editKey,
                 sso: config.sso
             ),
@@ -454,7 +452,7 @@ public final class FastCommentsSDK: ObservableObject {
             urlId: config.urlId,
             broadcastId: broadcastId,
             voteBodyParams: params,
-            options: VoteCommentOptions(
+            options: PublicAPI.VoteCommentOptions(
                 sessionId: sessionId,
                 sso: config.sso
             ),
@@ -500,7 +498,7 @@ public final class FastCommentsSDK: ObservableObject {
             voteId: voteId,
             urlId: config.urlId,
             broadcastId: broadcastId,
-            options: DeleteCommentVoteOptions(
+            options: PublicAPI.DeleteCommentVoteOptions(
                 editKey: editKey,
                 sso: config.sso
             ),
@@ -710,7 +708,7 @@ public final class FastCommentsSDK: ObservableObject {
         let response = try await PublicAPI.uploadImage(
             tenantId: config.tenantId,
             file: fileURL,
-            options: UploadImageOptions(
+            options: PublicAPI.UploadImageOptions(
                 sizePreset: .crossPlatform,
                 urlId: config.urlId
             ),
@@ -734,7 +732,7 @@ public final class FastCommentsSDK: ObservableObject {
         let response = try await PublicAPI.searchUsers(
             tenantId: config.tenantId,
             urlId: config.urlId,
-            options: SearchUsersOptions(
+            options: PublicAPI.SearchUsersOptions(
                 usernameStartsWith: query,
                 sso: config.sso
             ),
@@ -965,7 +963,7 @@ public final class FastCommentsSDK: ObservableObject {
     // MARK: - Private Helpers
 
     private func processCommentsResponse(_ response: GetCommentsResponseWithPresencePublicComment, isInitialLoad: Bool, clientHasMore: Bool? = nil) {
-        commentsTree.build(comments: (response.comments ?? []))
+        commentsTree.build(comments: response.comments)
 
         commentCountOnServer = response.commentCount ?? 0
         currentUser = response.user

@@ -213,7 +213,7 @@ class IntegrationTestBase: XCTestCase {
         do {
             let response = try await DefaultAPI.getComments(
             tenantId: tid,
-            options: GetCommentsOptions(
+            options: DefaultAPI.GetCommentsOptions(
                 urlId: urlId
             ),
             apiConfiguration: adminApiConfig

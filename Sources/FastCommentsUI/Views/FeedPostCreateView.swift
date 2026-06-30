@@ -209,11 +209,7 @@ public struct FeedPostCreateView: View {
             if !imageFileURLs.isEmpty {
                 let totalImages = Double(imageFileURLs.count)
                 for (index, fileURL) in imageFileURLs.enumerated() {
-                    let mediaItem = try await sdk.uploadImage(
-            options: UploadImageOptions(
-                fileURL: fileURL
-            )
-        )
+                    let mediaItem = try await sdk.uploadImage(fileURL: fileURL)
                     mediaItems.append(mediaItem)
                     uploadProgress = Double(index + 1) / totalImages
                 }

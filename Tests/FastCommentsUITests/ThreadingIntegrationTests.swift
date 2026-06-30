@@ -29,11 +29,7 @@ final class ThreadingIntegrationTests: IntegrationTestBase {
         let child = try await sdk.postComment(text: "Child", parentId: root.id)
         let grandchild = try await sdk.postComment(text: "Grandchild", parentId: child.id)
 
-        try await sdk.deleteComment(
-            options: DeleteCommentOptions(
-                commentId: child.id
-            )
-        )
+        try await sdk.deleteComment(commentId: child.id)
 
         // Child removed
         XCTAssertNil(sdk.commentsTree.commentsById[child.id])
@@ -85,11 +81,7 @@ final class ThreadingIntegrationTests: IntegrationTestBase {
         let child1 = try await sdk.postComment(text: "Child 1", parentId: root.id)
         let child2 = try await sdk.postComment(text: "Child 2", parentId: root.id)
 
-        try await sdk.deleteComment(
-            options: DeleteCommentOptions(
-                commentId: child1.id
-            )
-        )
+        try await sdk.deleteComment(commentId: child1.id)
 
         XCTAssertNil(sdk.commentsTree.commentsById[child1.id])
         XCTAssertNotNil(sdk.commentsTree.commentsById[child2.id])
@@ -104,11 +96,7 @@ final class ThreadingIntegrationTests: IntegrationTestBase {
         let child = try await sdk.postComment(text: "Child", parentId: root.id)
         let grandchild = try await sdk.postComment(text: "Grandchild", parentId: child.id)
 
-        try await sdk.deleteComment(
-            options: DeleteCommentOptions(
-                commentId: root.id
-            )
-        )
+        try await sdk.deleteComment(commentId: root.id)
 
         XCTAssertNil(sdk.commentsTree.commentsById[root.id])
         XCTAssertNil(sdk.commentsTree.commentsById[child.id])

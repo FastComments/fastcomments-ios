@@ -132,11 +132,7 @@ public struct FastCommentsView: View {
                 if let comment = showDeleteAlert {
                     Task {
                         do {
-                            try await sdk.deleteComment(
-            options: DeleteCommentOptions(
-                commentId: comment.comment.id
-            )
-        )
+                            try await sdk.deleteComment(commentId: comment.comment.id)
                         } catch { sdk.showWarning(FastCommentsError.userMessage(from: error)) }
                     }
                 }

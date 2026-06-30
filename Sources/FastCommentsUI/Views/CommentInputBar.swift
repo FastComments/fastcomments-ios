@@ -422,11 +422,7 @@ public struct CommentInputBar: View {
         do {
             guard let file = try await item.loadTransferable(type: ImageFileTransferable.self) else { return }
 
-            let imageUrl = try await sdk.uploadImage(
-            options: UploadImageOptions(
-                fileURL: file.url
-            )
-        )
+            let imageUrl = try await sdk.uploadImage(fileURL: file.url)
             defer { try? FileManager.default.removeItem(at: file.url) }
 
             // Generate a thumbnail for WYSIWYG display from the file on disk
@@ -526,11 +522,7 @@ public struct CommentInputBar: View {
 
         Task {
             do {
-                let results = try await sdk.searchUsers(
-            options: SearchUsersOptions(
-                query: query
-            )
-        )
+                let results = try await sdk.searchUsers(query: query)
                 mentionSuggestions = results
             } catch {
                 mentionSuggestions = []
