@@ -52,6 +52,20 @@ jobs:
           SDK_PATH="$(xcrun --sdk iphonesimulator --show-sdk-path)"
           swift build --sdk "$SDK_PATH" --triple arm64-apple-ios16.0-simulator
 
+      # The integration tests reference TestConfig (gitignored — it holds real
+      # credentials). CI only compiles the tests, so write a placeholder with
+      # the same shape as Helpers/TestConfig.example.swift.
+      - name: Generate placeholder TestConfig
+        run: |
+          cat > Tests/FastCommentsUITests/Helpers/TestConfig.swift <<'SWIFT'
+          enum TestConfig {
+              static let tenantId = "ci-placeholder"
+              static let apiKey = "ci-placeholder"
+              static let e2eApiKey = "ci-placeholder"
+              static let host = "https://fastcomments.com"
+          }
+          SWIFT
+
       - name: Compile tests
         run: |
           SDK_PATH="$(xcrun --sdk iphonesimulator --show-sdk-path)"
