@@ -54,7 +54,7 @@ struct ScreenshotTourView: View {
                         }
                     }
                 }
-                .padding(.bottom, 90) // Above input bar
+                .padding(.bottom, 90)  // Above input bar
             }
         }
     }

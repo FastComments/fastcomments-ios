@@ -122,7 +122,8 @@ final class ThreadingIntegrationTests: IntegrationTestBase {
         // Parent should have children or a childCount indicating children exist
         let childCount = parent?.comment.childCount ?? 0
         let loadedChildren = parent?.comment.children?.count ?? 0
-        XCTAssertTrue(childCount > 0 || loadedChildren > 0,
-                       "Parent should have children (childCount=\(childCount), loaded=\(loadedChildren))")
+        XCTAssertTrue(
+            childCount > 0 || loadedChildren > 0,
+            "Parent should have children (childCount=\(childCount), loaded=\(loadedChildren))")
     }
 }

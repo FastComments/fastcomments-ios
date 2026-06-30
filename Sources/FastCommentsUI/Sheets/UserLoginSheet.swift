@@ -25,19 +25,20 @@ public struct UserLoginSheet: View {
                     TextField(NSLocalizedString("email", bundle: .module, comment: ""), text: $email)
                         .textContentType(.emailAddress)
                         #if os(iOS)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
                         #endif
                 } header: {
-                    Text(action == .vote
-                         ? NSLocalizedString("login_to_vote", bundle: .module, comment: "")
-                         : NSLocalizedString("login_to_comment", bundle: .module, comment: "")
+                    Text(
+                        action == .vote
+                            ? NSLocalizedString("login_to_vote", bundle: .module, comment: "")
+                            : NSLocalizedString("login_to_comment", bundle: .module, comment: "")
                     )
                 }
             }
             .navigationTitle(NSLocalizedString("login", bundle: .module, comment: ""))
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

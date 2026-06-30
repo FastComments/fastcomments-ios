@@ -76,7 +76,10 @@ final class FeedComposerUITests: UITestBase {
         scrollView.swipeDown()
         scrollView.swipeDown()
 
-        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10), "App should remain running after refreshing twice")
-        XCTAssertTrue(app.staticTexts[postText].waitForExistence(timeout: 15), "Posted text should still render after refreshing twice")
+        XCTAssertTrue(
+            app.wait(for: .runningForeground, timeout: 10), "App should remain running after refreshing twice")
+        XCTAssertTrue(
+            app.staticTexts[postText].waitForExistence(timeout: 15),
+            "Posted text should still render after refreshing twice")
     }
 }

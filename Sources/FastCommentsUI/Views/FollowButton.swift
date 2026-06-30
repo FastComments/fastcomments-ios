@@ -30,7 +30,8 @@ public struct FollowButton: View {
 
     public var body: some View {
         if let provider = sdk.followStateProvider,
-           Self.shouldShow(hasProvider: true, currentUserId: sdk.currentUser?.id, post: post) {
+            Self.shouldShow(hasProvider: true, currentUserId: sdk.currentUser?.id, post: post)
+        {
             let user = UserInfo.from(post)
             // `@ObservedObject var sdk` already subscribes this view to every
             // @Published on the SDK, including `followStateRevision` — no
@@ -58,7 +59,8 @@ public struct FollowButton: View {
 
     @ViewBuilder
     private func label(text isFollowing: Bool, actionColor: Color) -> some View {
-        let title = isFollowing
+        let title =
+            isFollowing
             ? NSLocalizedString("following", bundle: .module, comment: "Follow button — already following")
             : NSLocalizedString("follow", bundle: .module, comment: "Follow button — not yet following")
 
@@ -157,4 +159,3 @@ final class FollowButtonState: ObservableObject {
         }
     }
 }
-

@@ -26,7 +26,7 @@ final class RenderableNodeTests: XCTestCase {
         let depth2 = RenderableComment(comment: MockComment.make(id: "d2", parentId: "d1"))
         let depth3 = RenderableComment(comment: MockComment.make(id: "d3", parentId: "d2"))
         let map: [String: RenderableComment] = [
-            "root": root, "d1": depth1, "d2": depth2, "d3": depth3
+            "root": root, "d1": depth1, "d2": depth2, "d3": depth3,
         ]
 
         XCTAssertEqual(depth3.nestingLevel(in: map), 3)

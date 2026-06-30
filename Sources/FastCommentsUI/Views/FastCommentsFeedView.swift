@@ -141,7 +141,9 @@ public struct FastCommentsFeedView: View {
         return copy
     }
 
-    public func onUserClick(_ handler: @escaping (UserClickContext, UserInfo, UserClickSource) -> Void) -> FastCommentsFeedView {
+    public func onUserClick(
+        _ handler: @escaping (UserClickContext, UserInfo, UserClickSource) -> Void
+    ) -> FastCommentsFeedView {
         var copy = self
         copy.onUserClick = handler
         return copy

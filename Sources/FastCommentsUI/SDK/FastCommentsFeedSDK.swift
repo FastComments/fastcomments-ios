@@ -120,7 +120,9 @@ public final class FastCommentsFeedSDK: ObservableObject {
         } catch {
             // A blocking condition now arrives as a thrown APIError; surface its localized message in
             // the blocking banner, then rethrow it so callers see the same text.
-            if let apiError = FastCommentsError(decoding: error), let blocking = apiError.translatedError ?? apiError.reason {
+            if let apiError = FastCommentsError(decoding: error),
+                let blocking = apiError.translatedError ?? apiError.reason
+            {
                 blockingErrorMessage = blocking
                 throw apiError
             }
@@ -243,15 +245,15 @@ public final class FastCommentsFeedSDK: ObservableObject {
         let response: PublicFeedPostsResponse
         do {
             response = try await PublicAPI.getFeedPostsPublic(
-            tenantId: config.tenantId,
-            options: PublicAPI.GetFeedPostsPublicOptions(
-                limit: pageSize,
-                tags: tags,
-                sso: config.sso,
-                includeUserInfo: true
-            ),
-            apiConfiguration: apiConfig
-        )
+                tenantId: config.tenantId,
+                options: PublicAPI.GetFeedPostsPublicOptions(
+                    limit: pageSize,
+                    tags: tags,
+                    sso: config.sso,
+                    includeUserInfo: true
+                ),
+                apiConfiguration: apiConfig
+            )
         } catch {
             // Count stays so the banner remains visible on failure
             throw error
@@ -361,16 +363,16 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
         do {
             _ = try await PublicAPI.reactFeedPostPublic(
-            tenantId: config.tenantId,
-            postId: postId,
-            reactBodyParams: params,
-            options: PublicAPI.ReactFeedPostPublicOptions(
-                isUndo: isUndo,
-                broadcastId: broadcastId,
-                sso: config.sso
-            ),
-            apiConfiguration: apiConfig
-        )
+                tenantId: config.tenantId,
+                postId: postId,
+                reactBodyParams: params,
+                options: PublicAPI.ReactFeedPostPublicOptions(
+                    isUndo: isUndo,
+                    broadcastId: broadcastId,
+                    sso: config.sso
+                ),
+                apiConfiguration: apiConfig
+            )
         } catch {
             // Rollback on failure
             if isUndo {
@@ -533,7 +535,8 @@ public final class FastCommentsFeedSDK: ObservableObject {
         liveEventSubscription?.close()
 
         guard let _ = tenantIdWS,
-              let urlIdWS = urlIdWS else { return }
+            let urlIdWS = urlIdWS
+        else { return }
 
         let liveConfig = LiveEventConfig(
             tenantId: config.tenantId,
@@ -574,7 +577,8 @@ public final class FastCommentsFeedSDK: ObservableObject {
                 }
                 // Check if non-stats content changed
                 let existing = postsById[post.id]
-                let contentChanged = existing == nil
+                let contentChanged =
+                    existing == nil
                     || existing?.title != post.title
                     || existing?.contentHTML != post.contentHTML
                     || existing?.media != post.media
@@ -680,10 +684,11 @@ public final class FastCommentsFeedSDK: ObservableObject {
     }
 
     private static func toFeedPostMediaItem(_ pubSub: PubSubFeedPostMediaItem) -> FeedPostMediaItem? {
-        let sizes = pubSub.sizes?.compactMap { asset -> FeedPostMediaItemAsset? in
-            guard let w = asset.w, let h = asset.h, let src = asset.src else { return nil }
-            return FeedPostMediaItemAsset(w: w, h: h, src: src)
-        } ?? []
+        let sizes =
+            pubSub.sizes?.compactMap { asset -> FeedPostMediaItemAsset? in
+                guard let w = asset.w, let h = asset.h, let src = asset.src else { return nil }
+                return FeedPostMediaItemAsset(w: w, h: h, src: src)
+            } ?? []
         return FeedPostMediaItem(title: pubSub.title, linkUrl: pubSub.linkUrl, sizes: sizes)
     }
 
@@ -695,7 +700,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
         statsPollTask?.cancel()
         statsPollTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 30_000_000_000) // 30 seconds
+                try? await Task.sleep(nanoseconds: 30_000_000_000)  // 30 seconds
                 guard let self = self, !Task.isCancelled else { break }
                 let postIds = Array(self.postsById.keys)
                 try? await self.fetchPostStats(postIds: postIds)

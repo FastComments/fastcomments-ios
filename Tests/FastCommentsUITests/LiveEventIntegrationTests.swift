@@ -24,7 +24,8 @@ final class LiveEventIntegrationTests: IntegrationTestBase {
 
         let received = sdk1.commentsTree.commentsById[posted.id]
         XCTAssertNotNil(received)
-        XCTAssertTrue(received!.comment.commentHTML.contains("Live comment"), "Live comment should carry the posted text")
+        XCTAssertTrue(
+            received!.comment.commentHTML.contains("Live comment"), "Live comment should carry the posted text")
 
         sdk1.cleanup()
         sdk2.cleanup()

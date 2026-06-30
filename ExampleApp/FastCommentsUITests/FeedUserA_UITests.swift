@@ -17,12 +17,14 @@ final class FeedUserA_UITests: UITestBase {
         let ssoTokenA = makeSecureSSOToken(userId: "userA-feed")
         let ssoTokenB = makeSecureSSOToken(userId: "userB-feed")
 
-        SyncClient.postData(round: "setup", data: [
-            "tenantId": testTenantId!,
-            "apiKey": testTenantApiKey!,
-            "urlId": urlId,
-            "ssoTokenB": ssoTokenB,
-        ])
+        SyncClient.postData(
+            round: "setup",
+            data: [
+                "tenantId": testTenantId!,
+                "apiKey": testTenantApiKey!,
+                "urlId": urlId,
+                "ssoTokenB": ssoTokenB,
+            ])
         SyncClient.signalReady(round: "setup")
 
         // Single launch — both phases use the same app session and WebSocket connection.

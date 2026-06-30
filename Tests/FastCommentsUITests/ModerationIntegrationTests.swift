@@ -76,7 +76,7 @@ final class ModerationIntegrationTests: IntegrationTestBase {
     }
 
     func testNonAdminCannotPin() async throws {
-        let sdk = makeSDK() // regular user, not admin
+        let sdk = makeSDK()  // regular user, not admin
         try await sdk.load()
 
         let comment = try await sdk.postComment(text: "Try to pin without admin")
@@ -87,15 +87,16 @@ final class ModerationIntegrationTests: IntegrationTestBase {
             // If it didn't throw, verify server didn't actually pin
             let sdk2 = FastCommentsSDK(config: sdk.config)
             try await sdk2.load()
-            XCTAssertNotEqual(sdk2.commentsTree.commentsById[comment.id]?.comment.isPinned, true,
-                              "Non-admin should not be able to pin")
+            XCTAssertNotEqual(
+                sdk2.commentsTree.commentsById[comment.id]?.comment.isPinned, true,
+                "Non-admin should not be able to pin")
         } catch {
             // Expected — server rejects non-admin pin
         }
     }
 
     func testNonAdminCannotLock() async throws {
-        let sdk = makeSDK() // regular user, not admin
+        let sdk = makeSDK()  // regular user, not admin
         try await sdk.load()
 
         let comment = try await sdk.postComment(text: "Try to lock without admin")
@@ -104,8 +105,9 @@ final class ModerationIntegrationTests: IntegrationTestBase {
             try await sdk.lockComment(commentId: comment.id)
             let sdk2 = FastCommentsSDK(config: sdk.config)
             try await sdk2.load()
-            XCTAssertNotEqual(sdk2.commentsTree.commentsById[comment.id]?.comment.isLocked, true,
-                              "Non-admin should not be able to lock")
+            XCTAssertNotEqual(
+                sdk2.commentsTree.commentsById[comment.id]?.comment.isLocked, true,
+                "Non-admin should not be able to lock")
         } catch {
             // Expected — server rejects non-admin lock
         }

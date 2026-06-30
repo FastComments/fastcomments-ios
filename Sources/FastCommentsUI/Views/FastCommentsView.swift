@@ -17,7 +17,8 @@ public struct FastCommentsView: View {
     @State private var showDeleteAlert: RenderableComment?
     @State private var showBlockAlert: RenderableComment?
 
-    public init(sdk: FastCommentsSDK, voteStyle: VoteStyle = ._0, customToolbarButtons: [any CustomToolbarButton] = []) {
+    public init(sdk: FastCommentsSDK, voteStyle: VoteStyle = ._0, customToolbarButtons: [any CustomToolbarButton] = [])
+    {
         self.sdk = sdk
         self.voteStyle = voteStyle
         self.customToolbarButtons = customToolbarButtons
@@ -168,18 +169,21 @@ public struct FastCommentsView: View {
             }
         } message: {
             if let comment = showBlockAlert {
-                Text(String(
-                    format: comment.comment.isBlocked == true
-                        ? NSLocalizedString("unblock_user_confirm", bundle: .module, comment: "")
-                        : NSLocalizedString("block_user_confirm", bundle: .module, comment: ""),
-                    comment.comment.commenterName
-                ))
+                Text(
+                    String(
+                        format: comment.comment.isBlocked == true
+                            ? NSLocalizedString("unblock_user_confirm", bundle: .module, comment: "")
+                            : NSLocalizedString("block_user_confirm", bundle: .module, comment: ""),
+                        comment.comment.commenterName
+                    ))
             }
         }
-        .sheet(isPresented: Binding(
-            get: { sdk.badgeAwardToShow != nil },
-            set: { if !$0 { sdk.badgeAwardToShow = nil } }
-        )) {
+        .sheet(
+            isPresented: Binding(
+                get: { sdk.badgeAwardToShow != nil },
+                set: { if !$0 { sdk.badgeAwardToShow = nil } }
+            )
+        ) {
             if let badges = sdk.badgeAwardToShow {
                 BadgeAwardSheet(badges: badges)
             }
@@ -275,7 +279,9 @@ public struct FastCommentsView: View {
 
 extension FastCommentsView {
     /// Handle user avatar/name taps.
-    public func onUserClick(_ handler: @escaping (UserClickContext, UserInfo, UserClickSource) -> Void) -> FastCommentsView {
+    public func onUserClick(
+        _ handler: @escaping (UserClickContext, UserInfo, UserClickSource) -> Void
+    ) -> FastCommentsView {
         var copy = self
         copy.onUserClick = handler
         return copy

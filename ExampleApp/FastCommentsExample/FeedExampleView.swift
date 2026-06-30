@@ -113,9 +113,11 @@ struct FeedExampleView: View {
         }
         // 8. Comments dialog for a post
         .sheet(item: $commentsPost) { post in
-            CommentsSheet(post: post, feedSDK: sdk, onUserClick: { context, userInfo, source in
-                selectedUser = userInfo
-            })
+            CommentsSheet(
+                post: post, feedSDK: sdk,
+                onUserClick: { context, userInfo, source in
+                    selectedUser = userInfo
+                })
         }
         // Error alert
         .alert("Error", isPresented: .constant(errorMessage != nil)) {
@@ -190,7 +192,9 @@ final class LoggingFollowStateProvider: ObservableObject, FollowStateProvider {
         result: @escaping @Sendable (Bool) -> Void
     ) {
         let userId = user.userId ?? ""
-        print("[FollowProvider] request user=\(user.displayName) id=\(userId) desired=\(desiredFollowing) — simulating 3s backend call")
+        print(
+            "[FollowProvider] request user=\(user.displayName) id=\(userId) desired=\(desiredFollowing) — simulating 3s backend call"
+        )
 
         // Weak capture so the provider isn't kept alive purely by an
         // in-flight request after the viewer navigates away.

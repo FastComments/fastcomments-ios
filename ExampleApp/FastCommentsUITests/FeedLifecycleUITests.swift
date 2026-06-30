@@ -36,7 +36,9 @@ final class FeedLifecycleUITests: UITestBase {
         XCTAssertTrue(app.staticTexts["feed-lifecycle-hidden"].waitForExistence(timeout: 10))
 
         toggleButton.tap()
-        XCTAssertTrue(app.scrollViews["feed-lifecycle-view"].waitForExistence(timeout: 10) || app.otherElements["feed-lifecycle-view"].waitForExistence(timeout: 10))
+        XCTAssertTrue(
+            app.scrollViews["feed-lifecycle-view"].waitForExistence(timeout: 10)
+                || app.otherElements["feed-lifecycle-view"].waitForExistence(timeout: 10))
 
         pollUntil(timeout: 10) {
             countLabel.label == "5" && lastIdLabel.label == beforeLastId && lastTextLabel.label == beforeLastText

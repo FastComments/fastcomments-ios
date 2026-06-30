@@ -2,9 +2,9 @@ import SwiftUI
 import PhotosUI
 import FastCommentsSwift
 #if canImport(UIKit)
-import UIKit
+    import UIKit
 #elseif canImport(AppKit)
-import AppKit
+    import AppKit
 #endif
 
 /// View for creating a new feed post with text, images, and links.
@@ -27,8 +27,10 @@ public struct FeedPostCreateView: View {
 
     private let maxImages = 10
 
-    public init(sdk: FastCommentsFeedSDK, customToolbarButtons: [any FeedCustomToolbarButton] = [],
-                onPostCreated: ((FeedPost) -> Void)? = nil, onCancelled: (() -> Void)? = nil) {
+    public init(
+        sdk: FastCommentsFeedSDK, customToolbarButtons: [any FeedCustomToolbarButton] = [],
+        onPostCreated: ((FeedPost) -> Void)? = nil, onCancelled: (() -> Void)? = nil
+    ) {
         self.sdk = sdk
         self.customToolbarButtons = customToolbarButtons
         self.onPostCreated = onPostCreated
@@ -135,7 +137,7 @@ public struct FeedPostCreateView: View {
             }
             .navigationTitle(NSLocalizedString("create_post", bundle: .module, comment: ""))
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -189,9 +191,9 @@ public struct FeedPostCreateView: View {
         ]
         guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
         #if canImport(UIKit)
-        return UIImage(cgImage: cgImage)
+            return UIImage(cgImage: cgImage)
         #else
-        return UIImage(cgImage: cgImage, size: .zero)
+            return UIImage(cgImage: cgImage, size: .zero)
         #endif
     }
 

@@ -43,7 +43,8 @@ class IntegrationTestBase: XCTestCase {
         var signupRequest = URLRequest(url: signupURL)
         signupRequest.httpMethod = "POST"
         signupRequest.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        let formBody = "username=\(username)&email=\(email)&companyName=\(username)&domains=\(username).example.com&packageId=adv&noTracking=true"
+        let formBody =
+            "username=\(username)&email=\(email)&companyName=\(username)&domains=\(username).example.com&packageId=adv&noTracking=true"
         signupRequest.httpBody = formBody.data(using: .utf8)
 
         // Use a shared URLSession that stores cookies
@@ -54,7 +55,8 @@ class IntegrationTestBase: XCTestCase {
 
         let (_, signupResponse) = try await session.data(for: signupRequest)
         guard let httpSignup = signupResponse as? HTTPURLResponse,
-              (200..<400).contains(httpSignup.statusCode) else {
+            (200..<400).contains(httpSignup.statusCode)
+        else {
             XCTFail("Tenant signup failed")
             return
         }
@@ -80,7 +82,7 @@ class IntegrationTestBase: XCTestCase {
         // Extract API key from: value="<KEY>"
         if let range = html.range(of: #"value="([A-Z0-9]+)""#, options: .regularExpression) {
             let match = String(html[range])
-            testTenantApiKey = String(match.dropFirst(7).dropLast(1)) // strip value=" and "
+            testTenantApiKey = String(match.dropFirst(7).dropLast(1))  // strip value=" and "
         }
 
         guard testTenantApiKey != nil else {
@@ -99,7 +101,8 @@ class IntegrationTestBase: XCTestCase {
         if let email = testTenantEmail {
             let encodedEmail = email.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!
             let encodedKey = TestConfig.e2eApiKey.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
-            let url = URL(string: "\(TestConfig.host)/test-e2e/api/tenant/by-email/\(encodedEmail)?API_KEY=\(encodedKey)")!
+            let url = URL(
+                string: "\(TestConfig.host)/test-e2e/api/tenant/by-email/\(encodedEmail)?API_KEY=\(encodedKey)")!
             var request = URLRequest(url: url)
             request.httpMethod = "DELETE"
             _ = try? await URLSession.shared.data(for: request)
@@ -188,7 +191,8 @@ class IntegrationTestBase: XCTestCase {
 
     /// Generate a unique urlId and register it for cleanup.
     func makeUrlId(testName: String = #function) -> String {
-        let sanitized = testName
+        let sanitized =
+            testName
             .replacingOccurrences(of: "()", with: "")
             .replacingOccurrences(of: " ", with: "-")
         let timestamp = Int(Date().timeIntervalSince1970)
@@ -212,12 +216,12 @@ class IntegrationTestBase: XCTestCase {
         guard let tid = testTenantId else { return }
         do {
             let response = try await DefaultAPI.getComments(
-            tenantId: tid,
-            options: DefaultAPI.GetCommentsOptions(
-                urlId: urlId
-            ),
-            apiConfiguration: adminApiConfig
-        )
+                tenantId: tid,
+                options: DefaultAPI.GetCommentsOptions(
+                    urlId: urlId
+                ),
+                apiConfiguration: adminApiConfig
+            )
             for comment in (response.comments ?? []) {
                 _ = try? await DefaultAPI.deleteComment(
                     tenantId: tid, id: comment.id, apiConfiguration: adminApiConfig

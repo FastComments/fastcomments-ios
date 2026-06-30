@@ -10,7 +10,10 @@ public struct AvatarImage: View {
 
     @Environment(\.fastCommentsTheme) private var theme
 
-    public init(url: String?, size: CGFloat = 36, showOnlineIndicator: Bool = false, isOnline: Bool = false, onlineIdentifier: String? = nil) {
+    public init(
+        url: String?, size: CGFloat = 36, showOnlineIndicator: Bool = false, isOnline: Bool = false,
+        onlineIdentifier: String? = nil
+    ) {
         self.url = url
         self.size = size
         self.showOnlineIndicator = showOnlineIndicator
@@ -66,9 +69,9 @@ public struct AvatarImage: View {
 
     private var onlineIndicatorBorderColor: Color {
         #if os(iOS)
-        Color(uiColor: .systemBackground)
+            Color(uiColor: .systemBackground)
         #else
-        Color(nsColor: .windowBackgroundColor)
+            Color(nsColor: .windowBackgroundColor)
         #endif
     }
 
@@ -87,9 +90,9 @@ public struct AvatarImage: View {
 
     private var placeholderBackground: some ShapeStyle {
         #if os(iOS)
-        Color(uiColor: .systemGray4)
+            Color(uiColor: .systemGray4)
         #else
-        Color(nsColor: .systemGray)
+            Color(nsColor: .systemGray)
         #endif
     }
 }

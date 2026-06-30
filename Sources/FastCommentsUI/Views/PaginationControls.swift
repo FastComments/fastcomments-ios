@@ -28,10 +28,11 @@ public struct PaginationControls: View {
                             ProgressView()
                                 .scaleEffect(0.7)
                         }
-                        Text(String(
-                            format: NSLocalizedString("next_%lld", bundle: .module, comment: ""),
-                            nextCount
-                        ))
+                        Text(
+                            String(
+                                format: NSLocalizedString("next_%lld", bundle: .module, comment: ""),
+                                nextCount
+                            ))
                     }
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(theme.resolveActionButtonColor())
@@ -51,10 +52,12 @@ public struct PaginationControls: View {
                             isLoadingMore = false
                         }
                     } label: {
-                        Text(String(
-                            format: NSLocalizedString("load_all_%lld", bundle: .module, comment: ""),
-                            sdk.commentCountOnServer
-                        ))
+                        Text(
+                            String(
+                                format: NSLocalizedString("load_all_%lld", bundle: .module, comment: ""),
+                                sdk.commentCountOnServer
+                            )
+                        )
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(theme.resolveActionButtonColor())
                         .padding(.horizontal, 16)

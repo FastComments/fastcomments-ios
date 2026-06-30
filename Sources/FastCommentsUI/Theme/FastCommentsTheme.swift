@@ -222,9 +222,9 @@ public struct FastCommentsTheme: Sendable {
 
     public func resolveVoteDividerColor() -> Color {
         #if os(iOS)
-        voteDividerColor ?? Color(uiColor: .separator)
+            voteDividerColor ?? Color(uiColor: .separator)
         #else
-        voteDividerColor ?? Color(nsColor: .separatorColor)
+            voteDividerColor ?? Color(nsColor: .separatorColor)
         #endif
     }
 
@@ -258,41 +258,41 @@ public struct FastCommentsTheme: Sendable {
 
     public func resolveCommentBackgroundColor() -> Color {
         #if os(iOS)
-        commentBackgroundColor ?? Color(uiColor: .secondarySystemGroupedBackground)
+            commentBackgroundColor ?? Color(uiColor: .secondarySystemGroupedBackground)
         #else
-        commentBackgroundColor ?? Color(nsColor: .controlBackgroundColor)
+            commentBackgroundColor ?? Color(nsColor: .controlBackgroundColor)
         #endif
     }
 
     public func resolveContainerBackgroundColor() -> Color {
         #if os(iOS)
-        containerBackgroundColor ?? Color(uiColor: .systemGroupedBackground)
+            containerBackgroundColor ?? Color(uiColor: .systemGroupedBackground)
         #else
-        containerBackgroundColor ?? Color(nsColor: .windowBackgroundColor)
+            containerBackgroundColor ?? Color(nsColor: .windowBackgroundColor)
         #endif
     }
 
     public func resolveInputBarBackgroundColor() -> Color {
         #if os(iOS)
-        inputBarBackgroundColor ?? Color(uiColor: .systemBackground)
+            inputBarBackgroundColor ?? Color(uiColor: .systemBackground)
         #else
-        inputBarBackgroundColor ?? Color(nsColor: .windowBackgroundColor)
+            inputBarBackgroundColor ?? Color(nsColor: .windowBackgroundColor)
         #endif
     }
 
     public func resolveInputBarBorderColor() -> Color {
         #if os(iOS)
-        inputBarBorderColor ?? Color(uiColor: .separator)
+            inputBarBorderColor ?? Color(uiColor: .separator)
         #else
-        inputBarBorderColor ?? Color(nsColor: .separatorColor)
+            inputBarBorderColor ?? Color(nsColor: .separatorColor)
         #endif
     }
 
     public func resolveSeparatorColor() -> Color {
         #if os(iOS)
-        separatorColor ?? Color(uiColor: .separator)
+            separatorColor ?? Color(uiColor: .separator)
         #else
-        separatorColor ?? Color(nsColor: .separatorColor)
+            separatorColor ?? Color(nsColor: .separatorColor)
         #endif
     }
 

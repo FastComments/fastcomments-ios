@@ -16,8 +16,10 @@ public struct FastCommentsWidgetConfig: Sendable {
     public var sso: String?
     public var locale: String?
 
-    public init(tenantId: String, urlId: String, url: String = "", pageTitle: String? = nil,
-                region: String? = nil, sso: String? = nil, locale: String? = nil) {
+    public init(
+        tenantId: String, urlId: String, url: String = "", pageTitle: String? = nil,
+        region: String? = nil, sso: String? = nil, locale: String? = nil
+    ) {
         self.tenantId = tenantId
         self.urlId = urlId
         self.url = url
@@ -187,7 +189,9 @@ public final class FastCommentsSDK: ObservableObject {
         } catch {
             // A blocking condition (e.g. banned/closed) now arrives as a thrown APIError; surface its
             // localized message in the blocking banner, then rethrow it so callers see the same text.
-            if let apiError = FastCommentsError(decoding: error), let blocking = apiError.translatedError ?? apiError.reason {
+            if let apiError = FastCommentsError(decoding: error),
+                let blocking = apiError.translatedError ?? apiError.reason
+            {
                 blockingErrorMessage = blocking
                 throw apiError
             }
@@ -215,7 +219,9 @@ public final class FastCommentsSDK: ObservableObject {
         var trimmedResponse = response
         trimmedResponse.comments = comments
 
-        fcLog.info("load: returned \(response.comments.count) roots=\(rootComments.count) hasMore=\(clientHasMore, privacy: .public) commentCount=\(response.commentCount ?? -1)")
+        fcLog.info(
+            "load: returned \(response.comments.count) roots=\(rootComments.count) hasMore=\(clientHasMore, privacy: .public) commentCount=\(response.commentCount ?? -1)"
+        )
 
         processCommentsResponse(trimmedResponse, isInitialLoad: true, clientHasMore: clientHasMore)
         return response
@@ -233,19 +239,19 @@ public final class FastCommentsSDK: ObservableObject {
 
         do {
             let response = try await PublicAPI.getCommentsPublic(
-            tenantId: config.tenantId,
-            urlId: config.urlId,
-            options: PublicAPI.GetCommentsPublicOptions(
-                direction: defaultSortDirection,
-                sso: config.sso,
-                skip: currentSkip,
-                limit: pageSize + 1,
-                countChildren: true,
-                asTree: true,
-                maxTreeDepth: 0
-            ),
-            apiConfiguration: apiConfig
-        )
+                tenantId: config.tenantId,
+                urlId: config.urlId,
+                options: PublicAPI.GetCommentsPublicOptions(
+                    direction: defaultSortDirection,
+                    sso: config.sso,
+                    skip: currentSkip,
+                    limit: pageSize + 1,
+                    countChildren: true,
+                    asTree: true,
+                    maxTreeDepth: 0
+                ),
+                apiConfiguration: apiConfig
+            )
 
             var comments = response.comments
             let rootComments = comments.filter { $0.parentId == nil }
@@ -256,7 +262,9 @@ public final class FastCommentsSDK: ObservableObject {
                 comments.removeAll { $0.id == lastRoot.id }
             }
 
-            fcLog.info("loadMore: skip=\(self.currentSkip) limit=\(self.pageSize) returned=\(rootComments.count) roots, trimmed to \(comments.count), hasMore=\(moreAvailable, privacy: .public)")
+            fcLog.info(
+                "loadMore: skip=\(self.currentSkip) limit=\(self.pageSize) returned=\(rootComments.count) roots, trimmed to \(comments.count), hasMore=\(moreAvailable, privacy: .public)"
+            )
 
             if !comments.isEmpty {
                 if self.commentsTree.liveChatStyle {
@@ -328,7 +336,9 @@ public final class FastCommentsSDK: ObservableObject {
 
     /// Post a new comment or reply.
     @discardableResult
-    public func postComment(text: String, parentId: String? = nil, mentions: [CommentUserMentionInfo]? = nil) async throws -> PublicComment {
+    public func postComment(
+        text: String, parentId: String? = nil, mentions: [CommentUserMentionInfo]? = nil
+    ) async throws -> PublicComment {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             throw FastCommentsError(reason: "Comment text cannot be empty")
@@ -362,7 +372,6 @@ public final class FastCommentsSDK: ObservableObject {
             ),
             apiConfiguration: apiConfig
         )
-
 
         // Update user session if returned
         if let user = response.user {
@@ -398,7 +407,6 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-
         // Update local tree with server-rendered HTML
         let result = response.comment
         if let existing = commentsTree.commentsById[commentId] {
@@ -425,7 +433,6 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-
         commentsTree.removeComment(commentId: commentId)
         commentCountOnServer -= 1
     }
@@ -434,8 +441,10 @@ public final class FastCommentsSDK: ObservableObject {
 
     /// Vote on a comment (upvote or downvote).
     @discardableResult
-    public func voteComment(commentId: String, isUpvote: Bool,
-                            commenterName: String? = nil, commenterEmail: String? = nil) async throws -> VoteResponse {
+    public func voteComment(
+        commentId: String, isUpvote: Bool,
+        commenterName: String? = nil, commenterEmail: String? = nil
+    ) async throws -> VoteResponse {
         let broadcastId = UUID().uuidString
         broadcastIdsSent.insert(broadcastId)
 
@@ -458,7 +467,6 @@ public final class FastCommentsSDK: ObservableObject {
             ),
             apiConfiguration: apiConfig
         )
-
 
         // Update local comment state
         if let comment = commentsTree.commentsById[commentId] {
@@ -532,7 +540,6 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-
         // Re-fetch after await — renderable may have been replaced by a live event
         if let renderable = commentsTree.commentsById[commentId] {
             renderable.comment.isFlagged = true
@@ -549,7 +556,6 @@ public final class FastCommentsSDK: ObservableObject {
             sso: config.sso,
             apiConfiguration: apiConfig
         )
-
 
         if let renderable = commentsTree.commentsById[commentId] {
             renderable.comment.isFlagged = false
@@ -569,7 +575,6 @@ public final class FastCommentsSDK: ObservableObject {
             sso: config.sso,
             apiConfiguration: apiConfig
         )
-
 
         setBlockedStateForAuthor(commentId: commentId, blocked: true)
     }
@@ -612,7 +617,6 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-
         // Re-fetch after await — the renderable may have been replaced by a live event
         if let renderable = commentsTree.commentsById[commentId] {
             renderable.comment.isPinned = true
@@ -634,7 +638,6 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-
         if let renderable = commentsTree.commentsById[commentId] {
             renderable.comment.isPinned = false
             renderable.objectWillChange.send()
@@ -655,7 +658,6 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-
         if let renderable = commentsTree.commentsById[commentId] {
             renderable.comment.isLocked = true
             renderable.objectWillChange.send()
@@ -675,7 +677,6 @@ public final class FastCommentsSDK: ObservableObject {
             sso: config.sso,
             apiConfiguration: apiConfig
         )
-
 
         if let renderable = commentsTree.commentsById[commentId] {
             renderable.comment.isLocked = false
@@ -770,7 +771,8 @@ public final class FastCommentsSDK: ObservableObject {
         liveEventSubscription?.close()
 
         guard let tenantIdWS = tenantIdWS,
-              let urlIdWS = urlIdWS else { return }
+            let urlIdWS = urlIdWS
+        else { return }
 
         let liveConfig = LiveEventConfig(
             tenantId: config.tenantId,
@@ -814,7 +816,8 @@ public final class FastCommentsSDK: ObservableObject {
         case .newComment:
             if let comment = event.comment {
                 let publicComment = LiveEventHandler.toPublicComment(comment)
-                commentsTree.addComment(publicComment, displayNow: showLiveRightAway, sortDirection: defaultSortDirection)
+                commentsTree.addComment(
+                    publicComment, displayNow: showLiveRightAway, sortDirection: defaultSortDirection)
                 commentCountOnServer += 1
             }
         case .updatedComment:
@@ -828,7 +831,8 @@ public final class FastCommentsSDK: ObservableObject {
                 commentCountOnServer -= 1
             }
         case .newVote:
-            if let vote = event.vote, let commentId = vote.commentId, let comment = commentsTree.commentsById[commentId] {
+            if let vote = event.vote, let commentId = vote.commentId, let comment = commentsTree.commentsById[commentId]
+            {
                 let direction = vote.direction ?? 1
                 if direction > 0 {
                     comment.comment.votesUp = (comment.comment.votesUp ?? 0) + 1
@@ -839,7 +843,8 @@ public final class FastCommentsSDK: ObservableObject {
                 comment.objectWillChange.send()
             }
         case .deletedVote:
-            if let vote = event.vote, let commentId = vote.commentId, let comment = commentsTree.commentsById[commentId] {
+            if let vote = event.vote, let commentId = vote.commentId, let comment = commentsTree.commentsById[commentId]
+            {
                 let direction = vote.direction ?? 1
                 if direction > 0 {
                     comment.comment.votesUp = max(0, (comment.comment.votesUp ?? 0) - 1)
@@ -867,7 +872,8 @@ public final class FastCommentsSDK: ObservableObject {
             }
         case .updateBadges:
             guard let userId = event.userId,
-                  let eventBadges = event.badges, !eventBadges.isEmpty else { break }
+                let eventBadges = event.badges, !eventBadges.isEmpty
+            else { break }
 
             let convertedBadges = eventBadges.compactMap { LiveEventHandler.toCommentUserBadgeInfo($0) }
             guard !convertedBadges.isEmpty else { break }
@@ -962,7 +968,9 @@ public final class FastCommentsSDK: ObservableObject {
 
     // MARK: - Private Helpers
 
-    private func processCommentsResponse(_ response: GetCommentsResponseWithPresencePublicComment, isInitialLoad: Bool, clientHasMore: Bool? = nil) {
+    private func processCommentsResponse(
+        _ response: GetCommentsResponseWithPresencePublicComment, isInitialLoad: Bool, clientHasMore: Bool? = nil
+    ) {
         commentsTree.build(comments: response.comments)
 
         commentCountOnServer = response.commentCount ?? 0

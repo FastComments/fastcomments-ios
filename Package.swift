@@ -21,6 +21,6 @@ let package = Package(
         .testTarget(
             name: "FastCommentsUITests",
             dependencies: ["FastCommentsUI"]
-        )
+        ),
     ]
 )

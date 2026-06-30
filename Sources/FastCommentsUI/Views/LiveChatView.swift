@@ -119,12 +119,13 @@ public struct LiveChatView: View {
             }
         } message: {
             if let comment = showBlockAlert {
-                Text(String(
-                    format: comment.comment.isBlocked == true
-                        ? NSLocalizedString("unblock_user_confirm", bundle: .module, comment: "")
-                        : NSLocalizedString("block_user_confirm", bundle: .module, comment: ""),
-                    comment.comment.commenterName
-                ))
+                Text(
+                    String(
+                        format: comment.comment.isBlocked == true
+                            ? NSLocalizedString("unblock_user_confirm", bundle: .module, comment: "")
+                            : NSLocalizedString("block_user_confirm", bundle: .module, comment: ""),
+                        comment.comment.commenterName
+                    ))
             }
         }
     }
@@ -220,7 +221,8 @@ extension LiveChatView {
     }
 
     /// Handle user avatar/name taps.
-    public func onUserClick(_ handler: @escaping (UserClickContext, UserInfo, UserClickSource) -> Void) -> LiveChatView {
+    public func onUserClick(_ handler: @escaping (UserClickContext, UserInfo, UserClickSource) -> Void) -> LiveChatView
+    {
         var copy = self
         copy.onUserClick = handler
         return copy

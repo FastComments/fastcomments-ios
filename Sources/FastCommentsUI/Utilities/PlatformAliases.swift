@@ -1,6 +1,6 @@
 #if canImport(UIKit)
-import UIKit
+    import UIKit
 #elseif canImport(AppKit)
-import AppKit
-typealias UIImage = NSImage
+    import AppKit
+    typealias UIImage = NSImage
 #endif

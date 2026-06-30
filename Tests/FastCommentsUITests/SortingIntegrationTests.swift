@@ -119,8 +119,9 @@ final class SortingIntegrationTests: IntegrationTestBase {
 
         // First comment should be different between the two sorts
         if nfComments.count >= 2 && ofComments.count >= 2 {
-            XCTAssertNotEqual(nfComments.first?.id, ofComments.first?.id,
-                              "Different sort directions should produce different orderings")
+            XCTAssertNotEqual(
+                nfComments.first?.id, ofComments.first?.id,
+                "Different sort directions should produce different orderings")
         }
     }
 
@@ -142,7 +143,8 @@ final class SortingIntegrationTests: IntegrationTestBase {
 
             let visibleComments = reloadSDK.commentsTree.visibleNodes.compactMap { $0 as? RenderableComment }
             XCTAssertGreaterThanOrEqual(visibleComments.count, 2)
-            XCTAssertEqual(visibleComments.first?.id, a.id, "Pinned comment should appear first with sort direction \(direction)")
+            XCTAssertEqual(
+                visibleComments.first?.id, a.id, "Pinned comment should appear first with sort direction \(direction)")
         }
     }
 }

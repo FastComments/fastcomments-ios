@@ -50,7 +50,8 @@ struct FastCommentsExampleApp: App {
     private var testConfig: FastCommentsWidgetConfig? {
         let args = ProcessInfo.processInfo.arguments
         guard let idx = args.firstIndex(of: "-test"),
-              idx + 3 < args.count else { return nil }
+            idx + 3 < args.count
+        else { return nil }
         let tenantId = args[idx + 1]
         let urlId = args[idx + 2]
         let sso = args[idx + 3]
@@ -61,7 +62,8 @@ struct FastCommentsExampleApp: App {
     private var feedTestConfig: FastCommentsWidgetConfig? {
         let args = ProcessInfo.processInfo.arguments
         guard let idx = args.firstIndex(of: "-feed-test"),
-              idx + 3 < args.count else { return nil }
+            idx + 3 < args.count
+        else { return nil }
         let tenantId = args[idx + 1]
         let urlId = args[idx + 2]
         let sso = args[idx + 3]
@@ -72,7 +74,8 @@ struct FastCommentsExampleApp: App {
     private var feedComposerTestConfig: FastCommentsWidgetConfig? {
         let args = ProcessInfo.processInfo.arguments
         guard let idx = args.firstIndex(of: "-feed-composer-test"),
-              idx + 3 < args.count else { return nil }
+            idx + 3 < args.count
+        else { return nil }
         let tenantId = args[idx + 1]
         let urlId = args[idx + 2]
         let sso = args[idx + 3]
@@ -83,7 +86,8 @@ struct FastCommentsExampleApp: App {
     private var fullFeedTestConfig: FastCommentsWidgetConfig? {
         let args = ProcessInfo.processInfo.arguments
         guard let idx = args.firstIndex(of: "-full-feed-test"),
-              idx + 3 < args.count else { return nil }
+            idx + 3 < args.count
+        else { return nil }
         let tenantId = args[idx + 1]
         let urlId = args[idx + 2]
         let sso = args[idx + 3]
@@ -94,7 +98,8 @@ struct FastCommentsExampleApp: App {
     private var feedLifecycleTestConfig: FastCommentsWidgetConfig? {
         let args = ProcessInfo.processInfo.arguments
         guard let idx = args.firstIndex(of: "-feed-lifecycle-test"),
-              idx + 3 < args.count else { return nil }
+            idx + 3 < args.count
+        else { return nil }
         let tenantId = args[idx + 1]
         let urlId = args[idx + 2]
         let sso = args[idx + 3]
@@ -105,7 +110,8 @@ struct FastCommentsExampleApp: App {
     private var followTestConfig: FastCommentsWidgetConfig? {
         let args = ProcessInfo.processInfo.arguments
         guard let idx = args.firstIndex(of: "-follow-test"),
-              idx + 3 < args.count else { return nil }
+            idx + 3 < args.count
+        else { return nil }
         let tenantId = args[idx + 1]
         let urlId = args[idx + 2]
         let sso = args[idx + 3]
@@ -118,7 +124,8 @@ struct FastCommentsExampleApp: App {
     private var followDemoTestConfig: FastCommentsWidgetConfig? {
         let args = ProcessInfo.processInfo.arguments
         guard let idx = args.firstIndex(of: "-follow-demo-test"),
-              idx + 3 < args.count else { return nil }
+            idx + 3 < args.count
+        else { return nil }
         let tenantId = args[idx + 1]
         let urlId = args[idx + 2]
         let sso = args[idx + 3]

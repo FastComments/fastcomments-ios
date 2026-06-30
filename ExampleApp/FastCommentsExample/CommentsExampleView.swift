@@ -76,7 +76,7 @@ struct CommentsExampleView: View {
         theme.loadMoreButtonTextColor = .indigo
 
         // Vote colors
-        theme.voteActiveColor = .red       // Heart fill color
+        theme.voteActiveColor = .red  // Heart fill color
         theme.voteCountColor = .primary
         theme.voteCountZeroColor = .secondary
 

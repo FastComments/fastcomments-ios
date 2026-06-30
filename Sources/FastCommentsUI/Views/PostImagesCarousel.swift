@@ -25,7 +25,7 @@ public struct PostImagesCarousel: View {
                 }
             }
             #if os(iOS)
-            .tabViewStyle(.page(indexDisplayMode: .automatic))
+                .tabViewStyle(.page(indexDisplayMode: .automatic))
             #endif
             .frame(height: theme.feedMediaHeight)
 
@@ -46,9 +46,9 @@ public struct PostImagesCarousel: View {
     private var imagePlaceholder: some View {
         Rectangle()
             #if os(iOS)
-            .fill(Color(uiColor: .systemGray5))
+                .fill(Color(uiColor: .systemGray5))
             #else
-            .fill(Color(nsColor: .quaternaryLabelColor))
+                .fill(Color(nsColor: .quaternaryLabelColor))
             #endif
             .overlay(
                 Image(systemName: "photo")
