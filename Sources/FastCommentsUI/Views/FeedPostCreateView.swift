@@ -228,7 +228,7 @@ public struct FeedPostCreateView: View {
         } catch let error as FastCommentsError {
             errorMessage = error.errorDescription
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = FastCommentsError.userMessage(from: error)
         }
     }
 

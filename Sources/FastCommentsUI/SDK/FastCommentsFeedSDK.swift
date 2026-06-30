@@ -99,20 +99,33 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
     /// Initial load of feed posts. Sets up live events and stats polling.
     @discardableResult
-    public func load() async throws -> GetFeedPostsPublic200Response {
+    public func load() async throws -> PublicFeedPostsResponse {
         isLoading = true
         defer { isLoading = false }
 
         let tags = tagSupplier?.getTags(currentUser: currentUser)
 
-        let response = try await PublicAPI.getFeedPostsPublic(
-            tenantId: config.tenantId,
-            limit: pageSize,
-            tags: tags,
-            sso: config.sso,
-            includeUserInfo: true,
-            apiConfiguration: apiConfig
-        )
+        let response: PublicFeedPostsResponse
+        do {
+            response = try await PublicAPI.getFeedPostsPublic(
+                tenantId: config.tenantId,
+                options: PublicAPI.GetFeedPostsPublicOptions(
+                    limit: pageSize,
+                    tags: tags,
+                    sso: config.sso,
+                    includeUserInfo: true
+                ),
+                apiConfiguration: apiConfig
+            )
+        } catch {
+            // A blocking condition now arrives as a thrown APIError; surface its localized message in
+            // the blocking banner, then rethrow it so callers see the same text.
+            if let apiError = FastCommentsError(decoding: error), let blocking = apiError.translatedError ?? apiError.reason {
+                blockingErrorMessage = blocking
+                throw apiError
+            }
+            throw error
+        }
 
         processFeedResponse(response, isInitialLoad: true)
         return response
@@ -121,7 +134,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
     /// Load the feed only if it has not already been loaded or restored.
     /// If content is already present, this resumes live updates instead of resetting pagination state.
     @discardableResult
-    public func loadIfNeeded() async throws -> GetFeedPostsPublic200Response? {
+    public func loadIfNeeded() async throws -> PublicFeedPostsResponse? {
         if hasLoadedOnce || !feedPosts.isEmpty {
             resumeLiveUpdates()
             return nil
@@ -131,7 +144,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
     /// Load next page of feed posts (cursor-based via afterId).
     @discardableResult
-    public func loadMore() async throws -> GetFeedPostsPublic200Response {
+    public func loadMore() async throws -> PublicFeedPostsResponse {
         guard hasMore else {
             throw FastCommentsError(reason: "No more posts available")
         }
@@ -158,10 +171,12 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
         let response = try await PublicAPI.getFeedPostsPublic(
             tenantId: config.tenantId,
-            afterId: lastId,
-            limit: pageSize,
-            tags: tags,
-            sso: config.sso,
+            options: PublicAPI.GetFeedPostsPublicOptions(
+                afterId: lastId,
+                limit: pageSize,
+                tags: tags,
+                sso: config.sso
+            ),
             apiConfiguration: apiConfig
         )
 
@@ -195,15 +210,17 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
     /// Pull-to-refresh: reload the most recent posts.
     @discardableResult
-    public func refresh() async throws -> GetFeedPostsPublic200Response {
+    public func refresh() async throws -> PublicFeedPostsResponse {
         let tags = tagSupplier?.getTags(currentUser: currentUser)
 
         let response = try await PublicAPI.getFeedPostsPublic(
             tenantId: config.tenantId,
-            limit: pageSize,
-            tags: tags,
-            sso: config.sso,
-            includeUserInfo: true,
+            options: PublicAPI.GetFeedPostsPublicOptions(
+                limit: pageSize,
+                tags: tags,
+                sso: config.sso,
+                includeUserInfo: true
+            ),
             apiConfiguration: apiConfig
         )
 
@@ -215,7 +232,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
     /// Fetches the latest page and prepends any posts not already in the feed,
     /// preserving the user's existing loaded content and pagination cursor.
     @discardableResult
-    public func loadNewPosts() async throws -> GetFeedPostsPublic200Response {
+    public func loadNewPosts() async throws -> PublicFeedPostsResponse {
         guard newPostsCount > 0 else {
             throw FastCommentsError(reason: "No new posts to load")
         }
@@ -223,16 +240,18 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
         let tags = tagSupplier?.getTags(currentUser: currentUser)
 
-        let response: GetFeedPostsPublic200Response
+        let response: PublicFeedPostsResponse
         do {
             response = try await PublicAPI.getFeedPostsPublic(
-                tenantId: config.tenantId,
+            tenantId: config.tenantId,
+            options: PublicAPI.GetFeedPostsPublicOptions(
                 limit: pageSize,
                 tags: tags,
                 sso: config.sso,
-                includeUserInfo: true,
-                apiConfiguration: apiConfig
-            )
+                includeUserInfo: true
+            ),
+            apiConfiguration: apiConfig
+        )
         } catch {
             // Count stays so the banner remains visible on failure
             throw error
@@ -281,14 +300,14 @@ public final class FastCommentsFeedSDK: ObservableObject {
         let response = try await PublicAPI.createFeedPostPublic(
             tenantId: config.tenantId,
             createFeedPostParams: params,
-            broadcastId: broadcastId,
-            sso: config.sso,
+            options: PublicAPI.CreateFeedPostPublicOptions(
+                broadcastId: broadcastId,
+                sso: config.sso
+            ),
             apiConfiguration: apiConfig
         )
 
-        guard let post = response.feedPost else {
-            throw FastCommentsError(reason: "No post returned from API")
-        }
+        let post = response.feedPost
 
         // Insert at top of feed
         postsById[post.id] = post
@@ -304,8 +323,10 @@ public final class FastCommentsFeedSDK: ObservableObject {
         _ = try await PublicAPI.deleteFeedPostPublic(
             tenantId: config.tenantId,
             postId: postId,
-            broadcastId: broadcastId,
-            sso: config.sso,
+            options: PublicAPI.DeleteFeedPostPublicOptions(
+                broadcastId: broadcastId,
+                sso: config.sso
+            ),
             apiConfiguration: apiConfig
         )
 
@@ -340,14 +361,16 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
         do {
             _ = try await PublicAPI.reactFeedPostPublic(
-                tenantId: config.tenantId,
-                postId: postId,
-                reactBodyParams: params,
+            tenantId: config.tenantId,
+            postId: postId,
+            reactBodyParams: params,
+            options: PublicAPI.ReactFeedPostPublicOptions(
                 isUndo: isUndo,
                 broadcastId: broadcastId,
-                sso: config.sso,
-                apiConfiguration: apiConfig
-            )
+                sso: config.sso
+            ),
+            apiConfiguration: apiConfig
+        )
         } catch {
             // Rollback on failure
             if isUndo {
@@ -384,8 +407,10 @@ public final class FastCommentsFeedSDK: ObservableObject {
         let response = try await PublicAPI.uploadImage(
             tenantId: config.tenantId,
             file: fileURL,
-            sizePreset: .crossPlatform,
-            urlId: "FEEDS",
+            options: PublicAPI.UploadImageOptions(
+                sizePreset: .crossPlatform,
+                urlId: "FEEDS"
+            ),
             apiConfiguration: apiConfig
         )
 
@@ -587,7 +612,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
     // MARK: - Private
 
-    private func processFeedResponse(_ response: GetFeedPostsPublic200Response, isInitialLoad: Bool) {
+    private func processFeedResponse(_ response: PublicFeedPostsResponse, isInitialLoad: Bool) {
         feedPosts = (response.feedPosts ?? [])
         postsById.removeAll()
         likeCounts.removeAll()
@@ -625,11 +650,6 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
         if wsNeedsReconnect {
             subscribeToLiveEvents()
-        }
-
-        // Check for blocking errors
-        if let error = response.translatedError {
-            blockingErrorMessage = error
         }
 
         // Start stats polling

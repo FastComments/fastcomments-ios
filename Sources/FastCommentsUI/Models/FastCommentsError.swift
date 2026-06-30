@@ -17,57 +17,28 @@ public struct FastCommentsError: LocalizedError, Sendable {
         self.translatedError = translatedError
     }
 
-    public init(from response: CreateCommentPublic200Response) {
-        self.code = response.code
-        self.reason = response.reason
-        self.translatedError = response.translatedError
+    /// Decode a thrown `ErrorResponse` (the 3.0.0 non-2xx `APIError` body) into a `FastCommentsError`.
+    /// Returns nil for transport-level errors with no decodable API error body.
+    public init?(decoding error: Error) {
+        guard case let ErrorResponse.error(_, data, _, _) = error,
+              let data,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        let translated = (json["translatedError"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        let reasonValue = (json["reason"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        guard translated != nil || reasonValue != nil else { return nil }
+        self.code = json["code"] as? String
+        self.reason = reasonValue
+        self.translatedError = translated
     }
 
-    public init(from response: VoteComment200Response) {
-        self.code = response.code
-        self.reason = response.reason
-        self.translatedError = response.translatedError
-    }
-
-    public init(from response: GetFeedPostsPublic200Response) {
-        self.code = response.code
-        self.reason = response.reason
-        self.translatedError = response.translatedError
-    }
-
-    public init(from response: PinComment200Response) {
-        self.code = response.code
-        self.reason = response.reason
-        self.translatedError = response.translatedError
-    }
-
-    public init(from response: LockComment200Response) {
-        self.code = response.code
-        self.reason = response.reason
-        self.translatedError = response.translatedError
-    }
-
-    public init(from response: FlagCommentPublic200Response) {
-        self.code = response.code
-        self.reason = response.reason
-        self.translatedError = response.translatedError
-    }
-
-    public init(from response: BlockFromCommentPublic200Response) {
-        self.code = response.code
-        self.reason = response.reason
-        self.translatedError = response.translatedError
-    }
-
-    public init(from response: SetCommentText200Response) {
-        self.code = response.code
-        self.reason = response.reason
-        self.translatedError = response.translatedError
-    }
-
-    public init(from response: DeleteCommentPublic200Response) {
-        self.code = response.code
-        self.reason = response.reason
-        self.translatedError = response.translatedError
+    /// A user-facing message for any thrown error: the API's localized `translatedError`/`reason`
+    /// when the thrown `ErrorResponse` body can be decoded, otherwise the system description.
+    public static func userMessage(from error: Error) -> String {
+        if let apiError = FastCommentsError(decoding: error), let message = apiError.errorDescription {
+            return message
+        }
+        return error.localizedDescription
     }
 }

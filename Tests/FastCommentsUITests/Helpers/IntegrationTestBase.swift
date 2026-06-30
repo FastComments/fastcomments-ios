@@ -212,8 +212,12 @@ class IntegrationTestBase: XCTestCase {
         guard let tid = testTenantId else { return }
         do {
             let response = try await DefaultAPI.getComments(
-                tenantId: tid, urlId: urlId, apiConfiguration: adminApiConfig
-            )
+            tenantId: tid,
+            options: DefaultAPI.GetCommentsOptions(
+                urlId: urlId
+            ),
+            apiConfiguration: adminApiConfig
+        )
             for comment in (response.comments ?? []) {
                 _ = try? await DefaultAPI.deleteComment(
                     tenantId: tid, id: comment.id, apiConfiguration: adminApiConfig
