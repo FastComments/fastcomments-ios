@@ -92,7 +92,7 @@ final class FollowButtonTests: XCTestCase {
 
         state.tap(user: user(), provider: provider, sdk: sdk)
 
-        XCTAssertEqual(state.optimisticFollowing, true) // optimistic flip
+        XCTAssertEqual(state.optimisticFollowing, true)  // optimistic flip
         XCTAssertTrue(state.isPending)
 
         // Provider failure: returns unchanged (still not following) — the
@@ -120,14 +120,14 @@ final class FollowButtonTests: XCTestCase {
         // View is reused for post B before the callback fires.
         state.reset()
 
-        XCTAssertNil(state.optimisticFollowing) // no stale optimistic flip
+        XCTAssertNil(state.optimisticFollowing)  // no stale optimistic flip
         XCTAssertFalse(state.isPending)
 
         // Late callback from the author-1 request arrives — must be ignored.
         provider.flushLastCallback(with: true)
         await waitForMainActor()
 
-        XCTAssertNil(state.optimisticFollowing) // undisturbed
+        XCTAssertNil(state.optimisticFollowing)  // undisturbed
         XCTAssertFalse(state.isPending)
     }
 

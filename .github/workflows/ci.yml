@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format:
+    name: Format (swift-format lint)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest stable Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Show toolchain
+        run: swift --version
+
+      # Fails (exit 1) on any formatting deviation thanks to --strict.
+      # The .swift-format config at the repo root is auto-discovered.
+      - name: Check formatting
+        run: |
+          git ls-files '*.swift' -z \
+            | xargs -0 swift format lint --strict --configuration .swift-format
+
+  build:
+    name: Build (iOS simulator)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest stable Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Show toolchain
+        run: swift --version
+
+      # iOS-only package: build against the simulator SDK (a plain `swift build`
+      # would target macOS and fail on UIKit-dependent code).
+      - name: Build library
+        run: |
+          SDK_PATH="$(xcrun --sdk iphonesimulator --show-sdk-path)"
+          swift build --sdk "$SDK_PATH" --triple arm64-apple-ios16.0-simulator
+
+      - name: Compile tests
+        run: |
+          SDK_PATH="$(xcrun --sdk iphonesimulator --show-sdk-path)"
+          swift build --build-tests --sdk "$SDK_PATH" --triple arm64-apple-ios16.0-simulator
+
+      - name: Build example app
+        run: |
+          xcodebuild build \
+            -project ExampleApp/FastCommentsExample.xcodeproj \
+            -scheme FastCommentsExample \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO

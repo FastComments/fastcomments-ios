@@ -18,13 +18,15 @@ final class LiveEventUserA_UITests: UITestBase {
         let ssoTokenB = makeSecureSSOToken(userId: "userB-live")
         let ssoTokenBAdmin = makeSecureSSOToken(userId: "userB-live", isAdmin: true)
 
-        SyncClient.postData(round: "setup", data: [
-            "tenantId": testTenantId!,
-            "apiKey": testTenantApiKey!,
-            "urlId": urlId,
-            "ssoTokenB": ssoTokenB,
-            "ssoTokenBAdmin": ssoTokenBAdmin,
-        ])
+        SyncClient.postData(
+            round: "setup",
+            data: [
+                "tenantId": testTenantId!,
+                "apiKey": testTenantApiKey!,
+                "urlId": urlId,
+                "ssoTokenB": ssoTokenB,
+                "ssoTokenBAdmin": ssoTokenBAdmin,
+            ])
         SyncClient.signalReady(round: "setup")
 
         // Single launch — all phases use the same app session and WebSocket connection

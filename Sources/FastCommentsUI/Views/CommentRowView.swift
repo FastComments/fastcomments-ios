@@ -87,10 +87,12 @@ public struct CommentRowView: View {
                     Button {
                         onUserClick?(.comment(comment.comment), UserInfo.from(comment.comment), .name)
                     } label: {
-                        Text(comment.comment.isBlocked == true
-                             ? NSLocalizedString("blocked_user", bundle: .module, comment: "")
-                             : comment.comment.commenterName)
-                            .font(theme.resolveCommenterNameFont())
+                        Text(
+                            comment.comment.isBlocked == true
+                                ? NSLocalizedString("blocked_user", bundle: .module, comment: "")
+                                : comment.comment.commenterName
+                        )
+                        .font(theme.resolveCommenterNameFont())
                     }
                     .buttonStyle(.plain)
                     .allowsHitTesting(!isBlocked)
@@ -123,9 +125,9 @@ public struct CommentRowView: View {
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             #if os(iOS)
-                            .background(Color(uiColor: .systemGray6))
+                                .background(Color(uiColor: .systemGray6))
                             #else
-                            .background(Color(nsColor: .controlBackgroundColor))
+                                .background(Color(nsColor: .controlBackgroundColor))
                             #endif
                             .foregroundStyle(.secondary)
                             .clipShape(Capsule())
@@ -144,17 +146,23 @@ public struct CommentRowView: View {
             // Context menu
             Menu {
                 if canEdit {
-                    Button { onEdit?(comment) } label: {
+                    Button {
+                        onEdit?(comment)
+                    } label: {
                         Label(NSLocalizedString("edit", bundle: .module, comment: ""), systemImage: "pencil")
                     }
                 }
                 if canDelete {
-                    Button(role: .destructive) { onDelete?(comment) } label: {
+                    Button(role: .destructive) {
+                        onDelete?(comment)
+                    } label: {
                         Label(NSLocalizedString("delete", bundle: .module, comment: ""), systemImage: "trash")
                     }
                 }
                 if sdk.isSiteAdmin {
-                    Button { onPin?(comment) } label: {
+                    Button {
+                        onPin?(comment)
+                    } label: {
                         Label(
                             comment.comment.isPinned == true
                                 ? NSLocalizedString("unpin", bundle: .module, comment: "")
@@ -162,7 +170,9 @@ public struct CommentRowView: View {
                             systemImage: comment.comment.isPinned == true ? "pin.slash" : "pin"
                         )
                     }
-                    Button { onLock?(comment) } label: {
+                    Button {
+                        onLock?(comment)
+                    } label: {
                         Label(
                             comment.comment.isLocked == true
                                 ? NSLocalizedString("unlock", bundle: .module, comment: "")
@@ -172,7 +182,9 @@ public struct CommentRowView: View {
                     }
                 }
                 if !isOwnComment {
-                    Button { onBlock?(comment) } label: {
+                    Button {
+                        onBlock?(comment)
+                    } label: {
                         Label(
                             comment.comment.isBlocked == true
                                 ? NSLocalizedString("unblock_user", bundle: .module, comment: "")
@@ -182,7 +194,9 @@ public struct CommentRowView: View {
                     }
                 }
                 if !isOwnComment && !isBlocked {
-                    Button { onFlag?(comment) } label: {
+                    Button {
+                        onFlag?(comment)
+                    } label: {
                         Label(
                             comment.comment.isFlagged == true
                                 ? NSLocalizedString("unflag", bundle: .module, comment: "")
@@ -280,9 +294,12 @@ public struct CommentRowView: View {
                                 Image(systemName: comment.isRepliesShown ? "chevron.up" : "chevron.down")
                                     .font(.system(size: 10, weight: .semibold))
                             }
-                            Text(comment.isRepliesShown
-                                 ? NSLocalizedString("hide_replies", bundle: .module, comment: "")
-                                 : String(format: NSLocalizedString("show_replies_%lld", bundle: .module, comment: ""), childCount)
+                            Text(
+                                comment.isRepliesShown
+                                    ? NSLocalizedString("hide_replies", bundle: .module, comment: "")
+                                    : String(
+                                        format: NSLocalizedString("show_replies_%lld", bundle: .module, comment: ""),
+                                        childCount)
                             )
                         }
                         .font(theme.resolveActionFont())

@@ -37,7 +37,7 @@ struct ToolbarShowcaseView: View {
             FastCommentsView(
                 sdk: sdk,
                 customToolbarButtons: [
-                    CodeBlockButton(),
+                    CodeBlockButton()
                 ]
             )
 

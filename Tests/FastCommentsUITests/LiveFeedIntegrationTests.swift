@@ -32,8 +32,9 @@ final class LiveFeedIntegrationTests: IntegrationTestBase {
 
         XCTAssertGreaterThanOrEqual(sdk1.newPostsCount, 1)
         // Post should NOT be auto-inserted into feedPosts
-        XCTAssertEqual(sdk1.feedPosts.count, initialCount,
-                       "New live posts should be buffered, not auto-inserted")
+        XCTAssertEqual(
+            sdk1.feedPosts.count, initialCount,
+            "New live posts should be buffered, not auto-inserted")
 
         // Cleanup
         try? await sdk2.deletePost(postId: post.id)
@@ -65,8 +66,9 @@ final class LiveFeedIntegrationTests: IntegrationTestBase {
         try await sdk1.loadNewPosts()
 
         XCTAssertEqual(sdk1.newPostsCount, 0, "Count should reset after loading")
-        XCTAssertTrue(sdk1.feedPosts.contains { $0.id == post.id },
-                      "Buffered post should now appear in feed after loadNewPosts")
+        XCTAssertTrue(
+            sdk1.feedPosts.contains { $0.id == post.id },
+            "Buffered post should now appear in feed after loadNewPosts")
 
         // Cleanup
         try? await sdk1.deletePost(postId: post.id)
@@ -104,8 +106,9 @@ final class LiveFeedIntegrationTests: IntegrationTestBase {
             !sdk1.feedPosts.contains { $0.id == post.id }
         }
 
-        XCTAssertFalse(sdk1.feedPosts.contains { $0.id == post.id },
-                       "Deleted post should be removed from feed via live event")
+        XCTAssertFalse(
+            sdk1.feedPosts.contains { $0.id == post.id },
+            "Deleted post should be removed from feed via live event")
 
         sdk1.cleanup()
         sdk2.cleanup()
@@ -145,8 +148,9 @@ final class LiveFeedIntegrationTests: IntegrationTestBase {
             try await Task.sleep(nanoseconds: 500_000_000)
         }
 
-        XCTAssertGreaterThanOrEqual(sdk1.getLikeCount(postId: post.id), 1,
-                                    "Stats should reflect new reaction count after fetch")
+        XCTAssertGreaterThanOrEqual(
+            sdk1.getLikeCount(postId: post.id), 1,
+            "Stats should reflect new reaction count after fetch")
 
         // Cleanup
         try? await sdk2.deletePost(postId: post.id)
@@ -168,8 +172,9 @@ final class LiveFeedIntegrationTests: IntegrationTestBase {
         try await Task.sleep(nanoseconds: 2_000_000_000)
 
         // newPostsCount should still be 0 — our own post should not trigger the banner
-        XCTAssertEqual(sdk.newPostsCount, 0,
-                       "Own posts should be filtered by broadcastId, not counted as new")
+        XCTAssertEqual(
+            sdk.newPostsCount, 0,
+            "Own posts should be filtered by broadcastId, not counted as new")
 
         // The post should be in feedPosts from the direct insert in createPost
         let count = sdk.feedPosts.filter { $0.id == post.id }.count
@@ -189,19 +194,22 @@ final class LiveFeedIntegrationTests: IntegrationTestBase {
         let sdk2 = makeFeedSDK(urlId: urlId)
         try await sdk2.load()
 
-        let post1 = try await sdk2.createPost(params: CreateFeedPostParams(
-            title: "Post 1", contentHTML: "<p>First</p>"
-        ))
-        let post2 = try await sdk2.createPost(params: CreateFeedPostParams(
-            title: "Post 2", contentHTML: "<p>Second</p>"
-        ))
+        let post1 = try await sdk2.createPost(
+            params: CreateFeedPostParams(
+                title: "Post 1", contentHTML: "<p>First</p>"
+            ))
+        let post2 = try await sdk2.createPost(
+            params: CreateFeedPostParams(
+                title: "Post 2", contentHTML: "<p>Second</p>"
+            ))
 
         try await waitFor(timeout: 10.0) {
             sdk1.newPostsCount >= 2
         }
 
-        XCTAssertGreaterThanOrEqual(sdk1.newPostsCount, 2,
-                                    "Multiple new posts should each increment the count")
+        XCTAssertGreaterThanOrEqual(
+            sdk1.newPostsCount, 2,
+            "Multiple new posts should each increment the count")
 
         // Load them all
         try await sdk1.loadNewPosts()

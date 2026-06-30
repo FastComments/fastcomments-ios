@@ -2,7 +2,7 @@ import SwiftUI
 import PhotosUI
 import FastCommentsSwift
 #if canImport(UIKit)
-import UIKit
+    import UIKit
 #endif
 
 /// Bottom comment input bar with WYSIWYG formatting, reply indicator, and @mention support.
@@ -19,12 +19,12 @@ public struct CommentInputBar: View {
 
     @Environment(\.fastCommentsTheme) private var theme
     #if os(iOS)
-    @State private var attributedText = NSAttributedString()
-    @State private var selectedRange = NSRange(location: 0, length: 0)
-    @State private var isEditorFocused = false
-    @StateObject private var editorContext = RichTextEditorContext()
+        @State private var attributedText = NSAttributedString()
+        @State private var selectedRange = NSRange(location: 0, length: 0)
+        @State private var isEditorFocused = false
+        @StateObject private var editorContext = RichTextEditorContext()
     #else
-    @State private var text: String = ""
+        @State private var text: String = ""
     #endif
     @State private var isSending: Bool = false
     @State private var errorMessage: String?
@@ -32,23 +32,23 @@ public struct CommentInputBar: View {
     @State private var selectedMentions: [CommentUserMentionInfo] = []
     @State private var showAddLinkSheet: Bool = false
     #if os(iOS)
-    @State private var selectedPhotoItem: PhotosPickerItem?
-    @State private var isUploadingImage: Bool = false
+        @State private var selectedPhotoItem: PhotosPickerItem?
+        @State private var isUploadingImage: Bool = false
     #endif
 
     private var isEmpty: Bool {
         #if os(iOS)
-        attributedText.string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            attributedText.string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         #else
-        text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         #endif
     }
 
     private var plainText: String {
         #if os(iOS)
-        attributedText.string
+            attributedText.string
         #else
-        text
+            text
         #endif
     }
 
@@ -77,10 +77,12 @@ public struct CommentInputBar: View {
                         .fill(theme.resolveActionButtonColor())
                         .frame(width: 3, height: 20)
 
-                    Text(String(
-                        format: NSLocalizedString("replying_to_%@", bundle: .module, comment: ""),
-                        replyingTo.comment.commenterName
-                    ))
+                    Text(
+                        String(
+                            format: NSLocalizedString("replying_to_%@", bundle: .module, comment: ""),
+                            replyingTo.comment.commenterName
+                        )
+                    )
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(theme.resolveActionButtonColor())
                     .lineLimit(1)
@@ -129,66 +131,66 @@ public struct CommentInputBar: View {
                     HStack(spacing: 4) {
                         if sdk.defaultFormattingButtonsEnabled {
                             #if os(iOS)
-                            toolbarButton(icon: "bold", accessibilityKey: "format_bold") {
-                                editorContext.toggleBold()
-                            }
-                            toolbarButton(icon: "italic", accessibilityKey: "format_italic") {
-                                editorContext.toggleItalic()
-                            }
-                            toolbarButton(icon: "strikethrough", accessibilityKey: "format_strikethrough") {
-                                editorContext.toggleStrikethrough()
-                            }
-                            Button {
-                                editorContext.toggleCode()
-                            } label: {
-                                Image(systemName: "chevron.left.forwardslash.chevron.right")
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundStyle(theme.resolveActionButtonColor())
-                                    .frame(width: 36, height: 30)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(NSLocalizedString("format_code", bundle: .module, comment: ""))
-                            .simultaneousGesture(
-                                LongPressGesture(minimumDuration: 0.5)
-                                    .onEnded { _ in
-                                        editorContext.toggleCodeBlock()
-                                    }
-                            )
-                            toolbarButton(icon: "link", accessibilityKey: "add_link") {
-                                showAddLinkSheet = true
-                            }
-
-                            PhotosPicker(
-                                selection: $selectedPhotoItem,
-                                matching: .images
-                            ) {
-                                if isUploadingImage {
-                                    ProgressView()
-                                        .scaleEffect(0.6)
-                                        .frame(width: 36, height: 30)
-                                } else {
-                                    Image(systemName: "photo")
+                                toolbarButton(icon: "bold", accessibilityKey: "format_bold") {
+                                    editorContext.toggleBold()
+                                }
+                                toolbarButton(icon: "italic", accessibilityKey: "format_italic") {
+                                    editorContext.toggleItalic()
+                                }
+                                toolbarButton(icon: "strikethrough", accessibilityKey: "format_strikethrough") {
+                                    editorContext.toggleStrikethrough()
+                                }
+                                Button {
+                                    editorContext.toggleCode()
+                                } label: {
+                                    Image(systemName: "chevron.left.forwardslash.chevron.right")
                                         .font(.system(size: 15, weight: .medium))
                                         .foregroundStyle(theme.resolveActionButtonColor())
                                         .frame(width: 36, height: 30)
                                 }
-                            }
-                            .disabled(isUploadingImage)
-                            .onChange(of: selectedPhotoItem) { newItem in
-                                guard let newItem else { return }
-                                Task { await handleImagePicked(newItem) }
-                                selectedPhotoItem = nil
-                            }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(NSLocalizedString("format_code", bundle: .module, comment: ""))
+                                .simultaneousGesture(
+                                    LongPressGesture(minimumDuration: 0.5)
+                                        .onEnded { _ in
+                                            editorContext.toggleCodeBlock()
+                                        }
+                                )
+                                toolbarButton(icon: "link", accessibilityKey: "add_link") {
+                                    showAddLinkSheet = true
+                                }
+
+                                PhotosPicker(
+                                    selection: $selectedPhotoItem,
+                                    matching: .images
+                                ) {
+                                    if isUploadingImage {
+                                        ProgressView()
+                                            .scaleEffect(0.6)
+                                            .frame(width: 36, height: 30)
+                                    } else {
+                                        Image(systemName: "photo")
+                                            .font(.system(size: 15, weight: .medium))
+                                            .foregroundStyle(theme.resolveActionButtonColor())
+                                            .frame(width: 36, height: 30)
+                                    }
+                                }
+                                .disabled(isUploadingImage)
+                                .onChange(of: selectedPhotoItem) { newItem in
+                                    guard let newItem else { return }
+                                    Task { await handleImagePicked(newItem) }
+                                    selectedPhotoItem = nil
+                                }
                             #else
-                            toolbarButton(icon: "bold", accessibilityKey: "format_bold") {
-                                text += "<b></b>"
-                            }
-                            toolbarButton(icon: "italic", accessibilityKey: "format_italic") {
-                                text += "<i></i>"
-                            }
-                            toolbarButton(icon: "link", accessibilityKey: "add_link") {
-                                showAddLinkSheet = true
-                            }
+                                toolbarButton(icon: "bold", accessibilityKey: "format_bold") {
+                                    text += "<b></b>"
+                                }
+                                toolbarButton(icon: "italic", accessibilityKey: "format_italic") {
+                                    text += "<i></i>"
+                                }
+                                toolbarButton(icon: "link", accessibilityKey: "add_link") {
+                                    showAddLinkSheet = true
+                                }
                             #endif
                         }
 
@@ -224,9 +226,9 @@ public struct CommentInputBar: View {
                     .padding(.vertical, 4)
                 }
                 #if os(iOS)
-                .background(Color(uiColor: .secondarySystemBackground).opacity(0.5))
+                    .background(Color(uiColor: .secondarySystemBackground).opacity(0.5))
                 #else
-                .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                    .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
                 #endif
             }
 
@@ -238,50 +240,52 @@ public struct CommentInputBar: View {
                 AvatarImage(url: sdk.currentUser?.avatarSrc, size: 30)
 
                 #if os(iOS)
-                ZStack(alignment: .leading) {
-                    if attributedText.length == 0 && !isEditorFocused {
-                        Text(replyingTo != nil
-                             ? NSLocalizedString("reply_hint", bundle: .module, comment: "")
-                             : NSLocalizedString("comment_hint", bundle: .module, comment: ""))
-                        .font(.subheadline)
-                        .foregroundStyle(.tertiary)
-                        .padding(.horizontal, Layout.inputHorizontalPadding)
-                        .padding(.vertical, Layout.inputVerticalPadding)
-                    }
+                    ZStack(alignment: .leading) {
+                        if attributedText.length == 0 && !isEditorFocused {
+                            Text(
+                                replyingTo != nil
+                                    ? NSLocalizedString("reply_hint", bundle: .module, comment: "")
+                                    : NSLocalizedString("comment_hint", bundle: .module, comment: "")
+                            )
+                            .font(.subheadline)
+                            .foregroundStyle(.tertiary)
+                            .padding(.horizontal, Layout.inputHorizontalPadding)
+                            .padding(.vertical, Layout.inputVerticalPadding)
+                        }
 
-                    RichTextEditor(
-                        attributedText: $attributedText,
-                        selectedRange: $selectedRange,
-                        isFocused: $isEditorFocused,
-                        context: editorContext
+                        RichTextEditor(
+                            attributedText: $attributedText,
+                            selectedRange: $selectedRange,
+                            isFocused: $isEditorFocused,
+                            context: editorContext
+                        )
+                        .frame(minHeight: 36)
+                        .accessibilityIdentifier("comment-input")
+                    }
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(inputFieldBackground)
                     )
-                    .frame(minHeight: 36)
-                    .accessibilityIdentifier("comment-input")
-                }
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(inputFieldBackground)
-                )
                 #else
-                TextField(
-                    replyingTo != nil
-                        ? NSLocalizedString("reply_hint", bundle: .module, comment: "")
-                        : NSLocalizedString("comment_hint", bundle: .module, comment: ""),
-                    text: $text,
-                    axis: .vertical
-                )
-                .textFieldStyle(.plain)
-                .font(.subheadline)
-                .lineLimit(1...5)
-                .padding(.vertical, Layout.inputVerticalPadding)
-                .padding(.horizontal, Layout.inputHorizontalPadding)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(inputFieldBackground)
-                )
-                .onChange(of: text) { newValue in
-                    handleTextChange(newValue)
-                }
+                    TextField(
+                        replyingTo != nil
+                            ? NSLocalizedString("reply_hint", bundle: .module, comment: "")
+                            : NSLocalizedString("comment_hint", bundle: .module, comment: ""),
+                        text: $text,
+                        axis: .vertical
+                    )
+                    .textFieldStyle(.plain)
+                    .font(.subheadline)
+                    .lineLimit(1...5)
+                    .padding(.vertical, Layout.inputVerticalPadding)
+                    .padding(.horizontal, Layout.inputHorizontalPadding)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(inputFieldBackground)
+                    )
+                    .onChange(of: text) { newValue in
+                        handleTextChange(newValue)
+                    }
                 #endif
 
                 Button {
@@ -314,26 +318,27 @@ public struct CommentInputBar: View {
         }
         .background(theme.resolveInputBarBackgroundColor())
         #if os(iOS)
-        .onAppear {
-            editorContext.onPlainTextChange = { newText in
-                handleTextChange(newText)
+            .onAppear {
+                editorContext.onPlainTextChange = { newText in
+                    handleTextChange(newText)
+                }
             }
-        }
         #endif
         .sheet(isPresented: $showAddLinkSheet) {
             #if os(iOS)
-            AddLinkSheet { url, label in
-                if let linkURL = URL(string: url) {
-                    editorContext.applyLink(url: linkURL, label: label)
+                AddLinkSheet { url, label in
+                    if let linkURL = URL(string: url) {
+                        editorContext.applyLink(url: linkURL, label: label)
+                    }
                 }
-            }
             #else
-            AddLinkSheet { url, label in
-                let linkHtml = label.isEmpty
-                    ? "<a href=\"\(url)\">\(url)</a>"
-                    : "<a href=\"\(url)\">\(label)</a>"
-                text += linkHtml
-            }
+                AddLinkSheet { url, label in
+                    let linkHtml =
+                        label.isEmpty
+                        ? "<a href=\"\(url)\">\(url)</a>"
+                        : "<a href=\"\(url)\">\(label)</a>"
+                    text += linkHtml
+                }
             #endif
         }
     }
@@ -356,31 +361,31 @@ public struct CommentInputBar: View {
     /// Computed Binding<String> for custom toolbar buttons that still operate on strings.
     private var plainTextBinding: Binding<String> {
         #if os(iOS)
-        Binding(
-            get: { attributedText.string },
-            set: { newValue in
-                let oldValue = attributedText.string
-                guard newValue != oldValue else { return }
+            Binding(
+                get: { attributedText.string },
+                set: { newValue in
+                    let oldValue = attributedText.string
+                    guard newValue != oldValue else { return }
 
-                let defaultAttrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.preferredFont(forTextStyle: .subheadline),
-                    .foregroundColor: UIColor.label
-                ]
+                    let defaultAttrs: [NSAttributedString.Key: Any] = [
+                        .font: UIFont.preferredFont(forTextStyle: .subheadline),
+                        .foregroundColor: UIColor.label,
+                    ]
 
-                if newValue.hasPrefix(oldValue) {
-                    // Pure append
-                    let appended = String(newValue.dropFirst(oldValue.count))
-                    let mutable = NSMutableAttributedString(attributedString: attributedText)
-                    mutable.append(NSAttributedString(string: appended, attributes: defaultAttrs))
-                    attributedText = mutable
-                } else {
-                    // Full replacement or complex edit
-                    attributedText = NSAttributedString(string: newValue, attributes: defaultAttrs)
+                    if newValue.hasPrefix(oldValue) {
+                        // Pure append
+                        let appended = String(newValue.dropFirst(oldValue.count))
+                        let mutable = NSMutableAttributedString(attributedString: attributedText)
+                        mutable.append(NSAttributedString(string: appended, attributes: defaultAttrs))
+                        attributedText = mutable
+                    } else {
+                        // Full replacement or complex edit
+                        attributedText = NSAttributedString(string: newValue, attributes: defaultAttrs)
+                    }
                 }
-            }
-        )
+            )
         #else
-        $text
+            $text
         #endif
     }
 
@@ -388,9 +393,9 @@ public struct CommentInputBar: View {
 
     private var inputFieldBackground: Color {
         #if os(iOS)
-        Color(uiColor: .tertiarySystemFill)
+            Color(uiColor: .tertiarySystemFill)
         #else
-        Color(nsColor: .controlBackgroundColor)
+            Color(nsColor: .controlBackgroundColor)
         #endif
     }
 
@@ -398,16 +403,16 @@ public struct CommentInputBar: View {
 
     private static func friendlyErrorMessage(from error: Error) -> String {
         #if os(iOS)
-        if case let ErrorResponse.error(_, data, _, _) = error, let data = data {
-            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                if let translated = json["translatedError"] as? String, !translated.isEmpty {
-                    return translated
-                }
-                if let reason = json["reason"] as? String, !reason.isEmpty {
-                    return reason
+            if case let ErrorResponse.error(_, data, _, _) = error, let data = data {
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    if let translated = json["translatedError"] as? String, !translated.isEmpty {
+                        return translated
+                    }
+                    if let reason = json["reason"] as? String, !reason.isEmpty {
+                        return reason
+                    }
                 }
             }
-        }
         #endif
         return NSLocalizedString("comment_post_failed", bundle: .module, comment: "")
     }
@@ -415,50 +420,58 @@ public struct CommentInputBar: View {
     // MARK: - Image Upload
 
     #if os(iOS)
-    private func handleImagePicked(_ item: PhotosPickerItem) async {
-        isUploadingImage = true
-        defer { isUploadingImage = false }
+        private func handleImagePicked(_ item: PhotosPickerItem) async {
+            isUploadingImage = true
+            defer { isUploadingImage = false }
 
-        do {
-            guard let file = try await item.loadTransferable(type: ImageFileTransferable.self) else { return }
+            do {
+                guard let file = try await item.loadTransferable(type: ImageFileTransferable.self) else { return }
 
-            let imageUrl = try await sdk.uploadImage(fileURL: file.url)
-            defer { try? FileManager.default.removeItem(at: file.url) }
+                let imageUrl = try await sdk.uploadImage(fileURL: file.url)
+                defer { try? FileManager.default.removeItem(at: file.url) }
 
-            // Generate a thumbnail for WYSIWYG display from the file on disk
-            guard let source = CGImageSourceCreateWithURL(file.url as CFURL, nil),
-                  let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, [
-                      kCGImageSourceThumbnailMaxPixelSize: 300,
-                      kCGImageSourceCreateThumbnailFromImageAlways: true,
-                      kCGImageSourceCreateThumbnailWithTransform: true,
-                  ] as CFDictionary) else { return }
-            let thumb = UIImage(cgImage: cgImage)
+                // Generate a thumbnail for WYSIWYG display from the file on disk
+                guard let source = CGImageSourceCreateWithURL(file.url as CFURL, nil),
+                    let cgImage = CGImageSourceCreateThumbnailAtIndex(
+                        source, 0,
+                        [
+                            kCGImageSourceThumbnailMaxPixelSize: 300,
+                            kCGImageSourceCreateThumbnailFromImageAlways: true,
+                            kCGImageSourceCreateThumbnailWithTransform: true,
+                        ] as CFDictionary)
+                else { return }
+                let thumb = UIImage(cgImage: cgImage)
 
-            // Insert image into the editor
-            let mutable = NSMutableAttributedString(attributedString: attributedText)
+                // Insert image into the editor
+                let mutable = NSMutableAttributedString(attributedString: attributedText)
 
-            let thumbWidth: CGFloat = 150
-            let thumbHeight = thumbWidth * thumb.size.height / thumb.size.width
-            let attachment = NSTextAttachment()
-            attachment.image = thumb
-            attachment.bounds = CGRect(x: 0, y: 0, width: thumbWidth, height: thumbHeight)
+                let thumbWidth: CGFloat = 150
+                let thumbHeight = thumbWidth * thumb.size.height / thumb.size.width
+                let attachment = NSTextAttachment()
+                attachment.image = thumb
+                attachment.bounds = CGRect(x: 0, y: 0, width: thumbWidth, height: thumbHeight)
 
-            let attachmentString = NSMutableAttributedString(attachment: attachment)
-            // Store the URL so the HTML converter can find it
-            attachmentString.addAttribute(.link, value: URL(string: imageUrl)!, range: NSRange(location: 0, length: attachmentString.length))
-            attachmentString.addAttribute(.imageURL, value: imageUrl, range: NSRange(location: 0, length: attachmentString.length))
+                let attachmentString = NSMutableAttributedString(attachment: attachment)
+                // Store the URL so the HTML converter can find it
+                attachmentString.addAttribute(
+                    .link, value: URL(string: imageUrl)!, range: NSRange(location: 0, length: attachmentString.length))
+                attachmentString.addAttribute(
+                    .imageURL, value: imageUrl, range: NSRange(location: 0, length: attachmentString.length))
 
-            mutable.append(NSAttributedString(string: "\n"))
-            mutable.append(attachmentString)
-            mutable.append(NSAttributedString(string: "\n", attributes: [
-                .font: UIFont.preferredFont(forTextStyle: .subheadline),
-                .foregroundColor: UIColor.label
-            ]))
-            attributedText = mutable
-        } catch {
-            errorMessage = Self.friendlyErrorMessage(from: error)
+                mutable.append(NSAttributedString(string: "\n"))
+                mutable.append(attachmentString)
+                mutable.append(
+                    NSAttributedString(
+                        string: "\n",
+                        attributes: [
+                            .font: UIFont.preferredFont(forTextStyle: .subheadline),
+                            .foregroundColor: UIColor.label,
+                        ]))
+                attributedText = mutable
+            } catch {
+                errorMessage = Self.friendlyErrorMessage(from: error)
+            }
         }
-    }
     #endif
 
     // MARK: - Submit
@@ -470,9 +483,9 @@ public struct CommentInputBar: View {
         errorMessage = nil
 
         #if os(iOS)
-        let htmlText = AttributedStringHTMLConverter.convert(attributedText)
+            let htmlText = AttributedStringHTMLConverter.convert(attributedText)
         #else
-        let htmlText = text
+            let htmlText = text
         #endif
 
         do {
@@ -482,14 +495,14 @@ public struct CommentInputBar: View {
                 mentions: selectedMentions.isEmpty ? nil : selectedMentions
             )
             #if os(iOS)
-            attributedText = NSAttributedString()
-            // Reset typing attributes to plain style
-            editorContext.textView?.typingAttributes = [
-                .font: UIFont.preferredFont(forTextStyle: .subheadline),
-                .foregroundColor: UIColor.label
-            ]
+                attributedText = NSAttributedString()
+                // Reset typing attributes to plain style
+                editorContext.textView?.typingAttributes = [
+                    .font: UIFont.preferredFont(forTextStyle: .subheadline),
+                    .foregroundColor: UIColor.label,
+                ]
             #else
-            text = ""
+                text = ""
             #endif
             replyingTo = nil
             selectedMentions.removeAll()
@@ -534,25 +547,25 @@ public struct CommentInputBar: View {
         let displayName = user.displayName ?? user.name
 
         #if os(iOS)
-        let currentText = attributedText.string
-        guard let lastAtIndex = currentText.lastIndex(of: "@") else { return }
+            let currentText = attributedText.string
+            guard let lastAtIndex = currentText.lastIndex(of: "@") else { return }
 
-        let atPosition = currentText.distance(from: currentText.startIndex, to: lastAtIndex)
-        let replaceRange = NSRange(location: atPosition, length: currentText.count - atPosition)
+            let atPosition = currentText.distance(from: currentText.startIndex, to: lastAtIndex)
+            let replaceRange = NSRange(location: atPosition, length: currentText.count - atPosition)
 
-        let mentionAttrs: [NSAttributedString.Key: Any] = [
-            .font: UIFont.preferredFont(forTextStyle: .subheadline).withTraits(.traitBold),
-            .foregroundColor: UIColor.tintColor,
-            .mentionUserId: user.id
-        ]
-        let mentionText = NSAttributedString(string: "@\(displayName) ", attributes: mentionAttrs)
+            let mentionAttrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.preferredFont(forTextStyle: .subheadline).withTraits(.traitBold),
+                .foregroundColor: UIColor.tintColor,
+                .mentionUserId: user.id,
+            ]
+            let mentionText = NSAttributedString(string: "@\(displayName) ", attributes: mentionAttrs)
 
-        let mutable = NSMutableAttributedString(attributedString: attributedText)
-        mutable.replaceCharacters(in: replaceRange, with: mentionText)
-        attributedText = mutable
+            let mutable = NSMutableAttributedString(attributedString: attributedText)
+            mutable.replaceCharacters(in: replaceRange, with: mentionText)
+            attributedText = mutable
         #else
-        guard let lastAtIndex = text.lastIndex(of: "@") else { return }
-        text = String(text[..<lastAtIndex]) + "@\(displayName) "
+            guard let lastAtIndex = text.lastIndex(of: "@") else { return }
+            text = String(text[..<lastAtIndex]) + "@\(displayName) "
         #endif
 
         let mentionInfo = CommentUserMentionInfo(
@@ -567,12 +580,12 @@ public struct CommentInputBar: View {
 // MARK: - UIFont helper
 
 #if canImport(UIKit)
-private extension UIFont {
-    func withTraits(_ traits: UIFontDescriptor.SymbolicTraits) -> UIFont {
-        guard let descriptor = fontDescriptor.withSymbolicTraits(fontDescriptor.symbolicTraits.union(traits)) else {
-            return self
+    private extension UIFont {
+        func withTraits(_ traits: UIFontDescriptor.SymbolicTraits) -> UIFont {
+            guard let descriptor = fontDescriptor.withSymbolicTraits(fontDescriptor.symbolicTraits.union(traits)) else {
+                return self
+            }
+            return UIFont(descriptor: descriptor, size: pointSize)
         }
-        return UIFont(descriptor: descriptor, size: pointSize)
     }
-}
 #endif

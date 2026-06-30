@@ -19,7 +19,8 @@ enum SyncClient {
     private static func readConfigFile(role: String) -> [String: String]? {
         let path = "/tmp/fc-uitest-\(role).json"
         guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: String] else { return nil }
+            let json = try? JSONSerialization.jsonObject(with: data) as? [String: String]
+        else { return nil }
         return json
     }
 

@@ -21,8 +21,9 @@ public struct FastCommentsError: LocalizedError, Sendable {
     /// Returns nil for transport-level errors with no decodable API error body.
     public init?(decoding error: Error) {
         guard case let ErrorResponse.error(_, data, _, _) = error,
-              let data,
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            let data,
+            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else {
             return nil
         }
         let translated = (json["translatedError"] as? String).flatMap { $0.isEmpty ? nil : $0 }

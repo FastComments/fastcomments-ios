@@ -15,7 +15,8 @@ final class PresenceIntegrationTests: IntegrationTestBase {
         _ = try await sdk.postComment(text: "Comment 2")
 
         // Server-posted comments should have userId indexed
-        XCTAssertFalse(sdk.commentsTree.commentsByUserId.isEmpty, "commentsByUserId should be populated from server data")
+        XCTAssertFalse(
+            sdk.commentsTree.commentsByUserId.isEmpty, "commentsByUserId should be populated from server data")
 
         // Set all online via the presence API
         let userId = sdk.commentsTree.commentsByUserId.keys.first!

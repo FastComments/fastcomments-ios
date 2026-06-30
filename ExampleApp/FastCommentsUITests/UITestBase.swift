@@ -46,15 +46,19 @@ class UITestBase: XCTestCase {
             var req = URLRequest(url: signupURL)
             req.httpMethod = "POST"
             req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-            req.httpBody = "username=\(username)&email=\(email)&companyName=\(username)&domains=\(username).example.com&packageId=adv&noTracking=true".data(using: .utf8)
+            req.httpBody =
+                "username=\(username)&email=\(email)&companyName=\(username)&domains=\(username).example.com&packageId=adv&noTracking=true"
+                .data(using: .utf8)
             session.dataTask(with: req) { _, _, _ in done() }.resume()
         }
 
         // Get tenant ID
         let encodedKey = e2eApiKey.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
-        let tenantData = syncFetch(url: URL(string: "\(host)/test-e2e/api/tenant/by-email/\(email)?API_KEY=\(encodedKey)")!)
+        let tenantData = syncFetch(
+            url: URL(string: "\(host)/test-e2e/api/tenant/by-email/\(email)?API_KEY=\(encodedKey)")!)
         if let json = try? JSONSerialization.jsonObject(with: tenantData) as? [String: Any],
-           let tenant = json["tenant"] as? [String: Any] {
+            let tenant = json["tenant"] as? [String: Any]
+        {
             testTenantId = tenant["_id"] as? String
         }
         XCTAssertNotNil(testTenantId, "Should have tenant ID")
@@ -128,7 +132,7 @@ class UITestBase: XCTestCase {
             "id": userId,
             "email": "tester-\(userId.prefix(8))@fctest.com",
             "username": "Tester \(userId.prefix(6))",
-            "avatar": ""
+            "avatar": "",
         ]
         if isAdmin { userData["isAdmin"] = true }
 
@@ -142,10 +146,11 @@ class UITestBase: XCTestCase {
         var hmac = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
         key.withUnsafeBytes { keyBytes in
             messageData.withUnsafeBytes { msgBytes in
-                CCHmac(CCHmacAlgorithm(kCCHmacAlgSHA256),
-                        keyBytes.baseAddress, key.count,
-                        msgBytes.baseAddress, messageData.count,
-                        &hmac)
+                CCHmac(
+                    CCHmacAlgorithm(kCCHmacAlgSHA256),
+                    keyBytes.baseAddress, key.count,
+                    msgBytes.baseAddress, messageData.count,
+                    &hmac)
             }
         }
         let hash = hmac.map { String(format: "%02x", $0) }.joined()
@@ -153,7 +158,7 @@ class UITestBase: XCTestCase {
         let payload: [String: Any] = [
             "userDataJSONBase64": userDataBase64,
             "verificationHash": hash,
-            "timestamp": timestamp
+            "timestamp": timestamp,
         ]
         let payloadData = try! JSONSerialization.data(withJSONObject: payload)
         return String(data: payloadData, encoding: .utf8)!
@@ -260,7 +265,7 @@ class UITestBase: XCTestCase {
     func pollUntil(timeout: TimeInterval = 10, _ condition: () -> Bool) {
         let deadline = Date().addingTimeInterval(timeout)
         while !condition() && Date() < deadline {
-            usleep(50_000) // 50ms
+            usleep(50_000)  // 50ms
             RunLoop.current.run(until: Date().addingTimeInterval(0.01))
         }
     }
@@ -288,14 +293,14 @@ class UITestBase: XCTestCase {
             defer { sem.signal() }
             do {
                 let response = try await PublicAPI.createCommentPublic(
-            tenantId: testTenantId,
-            urlId: urlId,
-            broadcastId: UUID().uuidString,
-            commentData: commentData,
-            options: CreateCommentPublicOptions(
-                sso: ssoToken
-            )
-        )
+                    tenantId: testTenantId,
+                    urlId: urlId,
+                    broadcastId: UUID().uuidString,
+                    commentData: commentData,
+                    options: CreateCommentPublicOptions(
+                        sso: ssoToken
+                    )
+                )
                 resultId = response.comment?.id
             } catch {
                 XCTFail("seedComment failed: \(error)")
@@ -313,13 +318,13 @@ class UITestBase: XCTestCase {
             defer { sem.signal() }
             do {
                 let response = try await PublicAPI.createFeedPostPublic(
-            tenantId: testTenantId,
-            createFeedPostParams: CreateFeedPostParams(contentHTML: text),
-            options: CreateFeedPostPublicOptions(
-                broadcastId: UUID().uuidString,
-                sso: ssoToken
-            )
-        )
+                    tenantId: testTenantId,
+                    createFeedPostParams: CreateFeedPostParams(contentHTML: text),
+                    options: CreateFeedPostPublicOptions(
+                        broadcastId: UUID().uuidString,
+                        sso: ssoToken
+                    )
+                )
                 resultId = response.feedPost?.id
             } catch {
                 XCTFail("seedFeedPost failed: \(error)")
@@ -352,7 +357,10 @@ class UITestBase: XCTestCase {
     }
 
     /// Poll the admin API until a comment has at least `expected` children.
-    func waitForChildCount(parentId: String, urlId: String, expected: Int, timeout: TimeInterval = 10, file: StaticString = #file, line: UInt = #line) {
+    func waitForChildCount(
+        parentId: String, urlId: String, expected: Int, timeout: TimeInterval = 10, file: StaticString = #file,
+        line: UInt = #line
+    ) {
         let deadline = Date().addingTimeInterval(timeout)
         while true {
             let sem = DispatchSemaphore(value: 0)
@@ -360,20 +368,22 @@ class UITestBase: XCTestCase {
             Task {
                 defer { sem.signal() }
                 let response = try? await DefaultAPI.getComments(
-            tenantId: self.testTenantId,
-            options: GetCommentsOptions(
-                limit: expected,
-                urlId: urlId,
-                parentId: parentId
-            ),
-            apiConfiguration: self.adminApiConfig
-        )
+                    tenantId: self.testTenantId,
+                    options: GetCommentsOptions(
+                        limit: expected,
+                        urlId: urlId,
+                        parentId: parentId
+                    ),
+                    apiConfiguration: self.adminApiConfig
+                )
                 childCount = response?.comments?.count ?? 0
             }
             sem.wait()
             if childCount >= expected { return }
             if Date() > deadline {
-                XCTFail("waitForChildCount: only \(childCount)/\(expected) children found for \(parentId)", file: file, line: line)
+                XCTFail(
+                    "waitForChildCount: only \(childCount)/\(expected) children found for \(parentId)", file: file,
+                    line: line)
                 return
             }
             Thread.sleep(forTimeInterval: 0.5)
@@ -388,13 +398,13 @@ class UITestBase: XCTestCase {
             defer { sem.signal() }
             do {
                 let response = try await DefaultAPI.getComments(
-            tenantId: testTenantId,
-            options: GetCommentsOptions(
-                limit: 1,
-                urlId: urlId
-            ),
-            apiConfiguration: adminApiConfig
-        )
+                    tenantId: testTenantId,
+                    options: GetCommentsOptions(
+                        limit: 1,
+                        urlId: urlId
+                    ),
+                    apiConfiguration: adminApiConfig
+                )
                 resultId = response.comments?.first?.id
             } catch {
                 XCTFail("fetchLatestCommentId failed: \(error)", file: file, line: line)

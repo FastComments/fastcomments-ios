@@ -43,9 +43,9 @@ struct MentionSuggestionsList: View {
                 }
             }
             #if os(iOS)
-            .background(Color(uiColor: .systemBackground))
+                .background(Color(uiColor: .systemBackground))
             #else
-            .background(Color(nsColor: .windowBackgroundColor))
+                .background(Color(nsColor: .windowBackgroundColor))
             #endif
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .shadow(color: .black.opacity(0.12), radius: 12, y: 6)

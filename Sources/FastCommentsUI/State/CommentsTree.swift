@@ -136,10 +136,12 @@ public final class CommentsTree: ObservableObject {
         if liveChatStyle, !newNodes.isEmpty, !visibleNodes.isEmpty {
             if let firstExisting = visibleNodes.first, firstExisting is DateSeparator {
                 if let lastPrependedComment = newNodes.last(where: { $0 is RenderableComment }) as? RenderableComment,
-                   let firstExistingComment = visibleNodes.first(where: { $0 is RenderableComment }) as? RenderableComment,
-                   let d1 = lastPrependedComment.comment.date,
-                   let d2 = firstExistingComment.comment.date,
-                   calendar.isDate(d1, inSameDayAs: d2) {
+                    let firstExistingComment = visibleNodes.first(where: { $0 is RenderableComment })
+                        as? RenderableComment,
+                    let d1 = lastPrependedComment.comment.date,
+                    let d2 = firstExistingComment.comment.date,
+                    calendar.isDate(d1, inSameDayAs: d2)
+                {
                     visibleNodes.removeFirst()
                 }
             }
@@ -227,11 +229,13 @@ public final class CommentsTree: ObservableObject {
                         for i in stride(from: updatedNodes.count - 1, through: 0, by: -1) {
                             let node = updatedNodes[i]
                             if let separator = node as? DateSeparator {
-                                let sepComponents = calendar.dateComponents([.year, .month, .day], from: separator.date)
+                                let sepComponents = calendar.dateComponents(
+                                    [.year, .month, .day], from: separator.date)
                                 needDateSeparator = sepComponents != commentComponents
                                 break
                             } else if let lastComment = node as? RenderableComment,
-                                      let lastDate = lastComment.comment.date {
+                                let lastDate = lastComment.comment.date
+                            {
                                 let lastComponents = calendar.dateComponents([.year, .month, .day], from: lastDate)
                                 needDateSeparator = lastComponents != commentComponents
                                 break
@@ -260,7 +264,8 @@ public final class CommentsTree: ObservableObject {
                     newRootCommentsButton = button
                     updatedNodes.insert(button, at: 0)
                 } else if let existingButton = newRootCommentsButton,
-                          let buttonIndex = updatedNodes.firstIndex(where: { $0.id == existingButton.id }) {
+                    let buttonIndex = updatedNodes.firstIndex(where: { $0.id == existingButton.id })
+                {
                     let newButton = RenderableButton(
                         buttonType: .newRootComments,
                         commentCount: newRootComments.count
@@ -626,7 +631,8 @@ public final class CommentsTree: ObservableObject {
         var updatedNodes = visibleNodes
 
         if let existingButton = newChildCommentsButtons[parentId],
-           let buttonIndex = updatedNodes.firstIndex(where: { $0.id == existingButton.id }) {
+            let buttonIndex = updatedNodes.firstIndex(where: { $0.id == existingButton.id })
+        {
             let newButton = RenderableButton(
                 buttonType: .newChildComments,
                 commentCount: parent.getNewChildCommentsCount(),

@@ -30,7 +30,8 @@ public struct CommentEditSheet: View {
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(isFocused ? theme.resolveActionButtonColor().opacity(0.5) : Color.clear, lineWidth: 1.5)
+                            .stroke(
+                                isFocused ? theme.resolveActionButtonColor().opacity(0.5) : Color.clear, lineWidth: 1.5)
                     )
                     .padding()
 
@@ -38,7 +39,7 @@ public struct CommentEditSheet: View {
             }
             .navigationTitle(NSLocalizedString("edit_comment", bundle: .module, comment: ""))
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -65,9 +66,9 @@ public struct CommentEditSheet: View {
 
     private var editorBackground: Color {
         #if os(iOS)
-        Color(uiColor: .tertiarySystemFill)
+            Color(uiColor: .tertiarySystemFill)
         #else
-        Color(nsColor: .controlBackgroundColor)
+            Color(nsColor: .controlBackgroundColor)
         #endif
     }
 }

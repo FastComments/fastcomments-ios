@@ -11,8 +11,10 @@ public struct CommentsSheet: View {
     @StateObject private var commentsSDK: FastCommentsSDK
     @Environment(\.dismiss) private var dismiss
 
-    public init(post: FeedPost, feedSDK: FastCommentsFeedSDK,
-                onUserClick: ((UserClickContext, UserInfo, UserClickSource) -> Void)? = nil) {
+    public init(
+        post: FeedPost, feedSDK: FastCommentsFeedSDK,
+        onUserClick: ((UserClickContext, UserInfo, UserClickSource) -> Void)? = nil
+    ) {
         self.post = post
         self.feedSDK = feedSDK
         self.onUserClick = onUserClick
@@ -24,7 +26,7 @@ public struct CommentsSheet: View {
             FastCommentsView(sdk: commentsSDK)
                 .navigationTitle(NSLocalizedString("comments", bundle: .module, comment: ""))
                 #if os(iOS)
-                .navigationBarTitleDisplayMode(.inline)
+                    .navigationBarTitleDisplayMode(.inline)
                 #endif
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {

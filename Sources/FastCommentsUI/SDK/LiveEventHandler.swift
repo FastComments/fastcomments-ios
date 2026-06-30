@@ -7,8 +7,9 @@ enum LiveEventHandler {
     /// Convert a PubSubCommentUserBadgeInfo to a CommentUserBadgeInfo.
     static func toCommentUserBadgeInfo(_ pubSub: PubSubCommentUserBadgeInfo) -> CommentUserBadgeInfo? {
         guard let id = pubSub.id,
-              let type = pubSub.type,
-              let description = pubSub.description else { return nil }
+            let type = pubSub.type,
+            let description = pubSub.description
+        else { return nil }
         return CommentUserBadgeInfo(
             id: id,
             type: type,

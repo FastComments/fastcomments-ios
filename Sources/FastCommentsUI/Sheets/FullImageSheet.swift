@@ -52,7 +52,7 @@ public struct FullImageSheet: View {
                 }
             }
             #if os(iOS)
-            .tabViewStyle(.page(indexDisplayMode: .never))
+                .tabViewStyle(.page(indexDisplayMode: .never))
             #endif
             .ignoresSafeArea()
 
@@ -87,7 +87,7 @@ public struct FullImageSheet: View {
             }
         }
         #if os(iOS)
-        .statusBarHidden(true)
+            .statusBarHidden(true)
         #endif
     }
 }

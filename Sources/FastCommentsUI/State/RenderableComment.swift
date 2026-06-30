@@ -22,7 +22,8 @@ public final class RenderableComment: RenderableNode {
 
         // Determine if there are more children to load based on API counts
         if let childCount = comment.childCount,
-           let nestedChildrenCount = comment.nestedChildrenCount {
+            let nestedChildrenCount = comment.nestedChildrenCount
+        {
             self.hasMoreChildren = childCount > nestedChildrenCount
         } else if let childCount = comment.childCount, childCount > 0 {
             let loadedChildren = comment.children?.count ?? 0

@@ -61,7 +61,7 @@ final class ModerationUITests: UITestBase {
         pollUntil(timeout: 5) {
             menu.tap()
             let hasUnflag = self.app.buttons["Unflag"].waitForExistence(timeout: 0.5)
-            if !hasUnflag { self.app.tap() } // dismiss menu if Unflag not there yet
+            if !hasUnflag { self.app.tap() }  // dismiss menu if Unflag not there yet
             return hasUnflag
         }
 

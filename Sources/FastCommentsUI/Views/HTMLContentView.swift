@@ -1,8 +1,8 @@
 import SwiftUI
 #if canImport(UIKit)
-import UIKit
+    import UIKit
 #elseif canImport(AppKit)
-import AppKit
+    import AppKit
 #endif
 
 /// Renders HTML content as styled text with support for inline images.
@@ -82,13 +82,15 @@ public struct HTMLContentView: View {
 
     private func styledText(_ attributedString: AttributedString) -> some View {
         Text(attributedString)
-            .environment(\.openURL, OpenURLAction { url in
-                if let linkHandler = linkHandler {
-                    linkHandler(url)
-                    return .handled
-                }
-                return .systemAction
-            })
+            .environment(
+                \.openURL,
+                OpenURLAction { url in
+                    if let linkHandler = linkHandler {
+                        linkHandler(url)
+                        return .handled
+                    }
+                    return .systemAction
+                })
     }
 
     // MARK: - Cache
@@ -108,16 +110,17 @@ public struct HTMLContentView: View {
     /// Color.description is not stable across iOS versions or appearance changes.
     private static func stableCacheKey(for color: Color) -> String {
         #if canImport(UIKit)
-        let uiColor = UIColor(color)
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        uiColor.getRed(&r, green: &g, blue: &b, alpha: &a)
-        return String(format: "%.4f,%.4f,%.4f,%.4f", r, g, b, a)
+            let uiColor = UIColor(color)
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            uiColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+            return String(format: "%.4f,%.4f,%.4f,%.4f", r, g, b, a)
         #elseif canImport(AppKit)
-        let nsColor = NSColor(color)
-        let converted = nsColor.usingColorSpace(.sRGB) ?? nsColor
-        return String(format: "%.4f,%.4f,%.4f,%.4f",
-                      converted.redComponent, converted.greenComponent,
-                      converted.blueComponent, converted.alphaComponent)
+            let nsColor = NSColor(color)
+            let converted = nsColor.usingColorSpace(.sRGB) ?? nsColor
+            return String(
+                format: "%.4f,%.4f,%.4f,%.4f",
+                converted.redComponent, converted.greenComponent,
+                converted.blueComponent, converted.alphaComponent)
         #endif
     }
 
@@ -214,13 +217,13 @@ public struct HTMLContentView: View {
     @MainActor
     private static func parseHTMLToAttributedString(_ html: String, linkColor: Color) -> AttributedString? {
         let fullHTML = """
-        <html><head><style>
-        body { font-family: -apple-system; font-size: 15px; }
-        a { color: \(linkColor.description); }
-        code { font-family: monospace; background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px; }
-        pre { font-family: monospace; background-color: #f0f0f0; padding: 8px; border-radius: 6px; }
-        </style></head><body>\(html)</body></html>
-        """
+            <html><head><style>
+            body { font-family: -apple-system; font-size: 15px; }
+            a { color: \(linkColor.description); }
+            code { font-family: monospace; background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px; }
+            pre { font-family: monospace; background-color: #f0f0f0; padding: 8px; border-radius: 6px; }
+            </style></head><body>\(html)</body></html>
+            """
 
         guard let data = fullHTML.data(using: .utf8) else { return nil }
 
@@ -229,14 +232,14 @@ public struct HTMLContentView: View {
                 data: data,
                 options: [
                     .documentType: NSAttributedString.DocumentType.html,
-                    .characterEncoding: String.Encoding.utf8.rawValue
+                    .characterEncoding: String.Encoding.utf8.rawValue,
                 ],
                 documentAttributes: nil
             )
             #if os(iOS)
-            return try AttributedString(nsAttrString, including: \.uiKit)
+                return try AttributedString(nsAttrString, including: \.uiKit)
             #else
-            return try AttributedString(nsAttrString, including: \.appKit)
+                return try AttributedString(nsAttrString, including: \.appKit)
             #endif
         } catch {
             return nil

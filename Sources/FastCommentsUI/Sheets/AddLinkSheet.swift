@@ -15,8 +15,8 @@ public struct AddLinkSheet: View {
                 Section {
                     TextField("URL", text: $url)
                         #if os(iOS)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
+                            .keyboardType(.URL)
+                            .textInputAutocapitalization(.never)
                         #endif
                         .autocorrectionDisabled()
                     TextField(NSLocalizedString("link_label", bundle: .module, comment: ""), text: $label)
@@ -24,7 +24,7 @@ public struct AddLinkSheet: View {
             }
             .navigationTitle(NSLocalizedString("add_link", bundle: .module, comment: ""))
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

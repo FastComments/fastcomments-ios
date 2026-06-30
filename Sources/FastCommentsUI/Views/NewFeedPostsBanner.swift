@@ -15,7 +15,7 @@ struct NewFeedPostsBanner: View {
                 Image(systemName: "arrow.up.circle.fill")
                     .font(.system(size: 14))
                 Text(String(localized: "show_new_posts_\(count)", bundle: .module))
-                .font(.subheadline.weight(.medium))
+                    .font(.subheadline.weight(.medium))
             }
             .foregroundStyle(theme.resolveLoadMoreButtonTextColor())
             .padding(.vertical, 10)

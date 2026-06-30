@@ -84,7 +84,8 @@ struct DemoBannerModifier: ViewModifier {
         let match = regex.firstMatch(in: html, range: NSRange(location: 0, length: nsHTML.length))
 
         if let match = match,
-           match.numberOfRanges >= 3 {
+            match.numberOfRanges >= 3
+        {
             let href = nsHTML.substring(with: match.range(at: 1))
             let linkText = nsHTML.substring(with: match.range(at: 2))
             let url = URL(string: href)

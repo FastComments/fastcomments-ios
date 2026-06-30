@@ -149,7 +149,9 @@ final class CommentCRUDIntegrationTests: IntegrationTestBase {
         try await sdk2.load()
 
         let firstPageSize = sdk2.commentsTree.totalSize()
-        print("[FC] Pagination test: firstPage=\(firstPageSize) hasMore=\(sdk2.hasMore) commentCountOnServer=\(sdk2.commentCountOnServer)")
+        print(
+            "[FC] Pagination test: firstPage=\(firstPageSize) hasMore=\(sdk2.hasMore) commentCountOnServer=\(sdk2.commentCountOnServer)"
+        )
 
         XCTAssertGreaterThan(firstPageSize, 0, "First page should have comments")
         XCTAssertTrue(sdk2.hasMore, "35 comments with default pageSize 30 should have more")

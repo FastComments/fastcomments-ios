@@ -59,7 +59,9 @@ public struct FeedPostRowView: View {
                 // Delete menu
                 if post.fromUserId == sdk.currentUser?.id {
                     Menu {
-                        Button(role: .destructive) { onDelete?(post) } label: {
+                        Button(role: .destructive) {
+                            onDelete?(post)
+                        } label: {
                             Label(NSLocalizedString("delete", bundle: .module, comment: ""), systemImage: "trash")
                         }
                     } label: {
@@ -84,7 +86,8 @@ public struct FeedPostRowView: View {
             switch postType {
             case .singleImage:
                 if let media = post.media, let item = media.first,
-                   let asset = item.sizes.first, let url = URL(string: asset.src) {
+                    let asset = item.sizes.first, let url = URL(string: asset.src)
+                {
                     SmartImage(url: url, contentMode: .fill)
                         .frame(maxWidth: .infinity)
                         .frame(height: theme.feedMediaHeight)
@@ -107,7 +110,7 @@ public struct FeedPostRowView: View {
             case .task:
                 let taskMedia: (item: FeedPostMediaItem, list: [FeedPostMediaItem], url: URL)? = {
                     guard let list = post.media, let item = list.first,
-                          let asset = item.sizes.first, let url = URL(string: asset.src)
+                        let asset = item.sizes.first, let url = URL(string: asset.src)
                     else { return nil }
                     return (item, list, url)
                 }()
@@ -181,13 +184,13 @@ public struct FeedPostRowView: View {
         .contentShape(Rectangle())
         .onTapGesture { onPostClick?(post) }
         #if os(iOS)
-        .fullScreenCover(item: $fullImagePresentation) { presentation in
-            FullImageSheet(presentation: presentation)
-        }
+            .fullScreenCover(item: $fullImagePresentation) { presentation in
+                FullImageSheet(presentation: presentation)
+            }
         #else
-        .sheet(item: $fullImagePresentation) { presentation in
-            FullImageSheet(presentation: presentation)
-        }
+            .sheet(item: $fullImagePresentation) { presentation in
+                FullImageSheet(presentation: presentation)
+            }
         #endif
     }
 
@@ -203,7 +206,9 @@ public struct FeedPostRowView: View {
 
     // MARK: - Action Button
 
-    private func actionButton(icon: String, count: Int? = nil, tint: Color? = nil, action: @escaping () -> Void) -> some View {
+    private func actionButton(
+        icon: String, count: Int? = nil, tint: Color? = nil, action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             HStack(spacing: 4) {
                 Image(systemName: icon)
@@ -226,9 +231,9 @@ public struct FeedPostRowView: View {
     private var imagePlaceholder: some View {
         Rectangle()
             #if os(iOS)
-            .fill(Color(uiColor: .systemGray6))
+                .fill(Color(uiColor: .systemGray6))
             #else
-            .fill(Color(nsColor: .quaternaryLabelColor))
+                .fill(Color(nsColor: .quaternaryLabelColor))
             #endif
             .overlay(
                 Image(systemName: "photo")
