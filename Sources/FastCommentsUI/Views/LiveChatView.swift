@@ -113,7 +113,7 @@ public struct LiveChatView: View {
                             } else {
                                 try await sdk.blockUser(commentId: comment.comment.id)
                             }
-                        } catch { sdk.showWarning(error.localizedDescription) }
+                        } catch { sdk.showWarning(FastCommentsError.userMessage(from: error)) }
                     }
                 }
             }

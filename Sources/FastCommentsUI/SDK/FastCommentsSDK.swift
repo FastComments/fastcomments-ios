@@ -159,27 +159,40 @@ public final class FastCommentsSDK: ObservableObject {
 
     /// Initial load of comments. Sets up live events after first successful fetch.
     @discardableResult
-    public func load() async throws -> GetCommentsPublic200Response {
+    public func load() async throws -> GetCommentsResponseWithPresencePublicComment {
         isLoading = true
         defer { isLoading = false }
 
-        let response = try await PublicAPI.getCommentsPublic(
-            tenantId: config.tenantId,
-            urlId: config.urlId,
-            direction: defaultSortDirection,
-            sso: config.sso,
-            skip: 0,
-            limit: pageSize + 1,
-            limitChildren: pageSize,
-            countChildren: true,
-            includeConfig: true,
-            countAll: true,
-            locale: config.locale,
-            includeNotificationCount: true,
-            asTree: true,
-            maxTreeDepth: 1,
-            apiConfiguration: apiConfig
-        )
+        let response: GetCommentsResponseWithPresencePublicComment
+        do {
+            response = try await PublicAPI.getCommentsPublic(
+                tenantId: config.tenantId,
+                urlId: config.urlId,
+                options: GetCommentsPublicOptions(
+                    direction: defaultSortDirection,
+                    sso: config.sso,
+                    skip: 0,
+                    limit: pageSize + 1,
+                    limitChildren: pageSize,
+                    countChildren: true,
+                    includeConfig: true,
+                    countAll: true,
+                    locale: config.locale,
+                    includeNotificationCount: true,
+                    asTree: true,
+                    maxTreeDepth: 1
+                ),
+                apiConfiguration: apiConfig
+            )
+        } catch {
+            // A blocking condition (e.g. banned/closed) now arrives as a thrown APIError; surface its
+            // localized message in the blocking banner, then rethrow it so callers see the same text.
+            if let apiError = FastCommentsError(decoding: error), let blocking = apiError.translatedError ?? apiError.reason {
+                blockingErrorMessage = blocking
+                throw apiError
+            }
+            throw error
+        }
 
         // Determine hasMore by checking if we got more root comments than pageSize
         var comments = response.comments ?? []
@@ -210,7 +223,7 @@ public final class FastCommentsSDK: ObservableObject {
 
     /// Load next page of comments.
     @discardableResult
-    public func loadMore() async throws -> GetCommentsPublic200Response {
+    public func loadMore() async throws -> GetCommentsResponseWithPresencePublicComment {
         let previousSkip = currentSkip
         let previousPage = currentPage
         // With asTree, skip is based on root comment count, not pageSize
@@ -220,17 +233,19 @@ public final class FastCommentsSDK: ObservableObject {
 
         do {
             let response = try await PublicAPI.getCommentsPublic(
-                tenantId: config.tenantId,
-                urlId: config.urlId,
+            tenantId: config.tenantId,
+            urlId: config.urlId,
+            options: GetCommentsPublicOptions(
                 direction: defaultSortDirection,
                 sso: config.sso,
                 skip: currentSkip,
                 limit: pageSize + 1,
                 countChildren: true,
                 asTree: true,
-                maxTreeDepth: 0,
-                apiConfiguration: apiConfig
-            )
+                maxTreeDepth: 0
+            ),
+            apiConfiguration: apiConfig
+        )
 
             var comments = response.comments ?? []
             let rootComments = comments.filter { $0.parentId == nil }
@@ -264,18 +279,20 @@ public final class FastCommentsSDK: ObservableObject {
 
     /// Load all remaining comments.
     @discardableResult
-    public func loadAll() async throws -> GetCommentsPublic200Response {
+    public func loadAll() async throws -> GetCommentsResponseWithPresencePublicComment {
         let response = try await PublicAPI.getCommentsPublic(
             tenantId: config.tenantId,
             urlId: config.urlId,
-            direction: defaultSortDirection,
-            sso: config.sso,
-            skip: 0,
-            limit: 999999,
-            countChildren: true,
-            countAll: true,
-            asTree: true,
-            maxTreeDepth: 999,
+            options: GetCommentsPublicOptions(
+                direction: defaultSortDirection,
+                sso: config.sso,
+                skip: 0,
+                limit: 999999,
+                countChildren: true,
+                countAll: true,
+                asTree: true,
+                maxTreeDepth: 999
+            ),
             apiConfiguration: apiConfig
         )
 
@@ -290,15 +307,17 @@ public final class FastCommentsSDK: ObservableObject {
         let response = try await PublicAPI.getCommentsPublic(
             tenantId: config.tenantId,
             urlId: config.urlId,
-            sso: config.sso,
-            skip: skip,
-            skipChildren: skip,
-            limit: limit,
-            limitChildren: limit,
-            countChildren: true,
-            asTree: true,
-            maxTreeDepth: 1,
-            parentId: parentId,
+            options: GetCommentsPublicOptions(
+                sso: config.sso,
+                skip: skip,
+                skipChildren: skip,
+                limit: limit,
+                limitChildren: limit,
+                countChildren: true,
+                asTree: true,
+                maxTreeDepth: 1,
+                parentId: parentId
+            ),
             apiConfiguration: apiConfig
         )
 
@@ -337,14 +356,13 @@ public final class FastCommentsSDK: ObservableObject {
             urlId: config.urlId,
             broadcastId: broadcastId,
             commentData: commentData,
-            sessionId: sessionId,
-            sso: config.sso,
+            options: CreateCommentPublicOptions(
+                sessionId: sessionId,
+                sso: config.sso
+            ),
             apiConfiguration: apiConfig
         )
 
-        guard response.status == .success else {
-            throw FastCommentsError(from: response)
-        }
 
         // Update user session if returned
         if let user = response.user {
@@ -375,14 +393,13 @@ public final class FastCommentsSDK: ObservableObject {
             commentId: commentId,
             broadcastId: broadcastId,
             commentTextUpdateRequest: request,
-            editKey: editKey,
-            sso: config.sso,
+            options: SetCommentTextOptions(
+                editKey: editKey,
+                sso: config.sso
+            ),
             apiConfiguration: apiConfig
         )
 
-        guard response.status == .success else {
-            throw FastCommentsError(from: response)
-        }
 
         // Update local tree with server-rendered HTML
         if let result = response.comment,
@@ -403,14 +420,13 @@ public final class FastCommentsSDK: ObservableObject {
             tenantId: config.tenantId,
             commentId: commentId,
             broadcastId: broadcastId,
-            editKey: editKey,
-            sso: config.sso,
+            options: DeleteCommentPublicOptions(
+                editKey: editKey,
+                sso: config.sso
+            ),
             apiConfiguration: apiConfig
         )
 
-        guard response.status == .success else {
-            throw FastCommentsError(from: response)
-        }
 
         commentsTree.removeComment(commentId: commentId)
         commentCountOnServer -= 1
@@ -421,7 +437,7 @@ public final class FastCommentsSDK: ObservableObject {
     /// Vote on a comment (upvote or downvote).
     @discardableResult
     public func voteComment(commentId: String, isUpvote: Bool,
-                            commenterName: String? = nil, commenterEmail: String? = nil) async throws -> VoteComment200Response {
+                            commenterName: String? = nil, commenterEmail: String? = nil) async throws -> VoteResponse {
         let broadcastId = UUID().uuidString
         broadcastIdsSent.insert(broadcastId)
 
@@ -438,14 +454,13 @@ public final class FastCommentsSDK: ObservableObject {
             urlId: config.urlId,
             broadcastId: broadcastId,
             voteBodyParams: params,
-            sessionId: sessionId,
-            sso: config.sso,
+            options: VoteCommentOptions(
+                sessionId: sessionId,
+                sso: config.sso
+            ),
             apiConfiguration: apiConfig
         )
 
-        guard response.status == .success else {
-            throw FastCommentsError(from: response)
-        }
 
         // Update local comment state
         if let comment = commentsTree.commentsById[commentId] {
@@ -485,8 +500,10 @@ public final class FastCommentsSDK: ObservableObject {
             voteId: voteId,
             urlId: config.urlId,
             broadcastId: broadcastId,
-            editKey: editKey,
-            sso: config.sso,
+            options: DeleteCommentVoteOptions(
+                editKey: editKey,
+                sso: config.sso
+            ),
             apiConfiguration: apiConfig
         )
 
@@ -517,9 +534,6 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        guard response.status == .success else {
-            throw FastCommentsError(from: response)
-        }
 
         // Re-fetch after await — renderable may have been replaced by a live event
         if let renderable = commentsTree.commentsById[commentId] {
@@ -538,9 +552,6 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        guard response.status == .success else {
-            throw FastCommentsError(from: response)
-        }
 
         if let renderable = commentsTree.commentsById[commentId] {
             renderable.comment.isFlagged = false
@@ -561,9 +572,6 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        guard response.status == .success else {
-            throw FastCommentsError(from: response)
-        }
 
         setBlockedStateForAuthor(commentId: commentId, blocked: true)
     }
@@ -579,10 +587,6 @@ public final class FastCommentsSDK: ObservableObject {
             sso: config.sso,
             apiConfiguration: apiConfig
         )
-
-        guard response.status == .success else {
-            throw FastCommentsError(code: response.code, reason: response.reason, translatedError: response.translatedError)
-        }
 
         setBlockedStateForAuthor(commentId: commentId, blocked: false)
     }
@@ -610,9 +614,6 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        guard response.status == .success else {
-            throw FastCommentsError(from: response)
-        }
 
         // Re-fetch after await — the renderable may have been replaced by a live event
         if let renderable = commentsTree.commentsById[commentId] {
@@ -635,9 +636,6 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        guard response.status == .success else {
-            throw FastCommentsError(from: response)
-        }
 
         if let renderable = commentsTree.commentsById[commentId] {
             renderable.comment.isPinned = false
@@ -659,9 +657,6 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        guard response.status == .success else {
-            throw FastCommentsError(from: response)
-        }
 
         if let renderable = commentsTree.commentsById[commentId] {
             renderable.comment.isLocked = true
@@ -683,9 +678,6 @@ public final class FastCommentsSDK: ObservableObject {
             apiConfiguration: apiConfig
         )
 
-        guard response.status == .success else {
-            throw FastCommentsError(from: response)
-        }
 
         if let renderable = commentsTree.commentsById[commentId] {
             renderable.comment.isLocked = false
@@ -718,8 +710,10 @@ public final class FastCommentsSDK: ObservableObject {
         let response = try await PublicAPI.uploadImage(
             tenantId: config.tenantId,
             file: fileURL,
-            sizePreset: .crossPlatform,
-            urlId: config.urlId,
+            options: UploadImageOptions(
+                sizePreset: .crossPlatform,
+                urlId: config.urlId
+            ),
             apiConfiguration: apiConfig
         )
 
@@ -740,8 +734,10 @@ public final class FastCommentsSDK: ObservableObject {
         let response = try await PublicAPI.searchUsers(
             tenantId: config.tenantId,
             urlId: config.urlId,
-            usernameStartsWith: query,
-            sso: config.sso,
+            options: SearchUsersOptions(
+                usernameStartsWith: query,
+                sso: config.sso
+            ),
             apiConfiguration: apiConfig
         )
         return response.users ?? []
@@ -939,7 +935,7 @@ public final class FastCommentsSDK: ObservableObject {
 
         do {
             let (data, _) = try await Self.presenceSession.data(from: url)
-            let response = try JSONDecoder().decode(GetUserPresenceStatuses200Response.self, from: data)
+            let response = try JSONDecoder().decode(GetUserPresenceStatusesResponse.self, from: data)
 
             for (userId, isOnline) in (response.userIdsOnline ?? [:]) {
                 commentsTree.updateUserPresence(userId: userId, isOnline: isOnline)
@@ -968,7 +964,7 @@ public final class FastCommentsSDK: ObservableObject {
 
     // MARK: - Private Helpers
 
-    private func processCommentsResponse(_ response: GetCommentsPublic200Response, isInitialLoad: Bool, clientHasMore: Bool? = nil) {
+    private func processCommentsResponse(_ response: GetCommentsResponseWithPresencePublicComment, isInitialLoad: Bool, clientHasMore: Bool? = nil) {
         commentsTree.build(comments: (response.comments ?? []))
 
         commentCountOnServer = response.commentCount ?? 0
@@ -998,10 +994,7 @@ public final class FastCommentsSDK: ObservableObject {
             subscribeToLiveEvents()
         }
 
-        // Check for blocking errors (translatedError blocks, translatedWarning does not)
-        if let translatedError = response.translatedError, !translatedError.isEmpty {
-            blockingErrorMessage = translatedError
-        }
+        // Surface a blocking warning if present (errors are thrown by the API call)
         if let translatedWarning = response.translatedWarning, !translatedWarning.isEmpty {
             warningMessage = translatedWarning
         }

@@ -93,7 +93,11 @@ final class LiveEventIntegrationTests: IntegrationTestBase {
             sdk1.commentsTree.commentsById[posted.id] != nil
         }
 
-        try await sdk2.deleteComment(commentId: posted.id)
+        try await sdk2.deleteComment(
+            options: DeleteCommentOptions(
+                commentId: posted.id
+            )
+        )
 
         try await waitFor(timeout: 5.0) {
             sdk1.commentsTree.commentsById[posted.id] == nil
@@ -114,7 +118,12 @@ final class LiveEventIntegrationTests: IntegrationTestBase {
 
         let sdk2 = makeSDK(urlId: urlId)
         try await sdk2.load()
-        _ = try await sdk2.voteComment(commentId: comment.id, isUpvote: true)
+        _ = try await sdk2.voteComment(
+            commentId: comment.id,
+            options: VoteCommentOptions(
+                isUpvote: true
+            )
+        )
 
         try await waitFor(timeout: 5.0) {
             let c = sdk1.commentsTree.commentsById[comment.id]

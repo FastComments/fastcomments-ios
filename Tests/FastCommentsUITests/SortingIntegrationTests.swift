@@ -75,7 +75,12 @@ final class SortingIntegrationTests: IntegrationTestBase {
         let b = try await sdk.postComment(text: "Comment B - unpopular")
 
         // Upvote A
-        _ = try await sdk.voteComment(commentId: a.id, isUpvote: true)
+        _ = try await sdk.voteComment(
+            commentId: a.id,
+            options: VoteCommentOptions(
+                isUpvote: true
+            )
+        )
 
         // Reload with most relevant sort
         let sdk2 = FastCommentsSDK(config: sdk.config)

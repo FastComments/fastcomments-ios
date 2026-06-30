@@ -235,10 +235,20 @@ public struct CommentRowView: View {
                     comment: comment,
                     voteStyle: voteStyle,
                     onUpVote: {
-                        Task { try? await sdk.voteComment(commentId: comment.comment.id, isUpvote: true) }
+                        Task { try? await sdk.voteComment(
+            commentId: comment.comment.id,
+            options: VoteCommentOptions(
+                isUpvote: true
+            )
+        ) }
                     },
                     onDownVote: {
-                        Task { try? await sdk.voteComment(commentId: comment.comment.id, isUpvote: false) }
+                        Task { try? await sdk.voteComment(
+            commentId: comment.comment.id,
+            options: VoteCommentOptions(
+                isUpvote: false
+            )
+        ) }
                     },
                     onRemoveVote: {
                         if let voteId = comment.comment.myVoteId {

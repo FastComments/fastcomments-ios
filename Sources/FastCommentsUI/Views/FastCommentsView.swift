@@ -115,7 +115,7 @@ public struct FastCommentsView: View {
                     Task {
                         do {
                             try await sdk.editComment(commentId: comment.comment.id, newText: newText)
-                        } catch { sdk.showWarning(error.localizedDescription) }
+                        } catch { sdk.showWarning(FastCommentsError.userMessage(from: error)) }
                     }
                 }
             )
@@ -132,8 +132,12 @@ public struct FastCommentsView: View {
                 if let comment = showDeleteAlert {
                     Task {
                         do {
-                            try await sdk.deleteComment(commentId: comment.comment.id)
-                        } catch { sdk.showWarning(error.localizedDescription) }
+                            try await sdk.deleteComment(
+            options: DeleteCommentOptions(
+                commentId: comment.comment.id
+            )
+        )
+                        } catch { sdk.showWarning(FastCommentsError.userMessage(from: error)) }
                     }
                 }
             }
@@ -162,7 +166,7 @@ public struct FastCommentsView: View {
                             } else {
                                 try await sdk.blockUser(commentId: comment.comment.id)
                             }
-                        } catch { sdk.showWarning(error.localizedDescription) }
+                        } catch { sdk.showWarning(FastCommentsError.userMessage(from: error)) }
                     }
                 }
             }
@@ -220,7 +224,7 @@ public struct FastCommentsView: View {
                             } else {
                                 try await sdk.flagComment(commentId: comment.comment.id)
                             }
-                        } catch { sdk.showWarning(error.localizedDescription) }
+                        } catch { sdk.showWarning(FastCommentsError.userMessage(from: error)) }
                     }
                 },
                 onPin: { comment in
@@ -231,7 +235,7 @@ public struct FastCommentsView: View {
                             } else {
                                 try await sdk.pinComment(commentId: comment.comment.id)
                             }
-                        } catch { sdk.showWarning(error.localizedDescription) }
+                        } catch { sdk.showWarning(FastCommentsError.userMessage(from: error)) }
                     }
                 },
                 onLock: { comment in
@@ -242,7 +246,7 @@ public struct FastCommentsView: View {
                             } else {
                                 try await sdk.lockComment(commentId: comment.comment.id)
                             }
-                        } catch { sdk.showWarning(error.localizedDescription) }
+                        } catch { sdk.showWarning(FastCommentsError.userMessage(from: error)) }
                     }
                 },
                 onBlock: { comment in

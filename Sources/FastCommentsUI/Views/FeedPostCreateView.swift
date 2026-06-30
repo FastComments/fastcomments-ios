@@ -209,7 +209,11 @@ public struct FeedPostCreateView: View {
             if !imageFileURLs.isEmpty {
                 let totalImages = Double(imageFileURLs.count)
                 for (index, fileURL) in imageFileURLs.enumerated() {
-                    let mediaItem = try await sdk.uploadImage(fileURL: fileURL)
+                    let mediaItem = try await sdk.uploadImage(
+            options: UploadImageOptions(
+                fileURL: fileURL
+            )
+        )
                     mediaItems.append(mediaItem)
                     uploadProgress = Double(index + 1) / totalImages
                 }
@@ -228,7 +232,7 @@ public struct FeedPostCreateView: View {
         } catch let error as FastCommentsError {
             errorMessage = error.errorDescription
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = FastCommentsError.userMessage(from: error)
         }
     }
 

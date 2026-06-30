@@ -12,7 +12,12 @@ final class VoteIntegrationTests: IntegrationTestBase {
         try await sdk.load()
 
         let comment = try await sdk.postComment(text: "Vote me up")
-        let response = try await sdk.voteComment(commentId: comment.id, isUpvote: true)
+        let response = try await sdk.voteComment(
+            commentId: comment.id,
+            options: VoteCommentOptions(
+                isUpvote: true
+            )
+        )
 
         let renderable = sdk.commentsTree.commentsById[comment.id]!
         XCTAssertEqual(renderable.comment.votesUp, 1)
@@ -26,7 +31,12 @@ final class VoteIntegrationTests: IntegrationTestBase {
         try await sdk.load()
 
         let comment = try await sdk.postComment(text: "Vote me down")
-        _ = try await sdk.voteComment(commentId: comment.id, isUpvote: false)
+        _ = try await sdk.voteComment(
+            commentId: comment.id,
+            options: VoteCommentOptions(
+                isUpvote: false
+            )
+        )
 
         let renderable = sdk.commentsTree.commentsById[comment.id]!
         XCTAssertEqual(renderable.comment.votesDown, 1)
@@ -39,8 +49,18 @@ final class VoteIntegrationTests: IntegrationTestBase {
         try await sdk.load()
 
         let comment = try await sdk.postComment(text: "Toggle vote")
-        _ = try await sdk.voteComment(commentId: comment.id, isUpvote: true)
-        _ = try await sdk.voteComment(commentId: comment.id, isUpvote: false)
+        _ = try await sdk.voteComment(
+            commentId: comment.id,
+            options: VoteCommentOptions(
+                isUpvote: true
+            )
+        )
+        _ = try await sdk.voteComment(
+            commentId: comment.id,
+            options: VoteCommentOptions(
+                isUpvote: false
+            )
+        )
 
         let renderable = sdk.commentsTree.commentsById[comment.id]!
         XCTAssertEqual(renderable.comment.votesUp, 0)
@@ -55,8 +75,18 @@ final class VoteIntegrationTests: IntegrationTestBase {
         try await sdk.load()
 
         let comment = try await sdk.postComment(text: "Toggle vote reverse")
-        _ = try await sdk.voteComment(commentId: comment.id, isUpvote: false)
-        _ = try await sdk.voteComment(commentId: comment.id, isUpvote: true)
+        _ = try await sdk.voteComment(
+            commentId: comment.id,
+            options: VoteCommentOptions(
+                isUpvote: false
+            )
+        )
+        _ = try await sdk.voteComment(
+            commentId: comment.id,
+            options: VoteCommentOptions(
+                isUpvote: true
+            )
+        )
 
         let renderable = sdk.commentsTree.commentsById[comment.id]!
         XCTAssertEqual(renderable.comment.votesDown, 0)
@@ -71,7 +101,12 @@ final class VoteIntegrationTests: IntegrationTestBase {
         try await sdk.load()
 
         let comment = try await sdk.postComment(text: "Delete my vote")
-        let voteResponse = try await sdk.voteComment(commentId: comment.id, isUpvote: true)
+        let voteResponse = try await sdk.voteComment(
+            commentId: comment.id,
+            options: VoteCommentOptions(
+                isUpvote: true
+            )
+        )
         let voteId = voteResponse.voteId!
 
         try await sdk.deleteCommentVote(commentId: comment.id, voteId: voteId)
@@ -88,7 +123,12 @@ final class VoteIntegrationTests: IntegrationTestBase {
         try await sdk.load()
 
         let comment = try await sdk.postComment(text: "Net votes check")
-        _ = try await sdk.voteComment(commentId: comment.id, isUpvote: true)
+        _ = try await sdk.voteComment(
+            commentId: comment.id,
+            options: VoteCommentOptions(
+                isUpvote: true
+            )
+        )
 
         let renderable = sdk.commentsTree.commentsById[comment.id]!
         XCTAssertEqual(renderable.comment.votes, 1)
@@ -99,7 +139,12 @@ final class VoteIntegrationTests: IntegrationTestBase {
         try await sdk.load()
 
         let comment = try await sdk.postComment(text: "Vote ID check")
-        let response = try await sdk.voteComment(commentId: comment.id, isUpvote: true)
+        let response = try await sdk.voteComment(
+            commentId: comment.id,
+            options: VoteCommentOptions(
+                isUpvote: true
+            )
+        )
 
         XCTAssertNotNil(response.voteId)
         XCTAssertFalse(response.voteId!.isEmpty)
@@ -112,8 +157,18 @@ final class VoteIntegrationTests: IntegrationTestBase {
         let c1 = try await sdk.postComment(text: "Comment A")
         let c2 = try await sdk.postComment(text: "Comment B")
 
-        _ = try await sdk.voteComment(commentId: c1.id, isUpvote: true)
-        _ = try await sdk.voteComment(commentId: c2.id, isUpvote: true)
+        _ = try await sdk.voteComment(
+            commentId: c1.id,
+            options: VoteCommentOptions(
+                isUpvote: true
+            )
+        )
+        _ = try await sdk.voteComment(
+            commentId: c2.id,
+            options: VoteCommentOptions(
+                isUpvote: true
+            )
+        )
 
         try await waitFor {
             sdk.commentsTree.commentsById[c1.id]!.comment.votesUp == 1

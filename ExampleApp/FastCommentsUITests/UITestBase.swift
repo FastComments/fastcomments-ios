@@ -288,12 +288,14 @@ class UITestBase: XCTestCase {
             defer { sem.signal() }
             do {
                 let response = try await PublicAPI.createCommentPublic(
-                    tenantId: testTenantId,
-                    urlId: urlId,
-                    broadcastId: UUID().uuidString,
-                    commentData: commentData,
-                    sso: ssoToken
-                )
+            tenantId: testTenantId,
+            urlId: urlId,
+            broadcastId: UUID().uuidString,
+            commentData: commentData,
+            options: CreateCommentPublicOptions(
+                sso: ssoToken
+            )
+        )
                 resultId = response.comment?.id
             } catch {
                 XCTFail("seedComment failed: \(error)")
@@ -311,11 +313,13 @@ class UITestBase: XCTestCase {
             defer { sem.signal() }
             do {
                 let response = try await PublicAPI.createFeedPostPublic(
-                    tenantId: testTenantId,
-                    createFeedPostParams: CreateFeedPostParams(contentHTML: text),
-                    broadcastId: UUID().uuidString,
-                    sso: ssoToken
-                )
+            tenantId: testTenantId,
+            createFeedPostParams: CreateFeedPostParams(contentHTML: text),
+            options: CreateFeedPostPublicOptions(
+                broadcastId: UUID().uuidString,
+                sso: ssoToken
+            )
+        )
                 resultId = response.feedPost?.id
             } catch {
                 XCTFail("seedFeedPost failed: \(error)")
@@ -356,12 +360,14 @@ class UITestBase: XCTestCase {
             Task {
                 defer { sem.signal() }
                 let response = try? await DefaultAPI.getComments(
-                    tenantId: self.testTenantId,
-                    limit: expected,
-                    urlId: urlId,
-                    parentId: parentId,
-                    apiConfiguration: self.adminApiConfig
-                )
+            tenantId: self.testTenantId,
+            options: GetCommentsOptions(
+                limit: expected,
+                urlId: urlId,
+                parentId: parentId
+            ),
+            apiConfiguration: self.adminApiConfig
+        )
                 childCount = response?.comments?.count ?? 0
             }
             sem.wait()
@@ -382,11 +388,13 @@ class UITestBase: XCTestCase {
             defer { sem.signal() }
             do {
                 let response = try await DefaultAPI.getComments(
-                    tenantId: testTenantId,
-                    limit: 1,
-                    urlId: urlId,
-                    apiConfiguration: adminApiConfig
-                )
+            tenantId: testTenantId,
+            options: GetCommentsOptions(
+                limit: 1,
+                urlId: urlId
+            ),
+            apiConfiguration: adminApiConfig
+        )
                 resultId = response.comments?.first?.id
             } catch {
                 XCTFail("fetchLatestCommentId failed: \(error)", file: file, line: line)
