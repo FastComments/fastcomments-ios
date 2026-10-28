@@ -8,7 +8,7 @@ let package = Package(
         .library(name: "FastCommentsUI", targets: ["FastCommentsUI"])
     ],
     dependencies: [
-        .package(url: "https://github.com/FastComments/fastcomments-swift.git", .upToNextMajor(from: "3.0.0"))
+        .package(url: "https://github.com/FastComments/fastcomments-swift.git", .upToNextMajor(from: "3.1.0"))
     ],
     targets: [
         .target(
