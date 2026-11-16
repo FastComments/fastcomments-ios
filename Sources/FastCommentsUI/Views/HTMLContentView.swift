@@ -215,7 +215,7 @@ public struct HTMLContentView: View {
     // @MainActor required: NSAttributedString(data:options:.html) uses WebKit internally
     // and must run on the main thread. Removing this will crash.
     @MainActor
-    private static func parseHTMLToAttributedString(_ html: String, linkColor: Color) -> AttributedString? {
+    static func parseHTMLToAttributedString(_ html: String, linkColor: Color) -> AttributedString? {
         let fullHTML = """
             <html><head><style>
             body { font-family: -apple-system; font-size: 15px; }
@@ -228,7 +228,7 @@ public struct HTMLContentView: View {
         guard let data = fullHTML.data(using: .utf8) else { return nil }
 
         do {
-            let nsAttrString = try NSAttributedString(
+            let parsed = try NSAttributedString(
                 data: data,
                 options: [
                     .documentType: NSAttributedString.DocumentType.html,
@@ -236,6 +236,7 @@ public struct HTMLContentView: View {
                 ],
                 documentAttributes: nil
             )
+            let nsAttrString = removingDefaultTextColor(from: parsed)
             #if os(iOS)
                 return try AttributedString(nsAttrString, including: \.uiKit)
             #else
@@ -244,5 +245,27 @@ public struct HTMLContentView: View {
         } catch {
             return nil
         }
+    }
+
+    /// HTML import paints all plain text black, which would be invisible in dark mode. Dropping it lets the text follow
+    /// the environment's color. Code keeps it, because its light background doesn't change with the appearance.
+    private static func removingDefaultTextColor(from parsed: NSAttributedString) -> NSAttributedString {
+        let result = NSMutableAttributedString(attributedString: parsed)
+        let fullRange = NSRange(location: 0, length: result.length)
+        parsed.enumerateAttributes(in: fullRange) { attributes, range, _ in
+            #if canImport(UIKit)
+                guard let color = attributes[.foregroundColor] as? UIColor else { return }
+            #else
+                guard let color = (attributes[.foregroundColor] as? NSColor)?.usingColorSpace(.sRGB) else { return }
+            #endif
+            var red: CGFloat = 0
+            var green: CGFloat = 0
+            var blue: CGFloat = 0
+            color.getRed(&red, green: &green, blue: &blue, alpha: nil)
+            if red == 0 && green == 0 && blue == 0 && attributes[.backgroundColor] == nil {
+                result.removeAttribute(.foregroundColor, range: range)
+            }
+        }
+        return result
     }
 }
