@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 import SwiftUI
 @testable import FastCommentsUI
 
@@ -51,5 +52,29 @@ final class ThemeTests: XCTestCase {
         XCTAssertNotNil(theme.resolveVoteCountColor())
         XCTAssertNotNil(theme.resolveVoteCountZeroColor())
         XCTAssertNotNil(theme.resolveOnlineIndicatorColor())
+    }
+
+    // MARK: - Polls
+
+    private func isDark(_ color: Color) -> Bool {
+        var white: CGFloat = 0
+        UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: .light)).getWhite(&white, alpha: nil)
+        return white < 0.5
+    }
+
+    func testPollAccentTextStaysReadableOnACustomAccent() {
+        var theme = FastCommentsTheme()
+        theme.pollAccentColor = .yellow
+        XCTAssertTrue(isDark(theme.resolvePollAccentTextColor()), "Dark text on a light accent")
+
+        theme.pollAccentColor = Color(red: 0.1, green: 0.1, blue: 0.5)
+        XCTAssertFalse(isDark(theme.resolvePollAccentTextColor()), "Light text on a dark accent")
+
+        theme.primaryColor = .yellow
+        theme.pollAccentColor = nil
+        XCTAssertTrue(isDark(theme.resolvePollAccentTextColor()), "The accent falls back to the primary color")
+
+        theme.pollAccentTextColor = .white
+        XCTAssertFalse(isDark(theme.resolvePollAccentTextColor()), "An explicit color wins")
     }
 }

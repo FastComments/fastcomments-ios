@@ -45,7 +45,7 @@ public struct FastCommentsView: View {
                 .padding()
                 Spacer()
             } else if sdk.commentsTree.visibleNodes.isEmpty {
-                Spacer()
+                // Gives way to a tall composer, such as the poll builder, instead of pushing it under the keyboard.
                 VStack(spacing: 12) {
                     Image(systemName: "bubble.left.and.bubble.right")
                         .font(.system(size: 36))
@@ -55,7 +55,8 @@ public struct FastCommentsView: View {
                         .foregroundStyle(.secondary)
                 }
                 .padding()
-                Spacer()
+                .frame(minHeight: 0, maxHeight: .infinity)
+                .clipped()
             } else {
                 ScrollViewReader { proxy in
                     ScrollView {

@@ -16,6 +16,11 @@ enum SyncClient {
 
     static var role: String { currentRole }
 
+    /// Seconds to hold each reviewed state on screen, set by the runner's `--record` flag. Zero otherwise.
+    static var recordingHold: TimeInterval {
+        TimeInterval(readConfigFile(role: currentRole)?["FC_RECORDING_HOLD"] ?? "") ?? 0
+    }
+
     private static func readConfigFile(role: String) -> [String: String]? {
         let path = "/tmp/fc-uitest-\(role).json"
         guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
@@ -35,7 +40,10 @@ enum SyncClient {
     /// Block until the specified role signals ready for a round.
     static func waitFor(role waitRole: String, round: String, timeout: Int = 60) {
         let url = URL(string: "\(baseURL)/wait?waitFor=\(waitRole)&round=\(round)&timeout=\(timeout)")!
-        syncRequest(URLRequest(url: url))
+        var request = URLRequest(url: url)
+        // URLSession's 60 second default would otherwise give up first, and the wait would look finished.
+        request.timeoutInterval = TimeInterval(timeout + 5)
+        syncRequest(request)
     }
 
     /// Store data for a round.

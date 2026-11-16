@@ -69,7 +69,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
 
     // MARK: - Internal State
 
-    var broadcastIdsSent: Set<String> = []
+    var broadcastIdsSent = RecentIdSet()
     private let apiConfig: FastCommentsSwiftAPIConfiguration
     private var postsById: [String: FeedPost] = [:]
     private var likeCounts: [String: Int] = [:]
@@ -557,7 +557,7 @@ public final class FastCommentsFeedSDK: ObservableObject {
     }
 
     func handleLiveEvent(_ event: LiveEvent) {
-        if let broadcastId = event.broadcastId, broadcastIdsSent.remove(broadcastId) != nil {
+        if let broadcastId = event.broadcastId, broadcastIdsSent.remove(broadcastId) {
             return
         }
 

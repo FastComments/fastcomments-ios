@@ -35,6 +35,10 @@ public struct CommentRowView: View {
                 // Comment content
                 contentView
 
+                if comment.comment.poll != nil, !isBlocked, comment.comment.isDeleted != true {
+                    PollCardView(comment: comment, sdk: sdk)
+                }
+
                 // Action row: votes, reply, toggle replies
                 actionRow
             }

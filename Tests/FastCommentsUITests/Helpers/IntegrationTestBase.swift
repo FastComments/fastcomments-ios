@@ -189,6 +189,31 @@ class IntegrationTestBase: XCTestCase {
         return FastCommentsFeedSDK(config: config)
     }
 
+    /// Create a FastCommentsSDK with no SSO user, so it runs as an anonymous session.
+    func makeAnonymousSDK(urlId: String) -> FastCommentsSDK {
+        FastCommentsSDK(config: FastCommentsWidgetConfig(tenantId: tenantId, urlId: urlId))
+    }
+
+    /// Save a tenant-wide widget config (domain and urlId "*") through the e2e API, which the typed SDK doesn't cover.
+    func createCustomConfig(_ widgetConfig: [String: Any]) async throws {
+        let encodedKey = TestConfig.e2eApiKey.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
+        let url = URL(string: "\(TestConfig.host)/test-e2e/api/custom-configs?API_KEY=\(encodedKey)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "tenantId": tenantId,
+            "name": "iOS Test Config",
+            "domain": "*",
+            "urlId": "*",
+            "config": widgetConfig,
+        ])
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw FastCommentsError(reason: "createCustomConfig failed: \(String(decoding: data, as: UTF8.self))")
+        }
+    }
+
     /// Generate a unique urlId and register it for cleanup.
     func makeUrlId(testName: String = #function) -> String {
         let sanitized =

@@ -346,30 +346,10 @@ public final class CommentsTree: ObservableObject {
 
     /// Update a comment in-place (from live event).
     public func updateComment(_ comment: PublicComment) {
-        // The generated PublicComment is a struct, so we replace the renderable.
-        // Since RenderableComment.comment is let, we need to create a new one.
+        // In place, so the views observing this object and any state they hold stay attached to it.
         guard let existing = commentsById[comment.id] else { return }
-        // Transfer UI state to a new renderable
-        let updated = RenderableComment(comment: comment)
-        updated.isRepliesShown = existing.isRepliesShown
-        updated.isOnline = existing.isOnline
-        updated.hasMoreChildren = existing.hasMoreChildren
-        updated.isLoadingChildren = existing.isLoadingChildren
-        updated.childSkip = existing.childSkip
-        updated.childPage = existing.childPage
-        updated.childPageSize = existing.childPageSize
-        updated.newChildComments = existing.newChildComments
-
-        commentsById[comment.id] = updated
-        if let allIdx = allComments.firstIndex(where: { $0.id == comment.id }) {
-            allComments[allIdx] = updated
-        }
-
-        var updatedNodes = visibleNodes
-        if let visIdx = updatedNodes.firstIndex(where: { $0.id == comment.id }) {
-            updatedNodes[visIdx] = updated
-        }
-        visibleNodes = updatedNodes
+        existing.objectWillChange.send()
+        existing.comment = comment
     }
 
     // MARK: - Reply Toggling
