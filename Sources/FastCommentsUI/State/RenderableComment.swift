@@ -11,6 +11,11 @@ public final class RenderableComment: RenderableNode {
     @Published public var hasMoreChildren: Bool = false
     @Published public var isLoadingChildren: Bool = false
 
+    // Poll card view state. pollShowResults is nil until the viewer toggles results or changes their vote.
+    @Published public var pollShowResults: Bool?
+    @Published public var pollSaving: Bool = false
+    @Published public var pollError: String?
+
     public var childSkip: Int = 0
     public var childPage: Int = 0
     public var childPageSize: Int = 5

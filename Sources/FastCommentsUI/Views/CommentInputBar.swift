@@ -31,6 +31,9 @@ public struct CommentInputBar: View {
     @State private var mentionSuggestions: [UserSearchResult] = []
     @State private var selectedMentions: [CommentUserMentionInfo] = []
     @State private var showAddLinkSheet: Bool = false
+    @State private var pollDraft: PollDraft?
+    @State private var pollDraftError: PollDraft.ValidationError?
+    @State private var pollFocusRequest = 0
     #if os(iOS)
         @State private var selectedPhotoItem: PhotosPickerItem?
         @State private var isUploadingImage: Bool = false
@@ -50,6 +53,12 @@ public struct CommentInputBar: View {
         #else
             text
         #endif
+    }
+
+    /// The toolbar's formatting and custom buttons. When polls are allowed the toolbar shows for the poll button alone,
+    /// like the web widget's toolbar.
+    private var showsFormattingToolbar: Bool {
+        !sdk.disableToolbar && sdk.toolbarEnabled
     }
 
     /// Merges global SDK toolbar buttons with per-instance buttons, de-duplicated by ID.
@@ -123,13 +132,13 @@ public struct CommentInputBar: View {
             }
 
             // Formatting toolbar
-            if !sdk.disableToolbar && sdk.toolbarEnabled {
+            if showsFormattingToolbar || sdk.canCreatePoll {
                 Divider()
                     .opacity(0.5)
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 4) {
-                        if sdk.defaultFormattingButtonsEnabled {
+                        if showsFormattingToolbar && sdk.defaultFormattingButtonsEnabled {
                             #if os(iOS)
                                 toolbarButton(icon: "bold", accessibilityKey: "format_bold") {
                                     editorContext.toggleBold()
@@ -195,7 +204,8 @@ public struct CommentInputBar: View {
                         }
 
                         // Custom toolbar buttons (global + per-instance, de-duped)
-                        ForEach(mergedCustomButtons.filter { $0.isVisible() }, id: \.id) { button in
+                        ForEach(showsFormattingToolbar ? mergedCustomButtons.filter { $0.isVisible() } : [], id: \.id) {
+                            button in
                             Button {
                                 button.onClick(text: plainTextBinding)
                             } label: {
@@ -221,6 +231,10 @@ public struct CommentInputBar: View {
                             .disabled(!button.isEnabled())
                             .accessibilityLabel(button.contentDescription)
                         }
+
+                        if sdk.canCreatePoll {
+                            pollToolbarButton
+                        }
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
@@ -230,6 +244,27 @@ public struct CommentInputBar: View {
                 #else
                     .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
                 #endif
+            }
+
+            // Poll builder
+            if let draft = pollDraft {
+                Divider()
+                    .opacity(0.5)
+
+                // Not Binding($pollDraft), which force-unwraps and crashes while the builder animates out after the draft
+                // is cleared. This one reads the last draft during that animation, and can't bring a removed one back.
+                PollBuilderView(
+                    draft: Binding(
+                        get: { pollDraft ?? draft },
+                        set: { newDraft in
+                            if pollDraft != nil { pollDraft = newDraft }
+                        }
+                    ),
+                    error: $pollDraftError,
+                    questionFocusRequest: pollFocusRequest,
+                    onRemove: removePollDraft
+                )
+                .transition(.opacity)
             }
 
             Divider()
@@ -324,6 +359,9 @@ public struct CommentInputBar: View {
                 }
             }
         #endif
+        .onChange(of: sdk.canCreatePoll) { canCreatePoll in
+            if !canCreatePoll { removePollDraft() }
+        }
         .sheet(isPresented: $showAddLinkSheet) {
             #if os(iOS)
                 AddLinkSheet { url, label in
@@ -354,6 +392,39 @@ public struct CommentInputBar: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(NSLocalizedString(accessibilityKey, bundle: .module, comment: ""))
+    }
+
+    private var pollToolbarButton: some View {
+        Button {
+            guard pollDraft == nil else {
+                pollFocusRequest += 1
+                return
+            }
+            pollDraftError = nil
+            withAnimation(.easeOut(duration: 0.2)) {
+                pollDraft = PollDraft()
+            }
+        } label: {
+            Image(systemName: pollDraft == nil ? "chart.bar" : "chart.bar.fill")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(theme.resolveActionButtonColor())
+                .frame(width: 36, height: 30)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(pollDraft == nil ? Color.clear : theme.resolveActionButtonColor().opacity(0.12))
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(NSLocalizedString("poll_insert", bundle: .module, comment: ""))
+        .accessibilityAddTraits(pollDraft == nil ? [] : .isSelected)
+        .accessibilityIdentifier("poll-toolbar-button")
+    }
+
+    private func removePollDraft() {
+        pollDraftError = nil
+        withAnimation(.easeOut(duration: 0.2)) {
+            pollDraft = nil
+        }
     }
 
     // MARK: - Custom Toolbar Button Binding (backward compat)
@@ -479,6 +550,12 @@ public struct CommentInputBar: View {
     private func submitComment() async {
         guard !isEmpty else { return }
 
+        // A half-written poll blocks the post rather than being posted or silently dropped.
+        if let draftError = pollDraft?.validate() {
+            pollDraftError = draftError
+            return
+        }
+
         isSending = true
         errorMessage = nil
 
@@ -492,7 +569,8 @@ public struct CommentInputBar: View {
             let comment = try await sdk.postComment(
                 text: htmlText,
                 parentId: replyingTo?.comment.id,
-                mentions: selectedMentions.isEmpty ? nil : selectedMentions
+                mentions: selectedMentions.isEmpty ? nil : selectedMentions,
+                poll: pollDraft?.toInput()
             )
             #if os(iOS)
                 attributedText = NSAttributedString()
@@ -505,6 +583,7 @@ public struct CommentInputBar: View {
                 text = ""
             #endif
             replyingTo = nil
+            removePollDraft()
             selectedMentions.removeAll()
             mentionSuggestions.removeAll()
             onCommentPosted?(comment)

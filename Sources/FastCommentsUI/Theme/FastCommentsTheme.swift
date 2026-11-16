@@ -52,6 +52,24 @@ public struct FastCommentsTheme: Sendable {
     public var inputBarBackgroundColor: Color?
     public var inputBarBorderColor: Color?
 
+    // Poll colors. Unset, the accent follows `primaryColor` and the rest match the web widget's poll card.
+    /// Selected option border and check, chosen duration, and "Your vote is in".
+    public var pollAccentColor: Color?
+    /// Check mark and text drawn on the accent color.
+    public var pollAccentTextColor: Color?
+    /// Option chip background.
+    public var pollOptionBackgroundColor: Color?
+    /// Option chip background while pressed.
+    public var pollOptionPressedBackgroundColor: Color?
+    /// Result bar for options you did not pick.
+    public var pollBarColor: Color?
+    /// Result bar for the option you picked.
+    public var pollSelectedBarColor: Color?
+    /// Checkbox mark and outlined pills.
+    public var pollBorderColor: Color?
+    /// Errors and "Remove poll".
+    public var pollDangerColor: Color?
+
     // Other
     public var onlineIndicatorColor: Color?
     public var separatorColor: Color?
@@ -300,6 +318,77 @@ public struct FastCommentsTheme: Sendable {
         threadLineColor ?? resolvePrimaryColor().opacity(0.15)
     }
 
+    public func resolvePollAccentColor() -> Color {
+        pollAccentColor ?? primaryColor ?? Self.adaptiveColor(light: 0x333333, dark: 0xFFFFFF)
+    }
+
+    public func resolvePollAccentTextColor() -> Color {
+        if let pollAccentTextColor { return pollAccentTextColor }
+        if let accent = pollAccentColor ?? primaryColor { return Self.readableTextColor(on: accent) }
+        return Self.adaptiveColor(light: 0xFFFFFF, dark: 0x181A1B)
+    }
+
+    public func resolvePollOptionBackgroundColor() -> Color {
+        pollOptionBackgroundColor ?? Self.adaptiveColor(light: 0xF6F7F8, dark: 0x181A1B)
+    }
+
+    public func resolvePollOptionPressedBackgroundColor() -> Color {
+        pollOptionPressedBackgroundColor ?? Self.adaptiveColor(light: 0xECECEC, dark: 0x2A2C2D)
+    }
+
+    public func resolvePollBarColor() -> Color {
+        pollBarColor ?? Self.adaptiveColor(light: 0xE5E5E5, dark: 0x353535)
+    }
+
+    public func resolvePollSelectedBarColor() -> Color {
+        if let pollSelectedBarColor { return pollSelectedBarColor }
+        if let accent = pollAccentColor ?? primaryColor { return accent.opacity(0.22) }
+        return Self.adaptiveColor(light: 0xD9D9D9, dark: 0x4A4C4D)
+    }
+
+    public func resolvePollBorderColor() -> Color {
+        pollBorderColor ?? Self.adaptiveColor(light: 0xBFBFBF, dark: 0x424242)
+    }
+
+    public func resolvePollDangerColor() -> Color {
+        pollDangerColor ?? Self.adaptiveColor(light: 0xC44A3F, dark: 0xE0766C)
+    }
+
+    /// Black or white, whichever reads better on a color, so a light brand color doesn't get a white check mark.
+    private static func readableTextColor(on background: Color) -> Color {
+        #if os(iOS)
+            let base = UIColor(background)
+            return Color(
+                uiColor: UIColor { traits in
+                    var red: CGFloat = 0
+                    var green: CGFloat = 0
+                    var blue: CGFloat = 0
+                    base.resolvedColor(with: traits).getRed(&red, green: &green, blue: &blue, alpha: nil)
+                    // WCAG relative luminance. Black has the better contrast above about 0.179.
+                    let linear = [red, green, blue].map { channel -> CGFloat in
+                        let clamped = min(max(channel, 0), 1)
+                        return clamped <= 0.04045 ? clamped / 12.92 : pow((clamped + 0.055) / 1.055, 2.4)
+                    }
+                    let luminance = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+                    return luminance > 0.179 ? .black : .white
+                })
+        #else
+            return .white
+        #endif
+    }
+
+    private static func adaptiveColor(light: UInt32, dark: UInt32) -> Color {
+        #if os(iOS)
+            Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(hex: dark) : UIColor(hex: light) })
+        #else
+            Color(
+                nsColor: NSColor(name: nil) { appearance in
+                    appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                        ? NSColor(hex: dark) : NSColor(hex: light)
+                })
+        #endif
+    }
+
     public func resolveCommenterNameFont() -> Font {
         commenterNameFont ?? .subheadline.weight(.semibold)
     }
@@ -316,3 +405,21 @@ public struct FastCommentsTheme: Sendable {
         actionFont ?? .caption.weight(.medium)
     }
 }
+
+#if os(iOS)
+    private extension UIColor {
+        convenience init(hex: UInt32) {
+            self.init(
+                red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
+                blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+        }
+    }
+#else
+    private extension NSColor {
+        convenience init(hex: UInt32) {
+            self.init(
+                srgbRed: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
+                blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+        }
+    }
+#endif

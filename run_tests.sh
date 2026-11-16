@@ -15,7 +15,7 @@ SCHEME="FastCommentsExample"
 
 run_sdk() {
     echo "=========================================="
-    echo "  SDK Integration Tests (84 tests)"
+    echo "  SDK Unit and Integration Tests"
     echo "=========================================="
     xcodebuild test \
         -scheme FastCommentsUI \
@@ -37,6 +37,8 @@ run_ui() {
         -skip-testing FastCommentsUITests/LiveEventUserB_UITests \
         -skip-testing FastCommentsUITests/FeedUserA_UITests \
         -skip-testing FastCommentsUITests/FeedUserB_UITests \
+        -skip-testing FastCommentsUITests/PollUserA_UITests \
+        -skip-testing FastCommentsUITests/PollUserB_UITests \
         2>&1 | grep -E 'Test Case|Executed.*tests|SUCCEEDED|FAILED'
     echo ""
 }

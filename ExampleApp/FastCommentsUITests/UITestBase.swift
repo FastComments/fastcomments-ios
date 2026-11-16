@@ -127,11 +127,13 @@ class UITestBase: XCTestCase {
 
     // MARK: - SSO
 
-    func makeSecureSSOToken(userId: String = UUID().uuidString, isAdmin: Bool = false) -> String {
+    func makeSecureSSOToken(
+        userId: String = UUID().uuidString, username: String? = nil, isAdmin: Bool = false
+    ) -> String {
         var userData: [String: Any] = [
             "id": userId,
             "email": "tester-\(userId.prefix(8))@fctest.com",
-            "username": "Tester \(userId.prefix(6))",
+            "username": username ?? "Tester \(userId.prefix(6))",
             "avatar": "",
         ]
         if isAdmin { userData["isAdmin"] = true }
@@ -167,9 +169,9 @@ class UITestBase: XCTestCase {
     // MARK: - App Launch
 
     @discardableResult
-    func launchApp(urlId: String, ssoToken: String) -> XCUIApplication {
+    func launchApp(urlId: String, ssoToken: String, extraArguments: [String] = []) -> XCUIApplication {
         let application = XCUIApplication()
-        application.launchArguments = ["-test", testTenantId, urlId, ssoToken]
+        application.launchArguments = ["-test", testTenantId, urlId, ssoToken] + extraArguments
         application.launch()
         app = application
         return application
@@ -234,7 +236,148 @@ class UITestBase: XCTestCase {
         return "uitest-\(sanitized)-\(Int(Date().timeIntervalSince1970))"
     }
 
+    // MARK: - Custom Config
+
+    /// Save a tenant-wide widget config (domain and urlId "*") through the e2e API, which the typed SDK doesn't cover.
+    func createCustomConfig(_ widgetConfig: [String: Any], file: StaticString = #file, line: UInt = #line) {
+        let encodedKey = e2eApiKey.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
+        var request = URLRequest(url: URL(string: "\(host)/test-e2e/api/custom-configs?API_KEY=\(encodedKey)")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: [
+            "tenantId": testTenantId!,
+            "name": "iOS UI Test Config",
+            "domain": "*",
+            "urlId": "*",
+            "config": widgetConfig,
+        ])
+        let (_, response) = try! syncFetchRaw(url: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        XCTAssertTrue((200..<300).contains(status), "createCustomConfig failed: \(status)", file: file, line: line)
+    }
+
+    /// Comments load with the server's config, so this waits out config caching before the app is launched.
+    func waitForPollCreationEnabled(urlId: String, ssoToken: String, file: StaticString = #file, line: UInt = #line) {
+        let deadline = Date().addingTimeInterval(20)
+        while Date() < deadline {
+            let sem = DispatchSemaphore(value: 0)
+            var pollCreation: PollCreationMode?
+            Task {
+                defer { sem.signal() }
+                let response = try? await PublicAPI.getCommentsPublic(
+                    tenantId: self.testTenantId,
+                    urlId: urlId,
+                    options: PublicAPI.GetCommentsPublicOptions(sso: ssoToken, includeConfig: true)
+                )
+                pollCreation = response?.customConfig?.pollCreation
+            }
+            sem.wait()
+            if pollCreation == ._2 { return }
+            Thread.sleep(forTimeInterval: 1)
+        }
+        XCTFail("Poll creation never became enabled", file: file, line: line)
+    }
+
     // MARK: - UI Interaction Helpers
+
+    /// Keep a screenshot in the test results, for checking how a screen looks.
+    func attachScreenshot(_ name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    /// Holds the screen still for a moment when the dual-simulator runner is recording a video for review
+    /// (`run_dual_sim_tests.py --record`), so each state is visible. Does nothing in a normal run.
+    func holdForRecording() {
+        guard SyncClient.recordingHold > 0 else { return }
+        RunLoop.current.run(until: Date().addingTimeInterval(SyncClient.recordingHold))
+    }
+
+    /// Build a poll in the composer, post it with a comment, and return the new comment's id.
+    @discardableResult
+    func buildAndPostPoll(
+        urlId: String, comment: String, question: String, options: [String],
+        configure: (() -> Void)? = nil, file: StaticString = #file, line: UInt = #line
+    ) -> String {
+        let pollButton = app.buttons["poll-toolbar-button"]
+        XCTAssertTrue(pollButton.waitForExistence(timeout: 15), "Poll button should show", file: file, line: line)
+        pollButton.tap()
+
+        fillPollBuilder(question: question, options: options)
+        configure?()
+        attachScreenshot("poll-builder")
+
+        typeComment(comment)
+
+        XCTAssertTrue(
+            app.staticTexts[question].waitForExistence(timeout: 15), "Posted poll should render", file: file, line: line
+        )
+        return fetchLatestCommentId(urlId: urlId, file: file, line: line) ?? ""
+    }
+
+    func fillPollBuilder(question: String, options: [String]) {
+        let questionField = waitForId("poll-builder-question")
+        questionField.tap()
+        questionField.typeText(question)
+        for (index, option) in options.enumerated() {
+            let field = waitForId("poll-builder-option-\(index)")
+            field.tap()
+            field.typeText(option)
+        }
+    }
+
+    func pollOption(_ commentId: String, _ index: Int) -> XCUIElement {
+        app.buttons["poll-option-\(commentId)-\(index)"]
+    }
+
+    /// The percent an option reads out. Empty while results are hidden.
+    func waitForPollPercent(
+        _ commentId: String, option index: Int, equals expected: String, timeout: TimeInterval = 20,
+        file: StaticString = #file, line: UInt = #line
+    ) {
+        let element = pollOption(commentId, index)
+        pollUntil(timeout: timeout) { element.exists && (element.value as? String) == expected }
+        XCTAssertEqual(element.value as? String, expected, "Option \(index) percent", file: file, line: line)
+    }
+
+    func waitForPollTotal(
+        _ commentId: String, equals expected: String, timeout: TimeInterval = 20,
+        file: StaticString = #file, line: UInt = #line
+    ) {
+        let element = app.staticTexts["poll-total-\(commentId)"]
+        pollUntil(timeout: timeout) { element.exists && element.label == expected }
+        XCTAssertEqual(element.label, expected, "Poll total", file: file, line: line)
+    }
+
+    /// Close a poll through the admin API, as an integration would.
+    func adminClosePoll(commentId: String, file: StaticString = #file, line: UInt = #line) {
+        adminPatchPoll(
+            commentId: commentId, CommentPollPatch(closesAt: ISO8601DateFormatter().string(from: Date())),
+            file: file, line: line)
+    }
+
+    func adminPatchPoll(
+        commentId: String, _ patch: CommentPollPatch, file: StaticString = #file, line: UInt = #line
+    ) {
+        let sem = DispatchSemaphore(value: 0)
+        Task {
+            defer { sem.signal() }
+            do {
+                let response = try await DefaultAPI.patchPoll(
+                    tenantId: self.testTenantId,
+                    commentId: commentId,
+                    commentPollPatch: patch,
+                    apiConfiguration: self.adminApiConfig
+                )
+                XCTAssertEqual(response.status, .success, file: file, line: line)
+            } catch {
+                XCTFail("adminPatchPoll failed: \(error)", file: file, line: line)
+            }
+        }
+        sem.wait()
+    }
 
     func typeComment(_ text: String) {
         let input = app.textViews["comment-input"]
@@ -297,11 +440,11 @@ class UITestBase: XCTestCase {
                     urlId: urlId,
                     broadcastId: UUID().uuidString,
                     commentData: commentData,
-                    options: CreateCommentPublicOptions(
+                    options: PublicAPI.CreateCommentPublicOptions(
                         sso: ssoToken
                     )
                 )
-                resultId = response.comment?.id
+                resultId = response.comment.id
             } catch {
                 XCTFail("seedComment failed: \(error)")
             }
@@ -320,12 +463,12 @@ class UITestBase: XCTestCase {
                 let response = try await PublicAPI.createFeedPostPublic(
                     tenantId: testTenantId,
                     createFeedPostParams: CreateFeedPostParams(contentHTML: text),
-                    options: CreateFeedPostPublicOptions(
+                    options: PublicAPI.CreateFeedPostPublicOptions(
                         broadcastId: UUID().uuidString,
                         sso: ssoToken
                     )
                 )
-                resultId = response.feedPost?.id
+                resultId = response.feedPost.id
             } catch {
                 XCTFail("seedFeedPost failed: \(error)")
             }
@@ -369,14 +512,14 @@ class UITestBase: XCTestCase {
                 defer { sem.signal() }
                 let response = try? await DefaultAPI.getComments(
                     tenantId: self.testTenantId,
-                    options: GetCommentsOptions(
+                    options: DefaultAPI.GetCommentsOptions(
                         limit: expected,
                         urlId: urlId,
                         parentId: parentId
                     ),
                     apiConfiguration: self.adminApiConfig
                 )
-                childCount = response?.comments?.count ?? 0
+                childCount = response?.comments.count ?? 0
             }
             sem.wait()
             if childCount >= expected { return }
@@ -399,13 +542,13 @@ class UITestBase: XCTestCase {
             do {
                 let response = try await DefaultAPI.getComments(
                     tenantId: testTenantId,
-                    options: GetCommentsOptions(
+                    options: DefaultAPI.GetCommentsOptions(
                         limit: 1,
                         urlId: urlId
                     ),
                     apiConfiguration: adminApiConfig
                 )
-                resultId = response.comments?.first?.id
+                resultId = response.comments.first?.id
             } catch {
                 XCTFail("fetchLatestCommentId failed: \(error)", file: file, line: line)
             }

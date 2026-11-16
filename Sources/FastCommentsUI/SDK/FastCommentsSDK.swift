@@ -105,7 +105,7 @@ public final class FastCommentsSDK: ObservableObject {
 
     // MARK: - Internal
 
-    var broadcastIdsSent: Set<String> = []
+    var broadcastIdsSent = RecentIdSet()
     private var commentsTreeSubscription: AnyCancellable?
     private let apiConfig: FastCommentsSwiftAPIConfiguration
     private static let presenceSession: URLSession = {
@@ -334,10 +334,11 @@ public final class FastCommentsSDK: ObservableObject {
 
     // MARK: - Comment CRUD
 
-    /// Post a new comment or reply.
+    /// Post a new comment or reply, optionally with a poll attached (see `PollDraft.toInput(now:)`).
     @discardableResult
     public func postComment(
-        text: String, parentId: String? = nil, mentions: [CommentUserMentionInfo]? = nil
+        text: String, parentId: String? = nil, mentions: [CommentUserMentionInfo]? = nil,
+        poll: CommentPollInput? = nil
     ) async throws -> PublicComment {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -358,7 +359,8 @@ public final class FastCommentsSDK: ObservableObject {
             mentions: mentions,
             pageTitle: config.pageTitle,
             url: config.url.isEmpty ? config.urlId : config.url,
-            urlId: config.urlId
+            urlId: config.urlId,
+            poll: poll
         )
 
         let response = try await PublicAPI.createCommentPublic(
@@ -525,6 +527,135 @@ public final class FastCommentsSDK: ObservableObject {
             comment.comment.isVotedDown = false
             comment.comment.myVoteId = nil
             comment.objectWillChange.send()
+        }
+    }
+
+    // MARK: - Polls
+
+    /// Whether the current user may attach a poll to a new comment, per the `pollCreation` setting.
+    public var canCreatePoll: Bool {
+        PollRules.canCreatePoll(config: customConfig, isSiteAdmin: isSiteAdmin, isLiveChat: commentsTree.liveChatStyle)
+    }
+
+    /// Whether the current user may vote on this poll, per the `pollVoting` setting and its close date.
+    public func canVote(on poll: CommentPoll) -> Bool {
+        PollRules.canVote(config: customConfig, currentUser: currentUser, poll: poll)
+    }
+
+    /// Vote on a comment's poll. Voting again moves the vote to the new option. The comment in the tree has the
+    /// new tallies and `myPollVotes` by the time this returns.
+    @discardableResult
+    public func votePoll(commentId: String, optionId: String) async throws -> VotePollResponse {
+        let broadcastId = UUID().uuidString
+        broadcastIdsSent.insert(broadcastId)
+
+        let response = try await PublicAPI.votePoll(
+            tenantId: config.tenantId,
+            commentId: commentId,
+            votePollBody: VotePollBody(optionId: optionId),
+            options: PublicAPI.VotePollOptions(
+                urlId: config.urlId,
+                broadcastId: broadcastId,
+                sso: config.sso
+            ),
+            apiConfiguration: apiConfig
+        )
+        guard response.status == .success else {
+            fcLog.error("votePoll failed for \(commentId, privacy: .public)")
+            throw FastCommentsError(reason: "Poll vote failed")
+        }
+
+        // Re-fetch after await: the renderable may have been replaced by a live event.
+        if let renderable = commentsTree.commentsById[commentId] {
+            renderable.comment.poll = response.poll
+            renderable.comment.myPollVotes = response.myPollVotes
+            renderable.pollError = nil
+            renderable.objectWillChange.send()
+        }
+        return response
+    }
+
+    /// Page through who voted on a poll. Only polls whose privacy names voters can be listed, and admins-only polls
+    /// only for admins and moderators.
+    /// - Parameters:
+    ///   - page: Zero-based page. The server returns 25 voters per page.
+    ///   - search: Optional name filter.
+    public func getPollVoters(
+        commentId: String, page: Int = 0, search: String? = nil
+    ) async throws -> GetPollVoterNamesSuccessResponse {
+        let response = try await PublicAPI.getPollVoters(
+            tenantId: config.tenantId,
+            commentId: commentId,
+            options: PublicAPI.GetPollVotersOptions(
+                urlId: config.urlId,
+                page: page,
+                search: search?.isEmpty == false ? search : nil,
+                sso: config.sso
+            ),
+            apiConfiguration: apiConfig
+        )
+        guard response.status == .success else {
+            fcLog.error("getPollVoters failed for \(commentId, privacy: .public)")
+            throw FastCommentsError(reason: "Could not load poll voters")
+        }
+        return response
+    }
+
+    /// What tapping a poll option does: votes, or explains why it can't. Progress and errors are published on the
+    /// comment's `pollSaving` and `pollError` so the card reflects them.
+    func selectPollOption(commentId: String, optionId: String) async {
+        guard let renderable = commentsTree.commentsById[commentId], let poll = renderable.comment.poll,
+            !renderable.pollSaving
+        else { return }
+
+        // The close date can pass while the card is on screen, so this redraws it as closed.
+        guard !PollRules.isClosed(poll) else {
+            renderable.objectWillChange.send()
+            return
+        }
+
+        // A logged-out viewer can still tap, so the card can say why the vote didn't count.
+        guard canVote(on: poll) else {
+            renderable.pollError = NSLocalizedString("poll_login_to_vote", bundle: .module, comment: "")
+            return
+        }
+        renderable.pollError = nil
+
+        if PollRules.isSelected(renderable.comment, optionId: optionId) {
+            renderable.pollShowResults = true
+            return
+        }
+
+        renderable.pollSaving = true
+        var failureMessage: String?
+        do {
+            try await votePoll(commentId: commentId, optionId: optionId)
+        } catch {
+            failureMessage = Self.pollVoteErrorMessage(from: error)
+        }
+
+        // Re-fetch after await: the renderable may have been replaced by a live event.
+        guard let current = commentsTree.commentsById[commentId] else { return }
+        current.pollSaving = false
+        if let failureMessage {
+            current.pollError = failureMessage
+        } else {
+            current.pollShowResults = true
+        }
+    }
+
+    private static func pollVoteErrorMessage(from error: Error) -> String {
+        let apiError = FastCommentsError(decoding: error) ?? error as? FastCommentsError
+        if let translated = apiError?.translatedError, !translated.isEmpty {
+            return translated
+        }
+        switch apiError?.code {
+        case "poll-login-required":
+            return NSLocalizedString("poll_login_to_vote", bundle: .module, comment: "")
+        case "poll-closed":
+            return NSLocalizedString("poll_closed", bundle: .module, comment: "")
+        default:
+            return NSLocalizedString("poll_vote_failed", bundle: .module, comment: "")
         }
     }
 
@@ -823,7 +954,10 @@ public final class FastCommentsSDK: ObservableObject {
         case .updatedComment:
             if let comment = event.comment {
                 let publicComment = LiveEventHandler.toPublicComment(comment)
-                commentsTree.updateComment(publicComment)
+                if let existing = commentsTree.commentsById[publicComment.id] {
+                    commentsTree.updateComment(
+                        LiveEventHandler.carryingViewerState(from: existing.comment, to: publicComment))
+                }
             }
         case .deletedComment:
             if let comment = event.comment {
@@ -899,6 +1033,15 @@ public final class FastCommentsSDK: ObservableObject {
             } else if isCurrentUser {
                 badgeAwardToShow = convertedBadges
             }
+        case .pollUpdate:
+            // New tallies and close date only. Polls that withhold results until you vote don't get these.
+            guard let commentId = event.commentId, let update = event.poll,
+                let renderable = commentsTree.commentsById[commentId], renderable.comment.poll != nil
+            else { break }
+            renderable.comment.poll?.options = update.options
+            renderable.comment.poll?.totalVotes = update.totalVotes
+            renderable.comment.poll?.closesAt = update.closesAt
+            renderable.objectWillChange.send()
         case .newConfig:
             // Server pushed config change
             break
